@@ -1,0 +1,1 @@
+BOARDSRC += device/console.c
