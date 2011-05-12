@@ -1,0 +1,225 @@
+======================= 
+A0 Solution Description
+=======================
+
+Ze Long
+z2long
+
+
+Path to the executable: On tftp server, see blow
+----------------------------------------------------------------
+
+=====
+Usage
+=====
+
+Before loading and running the program, besure to press the go button
+on the control set.
+
+To load, load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/clk_test.elf"
+
+A backup is in /u9/z2long/cs452bak/clk_test.elf
+
+md5sum: 0cd00efd463bff5dd85dd67a1caa62cf
+
+
+===========
+Description
+===========
+
+The program is mainly structured in 2 portions: the UI description and
+the backend interface with the terminal and the train control set.
+
+The UI describes the different components that is shown on the
+terminal, display status of the control set, taking input from user,
+interpreting input as command and issue commands to backend.  The UI
+needs a 80 x 24 terminal to run. The backend interfaces with the
+train, track and sensor to provide the UI requested information.
+
+The whole program is object-oriented. In the front end, each UI
+component is a single object built upon Region class.  On the back
+end, buffered I/O is done via Iobuf class, and each hardware
+components, such as the consoles, clocks, trains, track, sensor all
+have their own class with timer, Iobuf, and UI built upon them.
+
+
+=======
+Details
+=======
+
+
+The UI
+------
+
+The basis of the UI system is the Iobuf class which handles buffered
+I/O.  This class has a write and a flush methods.  Flush is supposed
+to be called periodically in order to flush all contents written to
+the Iobuf.  The Iobuf contains a buffer that only remembers one write.
+Each consecutive writes will provide a new buffer and will replace the
+old buffer.  The user is expected to check if the buffer is empty.
+
+Built upon Iobuf is Region, which has 2 main purposes.  One is to
+describe the region a UI component resides in, give abstraction for
+its presentation.  Second, a Region requires a secondary buffer to be
+provided.  What this is meant to do is to make Region a double
+buffering I/O port.  Currently with only output implemented, all
+writes to a Region goes into the secondary buffer.  Once the Iobuf
+inside the Region runs out of data, it will immediately grab the
+secondary buffer and output it to the terminal.  This is mainly due to
+consideration of decreasing latency.
+
+Both Iobuf and Region only have output methods implemented.
+
+The digital clock, switch monitor, and sensor monitor are examples of
+UI components built upon Region.  They all require periodic flush
+which does not guarantee all contents will be displayed immediately,
+but eventually the status will be updated.  This gives the system more
+chance to inspect train/track status and accept user input.
+
+For example, the DD:HH:MM field of the timer rarely changes.  They
+will not be redrawn if they are not updated.
+
+In addition, every single one of the switch monitors and sensor
+monitors has its own Region, which makes it possible to only update a
+single status and save as much I/O time as possible.
+
+
+The Backend
+-----------
+
+The backend interfaces with 2 hardware components.  One is the ts7200
+board, and the second is the train control set.
+
+On dealing with the ts7200 board, clock, and console (UART) classes
+are implemented to handle timing and I/O.  The clock class supports
+reporting uptime in milliseconds for at most 49 days.  It also
+porvides a routine for counting down, which is useful for make timing
+decisions.  The console class provides raw I/O on the UART ports.
+This provides an easy and robust mean of interacting with the terminal
+as well as the train control set.
+
+Interfacing with the train control set is the train class.  This class
+handles all querys and commands from and to the train set.
+Interfacing with a low speed UART, a ring buffer queue for storing
+commands and an Iobuf are combined to make instructing the train
+non-blocking and wastes least amount of time.  The Iobuf ensures the
+current command can be issued with out blocking by periodically
+calling the flush method actively in the pooling loop, and the command
+queue ensures adding command does not need to wait for current command
+to complete.
+
+Input from the the train, namely sensor data, is handled by a single
+buffer routine which, again needs to be periodically called, will
+report successful once all 10 bytes of data are received.
+
+
+In Between
+----------
+
+While many direct communication exists between the UI and the backend,
+a main interface between them exists to parse the commands the user
+types in.  This interface consists of a buffered prompt and a command
+parser, which also issues parsed command to the backend.
+
+
+Busy Wait
+---------
+
+Occasional busy I/O are used when, for example, setting the cursor to
+draw the UI or print status bar, which must be cleared each time new
+message come in.  The busy waiting is minimized by limiting the amount
+of UI redraw on only the part that has changed, and limit the amount
+of status message printed.
+
+
+=========
+File List
+=========
+
+. maps to /u9/z2long/cs452bak/dev
+
+Some more directory level is needed to build the program.
+
+md5sum                           File Names
+b9c930723e81e74f13f552d6ee401f9b ./a0/src/main.c
+5e5da703fcfe16a5a694150945b1bd2b ./a0/src/Makefile
+6d656f0f74b34703853e3dc0132dd3f6 ./doc/cursor_control
+107ce5db8faf8fd50e97794d345e6656 ./doc/train
+f1859d06403ee20593df366a6d8aeb32 ./iotest/src/iotest.c
+b88ebdeb3d0c4ed8effd6f2c6c306808 ./iotest/src/Makefile
+68b329da9893e34099c7d8ad5cb9c940 ./iotest/src/iotest.h
+39f6854d350f9bef0ebd4530851a7bbb ./TODO
+7226624f5bf596582465f2604c3c0607 ./common/src/ui/timer.c
+1264713cef25a3524cd5a57d9714f061 ./common/src/ui/prompt.c
+b44cad9fed6b9e6c04f54eab91e7f033 ./common/src/ui/status.c
+76e538d2297aebd50a502be421d573b2 ./common/src/ui/switches.c
+11a27b934e9fda3d3ddb80aad5a859f3 ./common/src/ui/sensor.c
+2a127ea83cab9b20d2d017f3600912b6 ./common/src/ui/ui.c
+856bbe465ee1a095f19da3609f328b4f ./common/src/rbuf.c
+4af21f12d6f1c2af43cc6c465c7219e4 ./common/src/time.c
+4bebbb4fabf73daaa89003e32278305c ./common/src/command.c
+b81bb218cc0dd81b708f3aa66a9e85d7 ./common/src/sensorctrl.c
+2bf5b04b22e9c4cac91df86036f8497d ./common/src/bwio.c
+f97f1b116a3d46d2f68b1899b3a11022 ./common/src/console.c
+2b768326cbf40ffda401a27cefc6a017 ./common/src/bufio.c
+164d385785123c721a23171733470055 ./common/src/str.c
+8241149ddc2c89176c4d0f73a09d4c1b ./common/src/clock.c
+94f12f538289da58d101c7bf0ac1a770 ./common/src/regionio.c
+d1521a60cc83683e5d811843a2ce4f7d ./common/src/Makefile
+71f8449ad8737b36a7998eef271abe7f ./common/src/train.c
+f5c39549cb1fd0dd9e850256c81ee006 ./common/inc/ui/switches.h
+6a41d983370d5a382b54bf3c18c90178 ./common/inc/ui/sensor.h
+1d753e51e1c59fad1ae53ae28c7f1ead ./common/inc/ui/ui.h
+59233b54f0adffc307c3d17fd9fba61d ./common/inc/ui/timer.h
+75b93e51b1dba152b6553b708d0473f0 ./common/inc/ui/prompt.h
+9618d029908bfd2da2ecff603600cc25 ./common/inc/ui/status.h
+0d70265d7e013ede462e4d2038dbd43c ./common/inc/clock.h
+8fda6431612f0f380f4e8c5ff99a7f06 ./common/inc/sensorctrl.h
+7f500356e31694aa9894a32c3fa4422a ./common/inc/time.h
+85b44137dfef528703bd80f122428306 ./common/inc/rbuf.h
+c44f271844976edfc86d8d5d213b0cce ./common/inc/ts7200.h
+44618caf2bfd8b7c5b7930e9fa7fa0bd ./common/inc/bwio.h
+9089232adecfaa896366022071c5b0f7 ./common/inc/console.h
+c5c38d8ed1cd98feb911c74dcdc3f976 ./common/inc/valist.h
+c1c76687dacd12a040c3c297c7e31467 ./common/inc/types.h
+6f498ddaa3d39ddd5af7d229d8a70762 ./common/inc/bufio.h
+60245387474523cfc563efb143d5a7aa ./common/inc/config.h
+16eb2e0956e0d51380e4497dd9f1616a ./common/inc/str.h
+1be22814d42157465a8b7a02a7da9f34 ./common/inc/regionio.h
+527e2fb23d5e778e86a0e2f16fc71d18 ./common/inc/train.h
+f623c07fd3e3155b54e46948dc5d2c0a ./common/inc/command.h
+9362895f947ee525821efaaa82a059c1 ./common/inc/regopts.h
+5e5746b93a6b5880fc3001f517ffa2e2 ./common/inc/err.h
+4aa618b9753c5292e5d9e5c95d297f10 ./common/orex.ld
+618381132dd748de5204bdbf80d19e47 ./common/common.mk
+
+
+=========
+Questions
+=========
+
+1. How do you know that your clock does not lose time?
+
+I am using the 32bit CLK 3 on EP 9302 which should be able to last
+around 24 days with the 2KHz clock.  In order to report time I record
+the number of clock ticks the system is up, thus guarantees as long as
+the processor reports cycles correctly we are not losing time.  After
+24 days its a bit trickier, but there are ways to solve this.
+
+The timer itself recomputes the currently time from the cycle count.
+Therefore the time should be correct in 24 days.
+
+2. How long does the train hardeware take to reply to a sensor query?
+
+From my observation the timing results are mostly 63 to 64
+milliseconds.  Among the time there should only be negligible time
+used on I/O and interaction on the UI, so I will say 63 milliseconds
+should be a pretty good approximation.
+
+
+==============
+Known Problems
+==============
+
+The program occasionally experience memory corruption.  My theory is
+this is caused by the extensive use of global variable.

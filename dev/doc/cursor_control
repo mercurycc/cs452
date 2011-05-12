@@ -1,0 +1,481 @@
+ANSI
+
+Cursor
+
+Addressing
+
+ 
+
+ 
+
+ 
+
+Cursor Addressing
+
+Escape Sequences
+
+ANSI Escape Sequences
+
+An ANSI Escape Sequence is a sequence of characters that does not print on the screen, but rather causes an ANSI-compliant terminal to perform some function such as:
+
+Move the cursor up, down, backward, forward, or to a specified location
+
+Erase a character, line, or entire display
+
+Change character attributes such as bold, blinking, reverse video, underlined, double height, and/or double width
+
+Set and clear tabs
+
+Turn keyboard lights on and off
+
+Inquire about the terminal emulation or change it
+
+All ANSI Escape Sequences begin with theASCII ESCAPE character (27 decimal, 1B hexadecimal, 33 octal, 0011011 binary).
+
+An ANSI Escape Sequence ends as soon as a complete command has been assembled. If another ESCAPE character appears before a previous Escape Sequence has reached a valid conclusion, the previous Escape Sequence is terminated and the characters in that sequence are displayed (usually meaningless in the application.)
+
+Forms of ANSI Escape Sequences
+
+There are two forms of ANSI Escape Sequences
+
+1. The ESCAPE character, followed by one or two characters other than [. Some characters are considered "non-terminating," while the majority of characters are considered "terminating."
+
+a. If the ESCAPE character is followed by a character that is considered "terminating," then the ESCAPE sequence consists of only two characters in total.
+
+b. If the ESCAPE character is followed by a character that is considered "non-terminating," then the ESCAPE sequence consists of three characters in total. These non-terminating characters are most commonly the punctuation characters #, (, ), *, +, -, ., /, ?, $, and &.
+
+2. The ESCAPE character, followed by the [ character, followed optionally by a non-terminating punctuation character, followed by 0 or more parameters separated by semicolons, followed optionally by a non-terminating punctuation character, followed by a terminating character.
+
+a. Parameters are strings of 0 or more decimal digits (ASCII characters 0 through 9)
+
+b. Final characters are alphabetic or terminating punctuation characters. The most common terminating punctuation characters are ~, @, }, and |.
+
+The second form is used so often that the character sequence ESCAPE followed by an [ is referred to as a "Control Sequence Introducer." In all the examples that follow the ESCAPE character will be abbreviated ESC and the control sequence introducer (the two-character sequence) will be abbreviated CSI.
+
+Examples of Two-Character Escape Sequences
+
+ESC D
+	
+
+Index
+	
+
+Move cursor down one line in same column. If cursor at bottom of screen, scroll up.
+
+ESC E
+	
+
+Next Line
+	
+
+Move cursor to first column on next line down. If cursor at bottom of screen, scroll up.
+
+ESC H
+	
+
+Horizontal Tabulation Set
+	
+
+Set tab stop at current cursor postion.
+
+ESC M
+	
+
+Reverse Index
+	
+
+Move cursor to same horizontal position on preceding line. If cursor is at top of screen, scroll down.
+
+ESC Z
+	
+
+Identify Terminal
+	
+
+Old form of requesting terminal to send ANSI device attributes
+
+ESC c
+	
+
+Reset to Initial State
+	
+
+Reset terminal to power-on state after execution of power-up self-test.
+
+ESC 7
+	
+
+Save Cursor
+	
+
+Save current cursor position, graphic rendition, and character set.
+
+ESC 8
+	
+
+Restore Cursor
+	
+
+Restore previously saved cursor position, graphic rendition, and character set.
+
+ESC >
+	
+
+Keypad Numeric Mode
+	
+
+Auxiliary keypad to send characters on the keycaps. Cursor keys to send cursor controls.
+
+ESC =
+	
+
+Keypad Application Mode
+	
+
+Auxiliary keypad and cursor keys to send control sequences.
+
+Examples of Three-Character Escape Sequences
+
+ESC # 3
+	
+
+Double-height Line Top Half
+	
+
+Top half of double-height, double-width line (line length half as long)
+
+ESC # 4
+	
+
+Double-height Line Bottom Half
+	
+
+Bottom half of double-height, double-width line (better send same data as to top half)
+
+ESC # 5
+	
+
+Single-width Line
+	
+
+Single-height, single-width line (default for all new lines)
+
+ESC #6
+	
+
+Double-width Line
+	
+
+Single-height, double-width line (line length half as long)
+
+ESC # 8
+	
+
+Screen Alignment Display
+	
+
+Fill screen with E’s for screen focus and alignment.
+
+Example of Escape Sequences
+
+with CSI and no parameters
+
+CSI ! p
+	
+
+Soft Reset
+	
+
+Reset terminal, but retain screen
+
+Examples of Escape Sequences
+
+with CSI and fixed parameters
+
+CSI J
+	
+
+Erase Display End
+	
+
+Erase from cursor to end of screen
+
+CSI 0 J
+	
+
+Erase Display End
+	
+
+Erase from cursor to end of screen
+
+CSI 1 J
+	
+
+Erase Display Start
+	
+
+Erase from start of screen to cursor
+
+CSI 2 J
+	
+
+Erase Entire Display
+	
+
+Erase all of display, don’t move cursor
+
+CSI K
+	
+
+Erase Line End
+	
+
+Erase from cursor to end of line
+
+CSI 0 K
+	
+
+Erase Line End
+	
+
+Erase from cursor to end of line
+
+CSI 1 K
+	
+
+Erase Line Start
+	
+
+Erase from start of line to cursor
+
+CSI 2 K
+	
+
+Erase Entire Line
+	
+
+Erase all of line, don’t move cursor
+
+Examples of Escape Sequences
+
+with CSI and single variable parameter
+
+In these sequences, the variable parameter is specified by Pn, indicating a numeric parameter. If the parameter value is 0, it may be omitted entirely. Numeric parameters may have preceding zeroes.
+
+CSI Pn A
+	
+
+Cursor Up
+	
+
+Move cursor Pn lines up without altering column position, minimum one line, stop at top of screen.
+
+CSI Pn B
+	
+
+Cursor Down
+	
+
+Move cursor Pn lines down without altering column position, minimum one line, stop at bottom of screen.
+
+CSI Pn C
+	
+
+Cursor Forward
+	
+
+Move cursor right Pn spaces, minimum one space, don’t exceed right margin.
+
+CSI Pn D
+	
+
+Cursor Backward
+	
+
+Move cursor left Pn spaces, minimum one space, don’t exceed left margin.
+
+CSI Pn I
+	
+
+Horizontal Index
+	
+
+Cursor forward Pn tab stops
+
+CSI Pn L
+	
+
+Insert Lines
+	
+
+Insert Pn lines before current line, scroll current line down.
+
+CSI Pn M
+	
+
+Delete Lines
+	
+
+Delete Pn lines from current line downward, do not scroll
+
+CSI Pn P
+	
+
+Delete Right Characters
+	
+
+Delete Pn characters on a single line from cursor to left
+
+CSI Pn X
+	
+
+Delete Left Characters
+	
+
+Delete Pn characters on a single line from cursor to right
+
+CSI Pn @
+	
+
+Insert Characters
+	
+
+Insert Pn spaces at and after cursor.
+
+Examples of Escape Sequences
+
+with CSI and two variable parameters
+
+In these examples, there are two parameters, generally labelled Pr and Pc, which generally represent row numbers and column numbers on the screen. The upper left corner of the screen is considered row 1, column 1. However, an omitted parameter or a parameter value of 0 is treated as a value of 1 for purposes of screen addressing.
+
+CSI Pr; Pc H
+	
+
+Cursor Position
+	
+
+Set cursor to row Pr, column Pc
+
+CSI Pr, Pc f
+	
+
+Cursor Position
+	
+
+Set cursor to row Pr, column Pc
+
+ 
+
+Examples of Escape Sequences
+
+with CSI and many variable parameters
+
+The parameters Ps in this escape sequence may be used as many times as desired, although the practical limit in this example is 4.
+
+CSI Ps; Ps; ... Ps m
+	
+
+Select Graphic Rendition
+	
+
+Set character attributes for all following characters until changed
+
+The attribute parameters for this sequence are as follows:
+  	
+
+Parameter value
+	
+
+Parameter description
+  	
+
+0
+	
+
+Attributes 1, 4, 5, and 7 off
+  	
+
+1
+	
+
+Bold (intensify foreground)
+  	
+
+4
+	
+
+Underline
+  	
+
+5
+	
+
+Blink
+  	
+
+7
+	
+
+Reverse video image
+
+An Example in C
+
+The following example defines a series of macros that make programming with ANSI control sequences less painful.
+
+What is important to remember is to NEVER embed spaces into an ANSI control sequence and NEVER send newlines to the screen when using cursor addressing.
+
+/* Cursor addressing in C - original by Scott Aamodt */
+
+#include <stdio.h>
+
+#define esc 27
+
+#define cls printf("%c[2J",esc)
+
+#define pos(row,col) printf("%c[%d;%dH",esc,row,col)
+
+main()
+
+{
+
+cls; /* clear the screen */
+
+pos(9,28); /* position cursor at row 9, column 28 */
+
+printf("**************"); /* note there is no \n */
+
+pos(10,28); /* go down to next line */
+
+printf("* Hi There *"); /* aligns under *’s */
+
+pos(11,28); /* next line will be bold, blinking */
+
+printf("* %c[1;5mHi There%c[0m *",esc,esc);
+
+/* turn on ... turn off */
+
+pos(12,14); /* next two lines double high */
+
+/* but also double width - 14 double widths = 28 single */
+
+printf("%c#3*HELLO*",esc); /* top half */
+
+pos(13,14); /* must follow up with 2nd identical line */
+
+printf("%c#4*HELLO*",esc); /* top half */
+
+pos(14,28); /* close off the box - no need to reset height */
+
+printf("**************"); /* still no \n */
+
+pos(20,1); /* "park" cursor - after execution, terminal
+
+displays OS prompt wherever you left off - don’t want
+
+to mess up display */
+
+return 0;
+
+}
+
+ 
