@@ -28,4 +28,4 @@ $(LIBFILES): $(AFILES)
 	cp $(subst $(LIBDIR)/lib,,$@) $@
 
 clean:
-	-rm -f $(SFILES) $(OFILES) $(AFILES)
+	-rm -f $(SFILES) $(OFILES) $(AFILES) $(LIBFILES)

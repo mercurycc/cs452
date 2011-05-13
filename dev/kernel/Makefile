@@ -13,10 +13,7 @@ RMRF    = rm -rf
 
 XCCLIB = /u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
 
-ARCH = arm920t
-BOARD = ts7200
-
-INCLUDE = inc $(ARCH)/inc $(ARCH)/$(BOARD)/inc
+INCLUDE = inc
 
 # Directory storing important build files
 BUILD := build
@@ -24,8 +21,8 @@ BUILD := build
 # Directory to store built objects/.s
 BUILT := built
 
-# List of all source codes
-SRC :=
+# Directory holding the source code
+SOURCE := src
 
 CFLAGS  = -c -fPIC -Wall -I. -I$(INCLUDE) -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
@@ -47,16 +44,10 @@ LDFLAGS = -init main -Map $(BUILT)/$(KERNELEXEC).map -N -T $(BUILD)/orex.ld -L$(
 
 # Kernel file list
 KERNELSRC :=
-include src/kernel.mk
-SRC += $(addprefix src/, $(KERNELSRC))
+include $(SOURCE)/kernel.mk
 
-# Architecture specific file list
-ARCHSRC :=
-include arch/arch.mk
-SRC += $(addprefix arch/, $(ARCHSRC))
-
-CSRC = $(filter %.c, $(SRC))
-ASMSRC = $(filter %s, $(SRC))
+CSRC = $(filter %.c, $(KERNELSRC))
+ASMSRC = $(filter %s, $(KERNELSRC))
 
 CBUILTS = $(addprefix $(BUILT)/, $(basename $(CSRC)))
 ASMTARGET = $(addprefix $(BUILT)/, $(ASMSRC))
@@ -78,7 +69,7 @@ $(KERNELEXEC): $(OBJECTS)
 $(OBJECTS): %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(ASSEMBLY): %.s: %.c
+$(ASSEMBLY): $(BUILT)/%.s: $(SOURCE)/%.c
 	$(XCC) -S $(CFLAGS) $< -o $@
 
 $(ASMTARGET): :

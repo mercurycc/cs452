@@ -24,26 +24,26 @@
 int kernel_init( Context* ctx )
 {
 	/* Initialize kernel context */
-	ctx_init( ctx );
+	// ctx_init( ctx );
 
 	/* Initialize kernel memory management */
-	mem_init( ctx );
+	// mem_init( ctx );
 
 	/* Install trap handler */
 	/* Trap handler should call kernel_trap_handler and provide
 	   the trap reason, where kernel_trap_handler would handle the
 	   interrupt */
-	trap_init( ctx );
+	// trap_init( ctx );
 
 	/* We need at least 2 clocks: one for preemption (not needed
 	   for K1), one for timing */
-	clock_init( ctx );
+	// clock_init( ctx );
 
 	/* Here we need to initialize all uarts */
 	uart_init( ctx );
 
 	/* Initialize scheduler */
-	sched_init( ctx );
+	// sched_init( ctx );
 
 	return ERR_NONE;
 }

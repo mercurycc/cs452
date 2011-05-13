@@ -1,21 +1,22 @@
 /* Pinball entry point */
 
+#if 0
 /* Kernel */
 /* Hold kernel manipulation routines */
 #include <kernel.h>
 
 /* Devices */
 /* Device init, function, shutdown */
-#include <arch/clock.h>
-#include <arch/uart.h>
+#include <devices/clock.h>
+#include <devices/uart.h>
 
 /* Trap handler */
 /* Trap handler installation */
-#include <arch/trap.h>
+#include <trap.h>
 
 /* Interrupt */
 /* Interrupt manipulation */
-#include <arch/interrupt.h>
+#include <interrupt.h>
 
 /* Task */
 /* Task abstraction and scheduling support */
@@ -33,17 +34,22 @@
    pages, or allocate on kernel heap */
 /* Kernel heap is not deallocatable.  We need to give enough memory to
    the kernel heap for all sub components to work properly. */
+/* mem should also allocate stack for user apps */
 #include <mem.h>
 
 /* User space */
 #include <session.h>
+
+#endif /* if 0 */
 
 int main()
 {
 	Context ctxbody = {0};
 	Context* ctx = &ctxbody;
 
-
+	/* Init Kernel */
+	kernel_init();
+	
 	/* Start user session */
 	session_init( ctx );
 	session_start( ctx );
