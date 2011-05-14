@@ -1,6 +1,7 @@
 # Makefile for X-Compiling ARMv4
 
 KERNELEXEC = bin/pinball.elf
+KERNELEXECMAP = $(KERNELEXEC).map
 
 MAKEFILE_NAME = ${firstword ${MAKEFILE_LIST}}	# makefile name
 
@@ -36,7 +37,7 @@ ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 ARFLAGS = rcs
 
-LDFLAGS = -init main -Map $(KERNELEXEC).map -N -T $(BUILD)/orex.ld -L$(XCCLIB) -L$(BUILD) -lgcc
+LDFLAGS = -init main -Map $(KERNELEXECMAP) -N -T $(BUILD)/orex.ld -L$(XCCLIB) -L$(BUILD) -lgcc
 
 # ===============
 # File Lists
@@ -83,4 +84,4 @@ $(BUILTDIRS):
 .PHONY: clean
 
 clean:
-	$(RMRF) $(ASSEMBLY) $(OBJECTS) $(KERNELEXEC)
+	$(RMRF) $(ASSEMBLY) $(ASMTARGET) $(OBJECTS) $(KERNELEXEC) $(KERNELEXECMAP)

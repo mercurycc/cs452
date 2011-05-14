@@ -44,7 +44,7 @@
 
 void dosyscall( uint reason )
 {
-	asm volatile( "swi 0\n\t" );
+	asm volatile( "swi 0" );
 }
 
 void doyield()
@@ -57,13 +57,31 @@ void doexit()
 	dosyscall( 0xcafebabe );
 }
 
-int userland()
+void dokern()
 {
-	DEBUG_NOTICE( DBG_TEMP, "USERLAND ENTERED\n" );
-	doyield();
-	DEBUG_NOTICE( DBG_TEMP, "USERLAND RENTERED\n" );
-	doexit();
+	dosyscall( 0xcafe );
+}
 
+int userland1()
+{
+	DEBUG_NOTICE( DBG_KER, "entered\n" );
+	doyield();
+	
+	while( 1 ){
+		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
+		doexit();
+	}
+	return 0;
+}
+
+int userland2()
+{
+	DEBUG_NOTICE( DBG_KER, "entered\n" );
+
+	while( 1 ){
+		doexit();
+		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
+	}
 	return 0;
 }
 
@@ -72,15 +90,16 @@ int main()
 	Context ctxbody = {0};
 	Context* ctx = &ctxbody;
 	Console termbody = {0};
-	uchar currentsp = 0;
+	uint currentsp = 0;
 
 	ctxbody.terminal = &termbody;
 	
 	/* Init Kernel */
 	kernel_init( ctx );
-	
+
+	DEBUG_PRINT( DBG_KER, "Starting user session, sp 0x%x, org sp 0x%x\n", (&currentsp) - 4096, &currentsp );
 	/* Start user session */
-	session_start( userland, (&currentsp) - 4096 );
+	session_start( userland1, (&currentsp) - 4096 );
 
 	return 0;
 }

@@ -19,6 +19,7 @@ enum Debug_type {
 	DBG_TEMP,
 	DBG_CMD,
 	DBG_TRAP,
+	DBG_KER,
 	DBG_COUNT
 };
 
@@ -38,6 +39,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_PROMPT:
 	case DBG_SENSORUI:
 		// case DBG_TRAP:
+		// case DBG_KER:
 	case DBG_CMD:
 		return 0;
 	default:
