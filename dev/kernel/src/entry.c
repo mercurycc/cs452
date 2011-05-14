@@ -99,6 +99,9 @@ int main()
 
 	DEBUG_PRINT( DBG_KER, "Starting user session, sp 0x%x, org sp 0x%x\n", (&currentsp) - 4096, &currentsp );
 	/* Start user session */
+	/* TODO: The correct way to do this is to setup the stack, put
+	   pc into stack, and hand back the TD, and call
+	   trap_handler_exit with the first TD */
 	session_start( userland1, (&currentsp) - 4096 );
 
 	return 0;

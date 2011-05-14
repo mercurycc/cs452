@@ -7,6 +7,7 @@
 
 typedef struct Context_s {
 	Console* terminal;
+	
 } Context;
 
 #endif /* _CONTEXT_H_ */

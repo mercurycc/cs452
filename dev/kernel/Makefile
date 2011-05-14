@@ -53,7 +53,7 @@ ASMSRC = $(filter %s, $(KERNELSRC))
 CBUILTS = $(addprefix $(BUILT)/, $(basename $(CSRC)))
 ASMTARGET = $(addprefix $(BUILT)/, $(ASMSRC))
 ABUILTS = $(basename $(ASMTARGET))
-BUILTDIRS = $(addprefix $(BUILT)/, $(sort $(dir $(KERNELSRC))))
+BUILTDIRS = $(addprefix $(BUILT)/, $(sort $(dir $(KERNELSRC)))) bin
 
 ASSEMBLY = $(addsuffix .s, $(CBUILTS))
 OBJECTS = $(addsuffix .o, $(CBUILTS) $(ABUILTS))
