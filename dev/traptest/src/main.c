@@ -40,6 +40,8 @@ int main()
 	Console* term = &termbody;
 	int status;
 
+	uint currentSp = 0;
+
 	/* Initialization */
 	status = time_init();
 	ASSERT( status == ERR_NONE );

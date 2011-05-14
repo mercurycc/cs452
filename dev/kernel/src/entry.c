@@ -1,6 +1,8 @@
 /* Pinball entry point */
 
-#if 0
+#include <types.h>
+#include <err.h>
+
 /* Kernel */
 /* Hold kernel manipulation routines */
 #include <kernel.h>
@@ -8,7 +10,7 @@
 /* Devices */
 /* Device init, function, shutdown */
 #include <devices/clock.h>
-#include <devices/uart.h>
+#include <devices/console.h>
 
 /* Trap handler */
 /* Trap handler installation */
@@ -16,7 +18,7 @@
 
 /* Interrupt */
 /* Interrupt manipulation */
-#include <interrupt.h>
+// #include <interrupt.h>
 
 /* Task */
 /* Task abstraction and scheduling support */
@@ -40,22 +42,45 @@
 /* User space */
 #include <session.h>
 
-#endif /* if 0 */
+void dosyscall( uint reason )
+{
+	asm volatile( "swi 0\n\t" );
+}
+
+void doyield()
+{
+	dosyscall( 0xdeadbeef );
+}
+
+void doexit()
+{
+	dosyscall( 0xcafebabe );
+}
+
+int userland()
+{
+	DEBUG_NOTICE( DBG_TEMP, "USERLAND ENTERED\n" );
+	doyield();
+	DEBUG_NOTICE( DBG_TEMP, "USERLAND RENTERED\n" );
+	doexit();
+
+	return 0;
+}
 
 int main()
 {
 	Context ctxbody = {0};
 	Context* ctx = &ctxbody;
+	Console termbody = {0};
+	uchar currentsp = 0;
 
+	ctxbody.terminal = &termbody;
+	
 	/* Init Kernel */
-	kernel_init();
+	kernel_init( ctx );
 	
 	/* Start user session */
-	session_init( ctx );
-	session_start( ctx );
+	session_start( userland, (&currentsp) - 4096 );
 
-	/* Session ends, shutdown */
-	kernel_shutdown( ctx );
-	
 	return 0;
 }

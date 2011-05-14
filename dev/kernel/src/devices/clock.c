@@ -2,7 +2,7 @@
 #include <err.h>
 #include <bwio.h>
 #include <ts7200.h>
-#include <clock.h>
+#include <devices/clock.h>
 #include <regopts.h>
 
 static uint clkLastVal[ CLK_COUNT ] = { 0 };

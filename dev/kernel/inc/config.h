@@ -4,6 +4,9 @@
 #define USE_BWIO
 #define DEBUG
 
+/* Trap */
+#define TRAP_BASE                     0x20
+
 /* Train control */
 #define TRAIN_COMMAND_BUFFER_LENGTH   256
 extern unsigned int TRAIN_COMMAND_GAP;    /* In milli-seconds */

@@ -36,7 +36,7 @@ ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 ARFLAGS = rcs
 
-LDFLAGS = -init main -Map $(BUILT)/$(KERNELEXEC).map -N -T $(BUILD)/orex.ld -L$(XCCLIB) -L$(BUILD) -lgcc
+LDFLAGS = -init main -Map $(KERNELEXEC).map -N -T $(BUILD)/orex.ld -L$(XCCLIB) -L$(BUILD) -lgcc
 
 # ===============
 # File Lists
@@ -52,7 +52,7 @@ ASMSRC = $(filter %s, $(KERNELSRC))
 CBUILTS = $(addprefix $(BUILT)/, $(basename $(CSRC)))
 ASMTARGET = $(addprefix $(BUILT)/, $(ASMSRC))
 ABUILTS = $(basename $(ASMTARGET))
-BULITDIRS = $(dir $(BUILTS))
+BUILTDIRS = $(addprefix $(BUILT)/, $(sort $(dir $(KERNELSRC))))
 
 ASSEMBLY = $(addsuffix .s, $(CBUILTS))
 OBJECTS = $(addsuffix .o, $(CBUILTS) $(ABUILTS))
@@ -72,7 +72,7 @@ $(OBJECTS): %.o: %.s
 $(ASSEMBLY): $(BUILT)/%.s: $(SOURCE)/%.c
 	$(XCC) -S $(CFLAGS) $< -o $@
 
-$(ASMTARGET): :
+$(ASMTARGET): $(BUILT)/%.s: $(SOURCE)/%.s
 	$(CP) $< $@
 
 $(ASSEMBLY) $(OBJECTS): $(BUILTDIRS)

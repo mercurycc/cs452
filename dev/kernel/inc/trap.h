@@ -12,7 +12,7 @@ int trap_init( Context* ctx );
 void trap_handler_begin( uint reason, uint sp_usr );
 
 /* Trap handler body */
-void trap_handler( uint reason, uint sp_caller );
+void trap_handler( uint reason, uint sp_caller, uint mode );
 
 /* Trap hander return to userland through this */
 void trap_handler_end( uint reason, uint sp_usr );

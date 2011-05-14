@@ -1,11 +1,11 @@
 #include <types.h>
 #include <config.h>
 #include <err.h>
-#include <console.h>
+#include <devices/console.h>
 #include <bwio.h>  /* For convenience */
 #include <ts7200.h>
 #include <regopts.h>
-#include <str.h>
+#include <lib/str.h>
 
 #define CURSOR_CONTROL_ASSIGN_CMD( ch )				\
 	do {							\
