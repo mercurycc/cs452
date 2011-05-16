@@ -23,4 +23,8 @@ KERNELSRC += lib/str.c
 KERNELSRC += lib/rbuf.c
 KERNELSRC += lib/list.c
 
-# Userland init
+# ==================================================
+# Userland (too much trouble to modify the Makefile)
+
+# Libraries
+KERNELSRC += userland/lib/syscall.c

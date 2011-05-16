@@ -6,6 +6,8 @@
 #include <err.h>
 #include <config.h>
 
+#define offsetof(TYPE,MEMBER)   ((size_t)&((TYPE*)0)->MEMBER)
+
 struct List_s {
 	struct List_s* prev;
 	struct List_s* next;

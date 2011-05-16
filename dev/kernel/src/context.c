@@ -14,12 +14,3 @@ int ctx_init( Context* ctx )
 
 	return ERR_NONE;
 }
-
-uint ctx_next_tid( Context* ctx )
-{
-	uint next_tid = ctx->next_tid;
-	ctx->next_tid += 1;
-
-	return next_tid;
-}
-

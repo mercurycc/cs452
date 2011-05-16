@@ -14,5 +14,6 @@ typedef struct Task_s Task;
 typedef struct Console_s Console;
 typedef struct Sched_s Sched;
 typedef struct List_s List;
+typedef struct Syscall_s Syscall;
 
 #endif /* _TYPES_H_ */

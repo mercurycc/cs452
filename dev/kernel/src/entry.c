@@ -10,47 +10,7 @@
 #include <context.h>
 #include <mem.h>
 #include <session.h>
-
-void dosyscall( uint reason )
-{
-	asm volatile( "swi 0" );
-}
-
-void doyield()
-{
-	dosyscall( 0xdeadbeef );
-}
-
-void doexit()
-{
-	dosyscall( 0xcafebabe );
-}
-
-void dokern()
-{
-	dosyscall( 0xcafe );
-}
-
-void userland1()
-{
-	DEBUG_NOTICE( DBG_KER, "entered\n" );
-	doyield();
-	
-	while( 1 ){
-		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
-		doexit();
-	}
-}
-
-void userland2()
-{
-	DEBUG_NOTICE( DBG_KER, "entered\n" );
-
-	while( 1 ){
-		doexit();
-		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
-	}
-}
+#include <user/apps_entry.h>
 
 int main()
 {
@@ -75,7 +35,6 @@ int main()
 
 	/* First task information */
 	Task* user_init_td = 0;
-	Task* user_init_td_2 = 0;
 	int status = 0;
 
 	/* Calculation of stack base pointer */
@@ -87,8 +46,12 @@ int main()
 		/* Make stack page-aligned */
 		stack_space -= (uint)stack_space % KERNEL_PAGE_SIZE;
 	}
-
+	
 	DEBUG_PRINT( DBG_KER, "Intial stack pointer: 0x%x, ctx: 0x%x\n", stack_space, ctx );
+
+	/* Initialize all the tids */
+	status = task_init_all( task_descriptors, KERNEL_MAX_NUM_TASKS );
+	ASSERT( status == ERR_NONE );
 
 	status = ctx_init( ctx );
 	ASSERT( status == ERR_NONE );
@@ -114,21 +77,13 @@ int main()
 	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td, 1 );
 	ASSERT( status == ERR_NONE );
 
-	status = task_setup( ctx, user_init_td, userland1, 0, 0 );
-
-	/* Userland 2 */
-	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td_2, 1 );
+	status = task_setup( ctx, user_init_td, init_user, 0, 0 );
 	ASSERT( status == ERR_NONE );
 
-	status = task_setup( ctx, user_init_td_2, userland2, 0, 0 );
-
-	DEBUG_PRINT( DBG_KER, "User session 1, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
-
-	DEBUG_PRINT( DBG_KER, "User session 2, td 0x%x, sp 0x%x\n", user_init_td_2, user_init_td_2->stack );
+	DEBUG_PRINT( DBG_KER, "User session, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
 
 	/* Hack for testing */
 	ctx->current_task = user_init_td;
-	ctx->last_task = user_init_td_2;
 
 	/* TODO: We do need to save the kernel context here on the
 	   stack if we ever want to correctly exit the kernel.  To

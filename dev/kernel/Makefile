@@ -22,7 +22,7 @@ BUILD := build
 # Directory to store built objects/.s
 BUILT := built
 
-# Directory holding the source code
+# Directory holding the kernel source code
 SOURCE := src
 
 CFLAGS  = -c -fPIC -Wall -I. -I$(INCLUDE) -mcpu=arm920t -msoft-float

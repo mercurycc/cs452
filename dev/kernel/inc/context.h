@@ -20,6 +20,5 @@ struct Context_s {
 
 /* Ensure ctx is cleared */
 int ctx_init( Context* ctx );
-uint ctx_next_tid( Context* ctx );
 
 #endif /* _CONTEXT_H_ */

@@ -6,6 +6,7 @@
 #include <config.h>
 #include <context.h>
 #include <lib/list.h>
+#include <user/syscall.h>
 
 enum TaskStates {
 	TASK_READY,
@@ -18,10 +19,12 @@ struct Task_s {
 	uint state;
 	uint priority;
 	ptr stack;
+	Syscall* reason;
 	Task* parent;
-	List ready_queue;
+	List queue;
 };
 
+int task_init_all( Task* array, uint count );
 int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint priority );
 
 #endif /* _TASK_H_ */
