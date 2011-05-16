@@ -1,9 +1,11 @@
-#include <sched.h>
-
 #include <types.h>
 #include <err.h>
 #include <config.h>
 #include <context.h>
+
+#include <sched.h>
+#include <lib/list.h>
+
 
 #define SELECTOR_MASK { 0xFFFF, 0xFF, 0xF, 0x3, 0x1, 0 }
 #define BIT_MASK { 16, 8, 4, 2, 1, 0 }
@@ -13,9 +15,11 @@ int sched_init( Context* ctx, Sched* scheduler ){
 	scheduler->selector = 0;
 	int i;
 	for (i=0;i<32;i++){
-		scheduler->stack_queue[i] = 0;
+		scheduler->task_queue[i] = 0;
 	}
 	ctx->scheduler = scheduler;
+
+	return 0;
 }
 
 int sched_schedule( Context* ctx, Task** next ){
@@ -32,10 +36,10 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint i = 5;
 	while (i) {
 		uint high = selector & masks[i];
-		uint low = (selector >> bits[i]) & mask[i];
+		uint low = (selector >> bits[i]) & masks[i];
 		if (high)  {
 			selector = high;
-			priority += bits[i]l
+			priority += bits[i];
 		}
 		else {
 			selector = low;
@@ -51,13 +55,13 @@ int sched_schedule( Context* ctx, Task** next ){
 		return err;
 	}
 
-	*next = elem;
+	*next = list_entry( Task, elem, queue);
 	return 0;
 }
 
 int sched_add( Context* ctx, Task* task, uint priority ){
 	List* target_queue = ctx->scheduler->task_queue[priority];
-	uint err = list_add_tail( target_queue, &(task->queue) )
+	uint err = list_add_tail( target_queue, &(task->queue) );
 	if (err) {
 		return err;
 	}
