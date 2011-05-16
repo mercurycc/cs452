@@ -52,7 +52,7 @@ int sched_schedule( Context* ctx, Task** next ){
 
 int sched_add( Context* ctx, Task* task, uint priority ){
 	List* target_queue = ctx->scheduler->task_queue[priority];
-	uint err = list_add_tail( target_queue, &(task->ready_queue) )
+	uint err = list_add_tail( target_queue, &(task->queue) )
 	if (err) {
 		return err;
 	}
