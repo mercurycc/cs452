@@ -4,6 +4,16 @@
 #define USE_BWIO
 #define DEBUG
 
+/* Kernel parameters */
+#define KERNEL_NUM_CONSOLES           2
+#define KERNEL_MAX_NUM_TASKS          128
+#define KERNEL_STACK_PAGE             4
+#define KERNEL_PAGE_SIZE              4096
+#define KERNEL_MAX_PRIORITY           128
+
+/* Userland parameters */
+#define USER_STACK_PAGE               1
+
 /* Trap */
 #define TRAP_BASE                     0x20
 

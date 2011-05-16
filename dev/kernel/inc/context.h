@@ -4,10 +4,22 @@
 #include <types.h>
 #include <err.h>
 #include <devices/console.h>
+#include <config.h>
 
-typedef struct Context_s {
+/* Circular inclusion */
+/* TODO: add all the typedefs into types.h */
+
+struct Context_s {
 	Console* terminal;
-	
-} Context;
+	Console* train_set;
+	Memmgr* mem;
+	Task* current_task;
+	Task* last_task;
+	uint next_tid;
+};
+
+/* Ensure ctx is cleared */
+int ctx_init( Context* ctx );
+uint ctx_next_tid( Context* ctx );
 
 #endif /* _CONTEXT_H_ */

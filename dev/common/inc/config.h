@@ -4,6 +4,15 @@
 #define USE_BWIO
 #define DEBUG
 
+/* Kernel parameters */
+#define KERNEL_NUM_CONSOLES           2
+#define KERNEL_MAX_NUM_TASKS          1024
+#define KERNEL_PAGE_SIZE              4096
+#define KERNEL_STACK_PAGE             3
+
+/* Userland parameters */
+#define USER_STACK_PAGE               1
+
 /* Train control */
 #define TRAIN_COMMAND_BUFFER_LENGTH   256
 extern unsigned int TRAIN_COMMAND_GAP;    /* In milli-seconds */

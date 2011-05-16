@@ -23,28 +23,29 @@
 
 int kernel_init( Context* ctx )
 {
-	/* Initialize kernel context */
-	// ctx_init( ctx );
-
-	/* Initialize kernel memory management */
-	// mem_init( ctx );
-
+	int status = 0;
+	
 	/* Install trap handler */
-	/* Trap handler should call kernel_trap_handler and provide
-	   the trap reason, where kernel_trap_handler would handle the
-	   interrupt */
 	trap_init( ctx );
 
 	/* We need at least 2 clocks: one for preemption (not needed
 	   for K1), one for timing */
 	// clock_init( ctx );
 
-	/* TODO: Here we need to initialize all uarts */
-	/* For now only the terminal uart is initialized */
-	console_setup( ctx->terminal, CONSOLE_2, 115200, 0, 0, 0 );
-	console_init( ctx->terminal );
+	/* Initialize terminal console */
+	status = console_setup( ctx->terminal, CONSOLE_2, 115200, 0, 0, 0 );
+	ASSERT( status == ERR_NONE );
+	status = console_init( ctx->terminal );
+	ASSERT( status == ERR_NONE );
 
-	console_write_guarantee( ctx->terminal, (uchar*)"Terminal console initialized\n", 29 );
+	status = console_write_guarantee( ctx->terminal, (uchar*)"Terminal console initialized\n", 29 );
+	ASSERT( status == ERR_NONE );
+
+	/* Initialize train console */
+	status = console_setup( ctx->train_set, CONSOLE_1, 2400, 0, 1, 1 );
+	ASSERT( status == ERR_NONE );
+	status = console_init( ctx->train_set );
+	ASSERT( status == ERR_NONE );
 
 	/* Initialize scheduler */
 	// sched_init( ctx );

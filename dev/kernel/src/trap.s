@@ -1,5 +1,5 @@
 	@ a1: trap reason
-	@ a2: next task's sp
+	@ a2: current/next task's sp
 	@ a3: mode, for trap_handler
 	@ a4: kernel stack pointer, for trap_handler and trap_handler_end
 	@ TODO: mode is not processed.  Later with IRQ it will mess up everything
@@ -35,9 +35,9 @@ trap_handler_begin:
 	@ move into cpsr
 	msr	cpsr_c, ip
 	@ ==============================================================
-	@ Save kernel sp to a4
+	@ Save kernel sp to a4 (TODO: This is pretty sketchy, but currently we rely on it to obtain the kernel context)
 	mov	a4, sp
-	@ Store user pc onto stack
+	@ Store user pc onto user stack
 	stmdb	a2!, {lr}
 	@ Call trap_handler
 	b	trap_handler

@@ -8,7 +8,7 @@ enum ConsoleChannel { CONSOLE_1,
 		      CONSOLE_2,
 		      CONSOLE_COUNT };
 
-typedef struct Console_s {
+struct Console_s {
 	int channel;             /* Channel used */
 	int speed;               /* Speed */
 	int fifo;                /* Flag is fifo enabled */
@@ -19,7 +19,7 @@ typedef struct Console_s {
 	uint read_bytes;         /* Total bytes read */
 	uint last_write;         /* Bytes written in last write */
 	uint last_read;          /* Bytes read in last read */
-} Console;
+};
 
 /* Setup console handle */
 int console_setup( Console* cons, uint channel, uint speed, uint blocking, uint flow_control, uint dbl_stop );

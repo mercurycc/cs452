@@ -2,44 +2,13 @@
 
 #include <types.h>
 #include <err.h>
-
-/* Kernel */
-/* Hold kernel manipulation routines */
+#include <config.h>
 #include <kernel.h>
-
-/* Devices */
-/* Device init, function, shutdown */
-#include <devices/clock.h>
-#include <devices/console.h>
-
-/* Trap handler */
-/* Trap handler installation */
 #include <trap.h>
-
-/* Interrupt */
-/* Interrupt manipulation */
-// #include <interrupt.h>
-
-/* Task */
-/* Task abstraction and scheduling support */
 #include <task.h>
 #include <sched.h>
-
-/* Context */
-/* Kernel context, substitution of global variables */
-/* Not sure if file scope variables are safe.  If not they can be
-   moved into the kernel context */
 #include <context.h>
-
-/* Memory management */
-/* Kernel memory allocation, allocation and deallocation of kernel
-   pages, or allocate on kernel heap */
-/* Kernel heap is not deallocatable.  We need to give enough memory to
-   the kernel heap for all sub components to work properly. */
-/* mem should also allocate stack for user apps */
 #include <mem.h>
-
-/* User space */
 #include <session.h>
 
 void dosyscall( uint reason )
@@ -62,7 +31,7 @@ void dokern()
 	dosyscall( 0xcafe );
 }
 
-int userland1()
+void userland1()
 {
 	DEBUG_NOTICE( DBG_KER, "entered\n" );
 	doyield();
@@ -71,10 +40,9 @@ int userland1()
 		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
 		doexit();
 	}
-	return 0;
 }
 
-int userland2()
+void userland2()
 {
 	DEBUG_NOTICE( DBG_KER, "entered\n" );
 
@@ -82,27 +50,93 @@ int userland2()
 		doexit();
 		DEBUG_NOTICE( DBG_KER, "re-entered\n" );
 	}
-	return 0;
 }
 
 int main()
 {
 	Context ctxbody = {0};
 	Context* ctx = &ctxbody;
-	Console termbody = {0};
-	uint currentsp = 0;
 
-	ctxbody.terminal = &termbody;
+	/* Console descriptor */
+	Console console_descriptors[ KERNEL_NUM_CONSOLES ] = {{0}};
+
+	/* Memory manager */
+	Memmgr membody = {0};
+
+	/* Memory block for task descriptors */
+	Rbuf task_ring = {0};
+	Task* task_container[ KERNEL_MAX_NUM_TASKS + 1 ] = { 0 };
+	Task task_descriptors[ KERNEL_MAX_NUM_TASKS ] = {{0}};
+
+	/* Memory block for stack pointers */
+	Rbuf stack_ring = {0};
+	uchar* stack_container[ KERNEL_MAX_NUM_TASKS + 1 ] = { 0 };
+	uchar* stack_space = 0;
+
+	/* First task information */
+	Task* user_init_td = 0;
+	Task* user_init_td_2 = 0;
+	int status = 0;
+
+	/* Calculation of stack base pointer */
+	{
+		uint stack_end = ( uint )( &stack_space ) - KERNEL_STACK_PAGE * KERNEL_PAGE_SIZE;
+		uint stack_space_size = KERNEL_MAX_NUM_TASKS * USER_STACK_PAGE * KERNEL_PAGE_SIZE;
+		
+		stack_space = ( uchar* )( stack_end - stack_space_size );
+		/* Make stack page-aligned */
+		stack_space -= (uint)stack_space % KERNEL_PAGE_SIZE;
+	}
+
+	DEBUG_PRINT( DBG_KER, "Intial stack pointer: 0x%x, ctx: 0x%x\n", stack_space, ctx );
+
+	status = ctx_init( ctx );
+	ASSERT( status == ERR_NONE );
+	
+	ctx->mem = &membody;
+	ctx->terminal = console_descriptors;
+	ctx->train_set = console_descriptors + 1;
+
+	/* Initialize the memory manager */
+	/* Tasks */
+	status = mem_init( ctx, MEM_TASK, &task_ring, ( uchar* )task_container, ( uchar* )task_descriptors, sizeof( Task ), KERNEL_MAX_NUM_TASKS );
+	ASSERT( status == ERR_NONE );
+	/* Stack */
+	status = mem_init( ctx, MEM_STACK, &stack_ring, ( uchar* )stack_container, ( uchar* )stack_space, KERNEL_PAGE_SIZE * USER_STACK_PAGE, KERNEL_MAX_NUM_TASKS );
+	ASSERT( status == ERR_NONE );
 	
 	/* Init Kernel */
 	kernel_init( ctx );
 
-	DEBUG_PRINT( DBG_KER, "Starting user session, sp 0x%x, org sp 0x%x\n", (&currentsp) - 4096, &currentsp );
-	/* Start user session */
-	/* TODO: The correct way to do this is to setup the stack, put
-	   pc into stack, and hand back the TD, and call
-	   trap_handler_exit with the first TD */
-	session_start( userland1, (&currentsp) - 4096 );
+	DEBUG_NOTICE( DBG_KER, "Kernel init done\n" );
 
+	/* Start user session by getting into the init */
+	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td, 1 );
+	ASSERT( status == ERR_NONE );
+
+	status = task_setup( ctx, user_init_td, userland1, 0, 0 );
+
+	/* Userland 2 */
+	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td_2, 1 );
+	ASSERT( status == ERR_NONE );
+
+	status = task_setup( ctx, user_init_td_2, userland2, 0, 0 );
+
+	DEBUG_PRINT( DBG_KER, "User session 1, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
+
+	DEBUG_PRINT( DBG_KER, "User session 2, td 0x%x, sp 0x%x\n", user_init_td_2, user_init_td_2->stack );
+
+	/* Hack for testing */
+	ctx->current_task = user_init_td;
+	ctx->last_task = user_init_td_2;
+
+	/* TODO: We do need to save the kernel context here on the
+	   stack if we ever want to correctly exit the kernel.  To
+	   exit, just restore the kernel context we saved here and
+	   continue execution. */
+	session_start( ctx, (uchar*)user_init_td->stack );
+
+	ASSERT_M( 0, "We should never reach here! %s\n", "crap" );
+	
 	return 0;
 }

@@ -20,6 +20,7 @@ enum Debug_type {
 	DBG_CMD,
 	DBG_TRAP,
 	DBG_KER,
+	DBG_TASK,
 	DBG_COUNT
 };
 
@@ -40,37 +41,42 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SENSORUI:
 		// case DBG_TRAP:
 		// case DBG_KER:
+		// case DBG_TASK:
 	case DBG_CMD:
 		return 0;
 	default:
 		return 1;
 	}
-}	
+}
+
+#define DEBUG_FORMAT         "%s (%d), %s: "
+#define DEBUG_FORMAT_PARAM   __FILE__, __LINE__, __func__
 
 #define DEBUG_PRINT( level, fmt, arg... )				\
 	do {								\
 		if( DEBUG_ENABLE( level ) )				\
-			bwprintf( COM2, "%s: " fmt, __func__, arg );	\
+			bwprintf( COM2, DEBUG_FORMAT fmt, DEBUG_FORMAT_PARAM, arg ); \
 	} while( 0 )
 
 #define DEBUG_NOTICE( level, msg )				\
 	do {							\
 		if( DEBUG_ENABLE( level ) )			\
-			bwprintf( COM2, "%s: " msg, __func__ );	\
+			bwprintf( COM2, DEBUG_FORMAT msg, DEBUG_FORMAT_PARAM );	\
 	} while( 0 )
 
 /* Clear asserts for now */
 #define ASSERT( cond )							\
 	do {								\
 		if( ! ( cond ) ){					\
-			bwprintf( COM2, "%s (%d) hit assert %s\n", __FILE__, __LINE__, #cond ); \
+			bwprintf( COM2, DEBUG_FORMAT "hit assert %s\n", DEBUG_FORMAT_PARAM, #cond ); \
 			while( 1 );					\
 		}							\
 	} while( 0 )
 #define ASSERT_M( cond, fmt, arg... )					\
 	do {								\
 		if( ! (cond ) ){					\
-			bwprintf( COM2, "%s (%d) hit assert %s: " fmt, __FILE__, __LINE__, #cond, arg ); \
+			bwprintf( COM2, DEBUG_FORMAT "hit assert %s: " fmt, DEBUG_FORMAT_PARAM, #cond, arg ); \
+			while( 1 );					\
 		}							\
 	} while( 0 )
 #define WORDBINDUMP( word )						\

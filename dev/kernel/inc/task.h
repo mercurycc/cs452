@@ -5,17 +5,22 @@
 #include <err.h>
 #include <config.h>
 #include <context.h>
+#include <lib/list.h>
 
-typedef struct Task_s {
+enum TaskStates {
+	TASK_READY,
+	TASK_ACTIVE,
+	TASK_ZOMBIE
+};
+
+struct Task_s {
 	uint tid;
 	uint state;
 	uint priority;
 	ptr stack;
-	struct Task_s* parent;
-	struct Task_s* next;
-} Task;
+	List ready_queue;
+};
 
-int task_setup( Context* ctx, Task* ctx, ptr stack, void (*code)() );
-int task_start( Context* ctx, Task* ctx );
+int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint priority );
 
 #endif /* _TASK_H_ */
