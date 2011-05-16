@@ -16,6 +16,7 @@ struct Context_s {
 	Task* current_task;
 	Task* last_task;
 	uint next_tid;
+	Sched* scheduler;
 };
 
 /* Ensure ctx is cleared */

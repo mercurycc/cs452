@@ -11,7 +11,7 @@ KERNELSRC += task.c
 KERNELSRC += task_init.s
 KERNELSRC += mem.c
 KERNELSRC += context.c
-# KERNELSRC += sched.c
+KERNELSRC += sched.c
 
 # Devices
 KERNELSRC += devices/console.c
