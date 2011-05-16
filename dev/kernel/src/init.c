@@ -48,7 +48,7 @@ int kernel_init( Context* ctx )
 	ASSERT( status == ERR_NONE );
 
 	/* Initialize scheduler */
-	// sched_init( ctx );
+	sched_init( ctx );
 
 	return ERR_NONE;
 }

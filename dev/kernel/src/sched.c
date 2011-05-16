@@ -19,13 +19,17 @@ int sched_init( Context* ctx, Sched* scheduler ){
 }
 
 int sched_schedule( Context* ctx, Task** next ){
-
 	uint selector = ctx->scheduler->selector;
+	if (selector == 0) {
+		//no task in scheduler
+		*next = 0;
+	}
+
+	//find the highest priority queue
 	uint priority = 0;
 	uint masks[] = SELECTOR_MASK;
 	uint bits[] = BIT_MASK;
 	uint i = 5;
-
 	while (i) {
 		uint high = selector & masks[i];
 		uint low = (selector >> bits[i]) & mask[i];
@@ -40,6 +44,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	}
 	priority -= 1;
 
+	//get the corresponding element
 	List* elem;
 	uint err = list_remove_head( &(ctx->scheduler->task_queue[priority]), &elem );
 	if (err) {
