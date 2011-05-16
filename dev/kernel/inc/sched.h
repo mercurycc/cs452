@@ -7,10 +7,12 @@
 #include <context.h>
 
 struct Sched_s {
-	Task* 
+	uint selector;
+	List* task_queue[32];
 };
 
-int sched_init( Context* ctx );
+int sched_init( Context* ctx, Sched* scheduler );
 int sched_schedule( Context* ctx, Task** next );
+int sched_add( Context* ctx, Task* task, uint priority );
 
 #endif /* _SCHED_H_ */
