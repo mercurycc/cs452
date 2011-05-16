@@ -6,10 +6,6 @@
 #include <config.h>
 #include <context.h>
 
-struct Sched_s {
-	Task* 
-};
-
 int sched_init( Context* ctx );
 int sched_schedule( Context* ctx, Task** next );
 

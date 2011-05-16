@@ -32,7 +32,7 @@ int mem_init( Context* ctx, uint type, Rbuf* ring, uchar* container, uchar* buff
 	ASSERT( status == ERR_NONE );
 
 	for( ; count; count -= 1 ){
-		status = rbuf_put( ring, &buffer );
+		status = rbuf_put( ring, ( uchar* )&buffer );
 		buffer += size;
 		ASSERT_M( status == ERR_NONE, "status = %d", status );
 	}

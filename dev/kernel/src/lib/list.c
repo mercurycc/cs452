@@ -37,7 +37,6 @@ int list_remove_head( List** lst, List** elem )
 	ASSERT( lst && *lst && elem );
 
 	List* tail = (*lst)->prev;
-	int status = 0;
 
 	*elem = *lst;
 
@@ -45,7 +44,7 @@ int list_remove_head( List** lst, List** elem )
 		*lst = 0;
 	} else {
 		tail->next = (*lst)->next;
-		lst->next->prev = tail;
+		(*lst)->next->prev = tail;
 		*lst = (*lst)->next;
 	}
 
