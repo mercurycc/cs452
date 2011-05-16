@@ -5,7 +5,8 @@
 #include <config.h>
 #include <context.h>
 
-#define MASK
+#define SELECTOR_MASK { 0xFFFF, 0xFF, 0xF, 0x3, 0x1, 0 }
+#define BIT_MASK { 16, 8, 4, 2, 1, 0 }
 
 
 int sched_init( Context* ctx, Sched* scheduler ){
@@ -18,13 +19,25 @@ int sched_init( Context* ctx, Sched* scheduler ){
 }
 
 int sched_schedule( Context* ctx, Task** next ){
-	//TODO: select the desinated priority
+
 	uint selector = ctx->scheduler->selector;
 	uint priority = 0;
+	uint masks[] = SELECTOR_MASK;
+	uint bits[] = BIT_MASK;
+	uint i = 5;
 	
-	
-	
-	
+	while (i) {
+		uint high = selector & masks[i];
+		uint low = (selector >> bits[i]) & mask[i];
+		if (high)  {
+			selector = high;
+			priority += bits[i]l
+		}
+		else {
+			selector = low;
+		}
+		i -= 1;
+	}
 	priority -= 1;
 	
 	
@@ -50,4 +63,5 @@ int sched_add( Context* ctx, Task* task, uint priority ){
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
 	return 0;
 }
+
 
