@@ -11,10 +11,14 @@ struct List_s {
 	struct* List_s next;
 };
 
+/* Initialize a list */
 int list_init( List* lst );
+/* Test if a list is empty */
 int list_empty( List* lst );
+/* Add to the tail of the list */
 int list_add_tail( List* lst, List* elem );
-List* list_remove_head( List* lst );
+/* Remove the head of the list */
+int list_remove_head( List** lst, List** elem )
 
 /* type: The type of struct including the list
    lst:  A pointer to the list contained in the struct

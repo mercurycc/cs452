@@ -32,14 +32,16 @@ int list_add_tail( List* lst, List* elem )
 	return ERR_NONE;
 }
 
-int list_remove_head( List** lst )
+int list_remove_head( List** lst, List** elem )
 {
+	ASSERT( lst && *lst && elem );
+
 	List* tail = (*lst)->prev;
 	int status = 0;
 
-	ASSERT( lst );
+	*elem = *lst;
 
-	if( (*lst)->next == (*lst)->prev ){
+	if( tail == *lst ){
 		*lst = 0;
 	} else {
 		tail->next = (*lst)->next;
