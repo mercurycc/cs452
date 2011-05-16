@@ -25,7 +25,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint masks[] = SELECTOR_MASK;
 	uint bits[] = BIT_MASK;
 	uint i = 5;
-	
+
 	while (i) {
 		uint high = selector & masks[i];
 		uint low = (selector >> bits[i]) & mask[i];
@@ -39,25 +39,24 @@ int sched_schedule( Context* ctx, Task** next ){
 		i -= 1;
 	}
 	priority -= 1;
-	
-	
+
 	List* elem;
 	uint err = list_remove_head( &(ctx->scheduler->task_queue[priority]), &elem );
 	if (err) {
 		return err;
 	}
-	
+
 	*next = elem;
 	return 0;
 }
 
 int sched_add( Context* ctx, Task* task, uint priority ){
-	List* target_queue = ctx->scheduler->task_queue[priority];	
+	List* target_queue = ctx->scheduler->task_queue[priority];
 	uint err = list_add_tail( target_queue, &(task->ready_queue) )
 	if (err) {
 		return err;
 	}
-	
+
 	//change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
