@@ -26,5 +26,9 @@ KERNELSRC += lib/list.c
 # ==================================================
 # Userland (too much trouble to modify the Makefile)
 
+# Applications
+KERNELSRC += userland/apps/init_user/main.c
+KERNELSRC += userland/apps/noise/main.c
+
 # Libraries
 KERNELSRC += userland/lib/syscall.c

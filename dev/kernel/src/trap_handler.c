@@ -6,6 +6,7 @@
 #include <task.h>
 #include <syscall.h>
 #include <trap_reason.h>
+#include <mem.h>
 
 int trap_init( Context* ctx )
 {
@@ -30,6 +31,11 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp )
 	DEBUG_PRINT( DBG_TRAP, "reason %u called\n", reason->code );
 
 	switch( reason->code ){
+	case TRAP_CREATE:
+		mem_alloc( ctx, MEM_TASK, &ctx->last_task, 1 );
+		task_setup( ctx, ctx->last_task, reason->data, ctx->current_task, reason->datalen );
+		reason->result = ctx->last_task->tid;
+		break;
 	case TRAP_PASS:
 		temp = ctx->current_task;
 		ctx->current_task = ctx->last_task;

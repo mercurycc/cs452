@@ -18,7 +18,7 @@ int task_init_all( Task* array, uint count )
 {
 	uint tid = 0;
 
-	for( tid = 0; tid += 1; tid < count ){
+	for( tid = 0; tid < count; tid += 1 ){
 		array[ tid ].tid = tid;
 	}
 

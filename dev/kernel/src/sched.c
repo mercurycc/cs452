@@ -2,7 +2,7 @@
 #include <err.h>
 #include <config.h>
 #include <context.h>
-
+#include <task.h>
 #include <sched.h>
 #include <lib/list.h>
 

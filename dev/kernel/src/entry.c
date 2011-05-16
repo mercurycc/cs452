@@ -17,6 +17,9 @@ int main()
 	Context ctxbody = {0};
 	Context* ctx = &ctxbody;
 
+	/* Scheduler */
+	Sched scheduler;
+
 	/* Console descriptor */
 	Console console_descriptors[ KERNEL_NUM_CONSOLES ] = {{0}};
 
@@ -53,6 +56,8 @@ int main()
 	status = task_init_all( task_descriptors, KERNEL_MAX_NUM_TASKS );
 	ASSERT( status == ERR_NONE );
 
+	DEBUG_NOTICE( DBG_KER, "Task init done\n" );
+
 	status = ctx_init( ctx );
 	ASSERT( status == ERR_NONE );
 	
@@ -67,10 +72,13 @@ int main()
 	/* Stack */
 	status = mem_init( ctx, MEM_STACK, &stack_ring, ( uchar* )stack_container, ( uchar* )stack_space, KERNEL_PAGE_SIZE * USER_STACK_PAGE, KERNEL_MAX_NUM_TASKS );
 	ASSERT( status == ERR_NONE );
+
+	DEBUG_NOTICE( DBG_KER, "Memory manager init done\n" );
 	
 	/* Init Scheduler */
-	Sched scheduler;
 	sched_init( ctx, &scheduler );
+
+	DEBUG_NOTICE( DBG_KER, "Sched init done\n" );
 
 	/* Init Kernel */
 	kernel_init( ctx );
