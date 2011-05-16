@@ -105,6 +105,10 @@ int main()
 	status = mem_init( ctx, MEM_STACK, &stack_ring, ( uchar* )stack_container, ( uchar* )stack_space, KERNEL_PAGE_SIZE * USER_STACK_PAGE, KERNEL_MAX_NUM_TASKS );
 	ASSERT( status == ERR_NONE );
 	
+	/* Init Scheduler */
+	Sched scheduler;
+	sched_init( ctx, &scheduler );
+
 	/* Init Kernel */
 	kernel_init( ctx );
 

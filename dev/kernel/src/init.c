@@ -47,9 +47,6 @@ int kernel_init( Context* ctx )
 	status = console_init( ctx->train_set );
 	ASSERT( status == ERR_NONE );
 
-	/* Initialize scheduler */
-	sched_init( ctx );
-
 	return ERR_NONE;
 }
 
