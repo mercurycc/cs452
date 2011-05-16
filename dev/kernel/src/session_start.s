@@ -13,13 +13,6 @@ session_start:
 	stmdb	sp!, {a1}
 	@ Pass sp to trap_handler_end, according to trap.s
 	mov	a4, sp
-	@ ==============================================================
-	@ Setup user mode cpsr in spsr
-	mrs	ip, cpsr
-	bic	ip, ip, #0x1f
-	orr	ip, ip, #0x10
-	msr	spsr_c, ip
-	@ ==============================================================
 	@ Exit kernel through trap_handler_end
 	b	trap_handler_end
 	.size	session_start, .-session_start

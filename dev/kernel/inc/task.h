@@ -18,6 +18,7 @@ struct Task_s {
 	uint state;
 	uint priority;
 	ptr stack;
+	Task* parent;
 	List ready_queue;
 };
 

@@ -7,8 +7,8 @@
 #include <config.h>
 
 struct List_s {
-	struct* List_s prev;
-	struct* List_s next;
+	struct List_s* prev;
+	struct List_s* next;
 };
 
 /* Initialize a list */
@@ -18,7 +18,7 @@ int list_empty( List* lst );
 /* Add to the tail of the list */
 int list_add_tail( List* lst, List* elem );
 /* Remove the head of the list */
-int list_remove_head( List** lst, List** elem )
+int list_remove_head( List** lst, List** elem );
 
 /* type: The type of struct including the list
    lst:  A pointer to the list contained in the struct

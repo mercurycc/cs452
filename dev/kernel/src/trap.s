@@ -37,8 +37,10 @@ trap_handler_begin:
 	@ ==============================================================
 	@ Save kernel sp to a4 (TODO: This is pretty sketchy, but currently we rely on it to obtain the kernel context)
 	mov	a4, sp
-	@ Store user pc onto user stack
-	stmdb	a2!, {lr}
+	@ Store the spsr
+	mrs	ip, spsr
+	@ Store user pc and cpsr onto user stack
+	stmdb	a2!, {ip, lr}
 	@ Call trap_handler
 	b	trap_handler
 	.size	trap_handler_begin, .-trap_handler_begin
@@ -48,8 +50,10 @@ trap_handler_begin:
 trap_handler_end:
 	@ args = 0, pretend = 0, frame = 8
 	@ frame_needed = 1, uses_anonymous_args = 0
-	@ Restore user task pc
-	ldmia	a2!, {lr}
+	@ Restore user task pc and cpsr
+	ldmia	a2!, {ip, lr}
+	@ Restore user cpsr
+	msr	spsr, ip
 	@ Restore kernel stack pointer
 	mov	sp, a4
 	@ ==============================================================
