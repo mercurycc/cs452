@@ -16,7 +16,7 @@ int sched_init( Context* ctx, Sched* scheduler );
 int sched_schedule( Context* ctx, Task** next );
 int sched_add( Context* ctx, Task* task );
 int sched_kill( Context* ctx, Task* task );
-
+int sched_pass( Context* ctx, Task* task );
 
 
 #endif /* _SCHED_H_ */
