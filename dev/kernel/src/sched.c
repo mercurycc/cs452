@@ -7,12 +7,13 @@
 #include <lib/list.h>
 
 
-#define SELECTOR_MASK { 0xFFFF, 0xFF, 0xF, 0x3, 0x1, 0 }
-#define BIT_MASK { 16, 8, 4, 2, 1, 0 }
+#define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
+#define BIT_MASK { 0, 1, 2, 4 ,8 ,16 }
 
 
 int sched_init( Context* ctx, Sched* scheduler ){
 	scheduler->selector = 0;
+	scheduler->cur_priority = 32;
 	int i;
 	for (i=0;i<32;i++){
 		scheduler->task_queue[i] = 0;
@@ -27,6 +28,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	if (selector == 0) {
 		//no task in scheduler
 		*next = 0;
+		return 0;
 	}
 
 	//find the highest priority queue
@@ -35,8 +37,8 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint bits[] = BIT_MASK;
 	uint i = 5;
 	while (i) {
-		uint high = selector & masks[i];
-		uint low = (selector >> bits[i]) & masks[i];
+		uint low = selector & masks[i];
+		uint high = (selector >> bits[i]) & masks[i];
 		if (high)  {
 			selector = high;
 			priority += bits[i];
@@ -46,20 +48,18 @@ int sched_schedule( Context* ctx, Task** next ){
 		}
 		i -= 1;
 	}
-	priority -= 1;
 
 	//get the corresponding element
-	List* elem;
-	uint err = list_remove_head( &(ctx->scheduler->task_queue[priority]), &elem );
-	if (err) {
-		return err;
-	}
+	List* elem = ctx->scheduler->task_queue[priority];
 
 	*next = list_entry( Task, elem, queue);
 	return 0;
 }
 
-int sched_add( Context* ctx, Task* task, uint priority ){
+int sched_add( Context* ctx, Task* task ){
+	uint priority = task->priority;
+	ASSERT( (0 <= priority) && (priority < 32) );
+
 	List* target_queue = ctx->scheduler->task_queue[priority];
 	uint err = list_add_tail( target_queue, &(task->queue) );
 	if (err) {
@@ -72,4 +72,20 @@ int sched_add( Context* ctx, Task* task, uint priority ){
 	return 0;
 }
 
+int sched_kill( Context* ctx, Task* task){
+	uint priority = task->priority;
+	ASSERT( (0 <= priority) && (priority < 32) );
+	List* target_queue = ctx->scheduler->task_queue[priority];
+	List* zombie_queue = ctx->scheduler->zombie;
 
+	List* elem;
+	uint err = list_remove_head( &(target_queue), &elem );
+	if (err) {
+		return err;
+	}
+	err = list_add( &(zombie_queue), elem );
+	if (err) {
+		return err;
+	}
+	return 0
+}
