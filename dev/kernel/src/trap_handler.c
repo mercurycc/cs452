@@ -21,25 +21,37 @@ int trap_init( Context* ctx )
 void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp )
 {
 	Context* ctx = (Context*)(*kernelsp);
+	int status = 0;
 	Task* temp;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
-	DEBUG_PRINT( DBG_TRAP, "Trap handler called with reason 0x%x, sp = 0x%x, position = 0x%x\n", reason, sp_caller, &ctx );
+	DEBUG_PRINT( DBG_TRAP, "Trap handler called with reason 0x%x, sp = 0x%x\n", reason->code, sp_caller );
 
 	ctx->current_task->stack = sp_caller;
 	ctx->current_task->reason = reason;
 
-	DEBUG_PRINT( DBG_TRAP, "reason %u called\n", reason->code );
-
 	switch( reason->code ){
 	case TRAP_CREATE:
-		mem_alloc( ctx, MEM_TASK, &ctx->last_task, 1 );
-		task_setup( ctx, ctx->last_task, reason->data, ctx->current_task, reason->datalen );
-		reason->result = ctx->last_task->tid;
+		status = mem_alloc( ctx, MEM_TASK, ( void** )&ctx->last_task, 1 );
+		if( status == ERR_OUT_OF_MEMORY ){
+			reason->result = -1;
+		} else {
+			task_setup( ctx, ctx->last_task, reason->data, ctx->current_task, reason->datalen );
+			reason->result = task_tid( ctx->last_task );
+		}
+		break;
+	case TRAP_MY_TID:
+		reason->result = task_tid( ctx->current_task );
+		break;
+	case TRAP_MY_PARENT_TID:
+		reason->result = task_tid( ctx->current_task->parent );
 		break;
 	case TRAP_PASS:
 		temp = ctx->current_task;
 		ctx->current_task = ctx->last_task;
 		ctx->last_task = temp;
+		break;
+	case TRAP_EXIT:
+		
 		break;
 	default:
 		DEBUG_PRINT( DBG_TRAP, "%u not implemented\n", reason->code );

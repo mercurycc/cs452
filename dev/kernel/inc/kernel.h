@@ -7,6 +7,6 @@
 #include <context.h>
 
 int kernel_init( Context* ctx );
-int kernel_shutdown( Context* ctx );
+int kernel_shutdown( ptr kernel_sp );
 
 #endif /* _KERNEL_H_ */

@@ -12,7 +12,7 @@ struct Syscall_s {
 	void* buffer;
 	uint bufferlen;
 	/* Return value */
-	uint result;
+	int result;
 };
 
 #endif /* _SYSCALL_H_ */

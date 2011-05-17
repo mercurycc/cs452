@@ -11,7 +11,9 @@ ptr task_init( void (*code)(), ptr stack );
 
 static inline uint task_next_tid( uint tid )
 {
-	tid = (tid & (0xffff)) & ((tid >> 16) + 1);
+	tid += (1 << 16) ;
+
+	return tid;
 }
 
 int task_init_all( Task* array, uint count )
@@ -34,7 +36,7 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 	status = mem_alloc( ctx, MEM_STACK, ( void** )&stack, 1 );
 	ASSERT( status == ERR_NONE );
 	
-	task->tid = 
+	task->tid = task_next_tid( task->tid );
 	task->stack = task_init( code, stack );
 	DEBUG_PRINT( DBG_TASK, "old stack 0x%x, new 0x%x, diff 0x%x\n", stack, task->stack, stack - task->stack );
 	task->priority = priority;
@@ -46,4 +48,18 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 	list_init( &task->queue );
 
 	return ERR_NONE;
+}
+
+uint task_tid( Task* task )
+{
+	if( ! task ){
+		return 0;
+	} else {
+		return task->tid;
+	}
+}
+
+uint task_array_index( Task* task )
+{
+	return task->tid & 0xffff;
 }

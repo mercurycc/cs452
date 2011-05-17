@@ -57,6 +57,9 @@ int mem_alloc( Context* ctx, uint type, void** ret, uint count )
 	for( ; count; count -= 1, ret += 1 ){
 		status = rbuf_get( pool, ( uchar* )ret );
 		if( status != ERR_NONE ){
+			if( status == ERR_RBUF_EMPTY ){
+				status = ERR_OUT_OF_MEMORY;
+			}
 			break;
 		}
 	}

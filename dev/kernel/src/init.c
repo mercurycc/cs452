@@ -49,8 +49,3 @@ int kernel_init( Context* ctx )
 
 	return ERR_NONE;
 }
-
-int kernel_shutdown( Context* ctx )
-{
-	return ERR_NONE;
-}

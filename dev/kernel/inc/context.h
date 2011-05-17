@@ -13,6 +13,7 @@ struct Context_s {
 	Console* terminal;
 	Console* train_set;
 	Memmgr* mem;
+	Task* task_array;
 	Task* current_task;
 	Task* last_task;
 	uint next_tid;

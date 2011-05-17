@@ -1,0 +1,32 @@
+			   ==========================
+			   Pinball Kernel for TS-7200
+			       Installation Guide
+			   ==========================
+				    cs452_08
+
+1. Installation
+===============
+
+To install the kernel, boot the TS-7200 box into RedBoot and load the executable
+from the tftp server via
+
+> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball.elf"
+
+A backup of pinball.elf is located in /u9/z2long/rt/dev/kernel/bin
+
+2. Launch
+=========
+
+On RedBoot prompt, run command
+
+> go
+
+The kernel should boot up.
+
+As of Kernel assignment 1, the kernel should simply do what was specified in the
+assignment.
+
+3. Known Problems
+=================
+
+None.

@@ -26,5 +26,7 @@ struct Task_s {
 
 int task_init_all( Task* array, uint count );
 int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint priority );
+uint task_tid( Task* task );
+uint task_array_index( Task* task );
 
 #endif /* _TASK_H_ */

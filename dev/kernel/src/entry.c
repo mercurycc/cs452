@@ -55,6 +55,8 @@ int main()
 	/* Initialize all the tids */
 	status = task_init_all( task_descriptors, KERNEL_MAX_NUM_TASKS );
 	ASSERT( status == ERR_NONE );
+	
+	ctx->task_array = task_descriptors;
 
 	DEBUG_NOTICE( DBG_KER, "Task init done\n" );
 

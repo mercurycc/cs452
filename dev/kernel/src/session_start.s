@@ -9,6 +9,8 @@ session_start:
 	@ Push context pointer onto kernel stack, setup user cpsr, and fallback to usermode through trap_handler_end
 	@ a1: Kernel context
 	@ a2: First task sp
+	@ Save kernel context
+	stmdb	sp!, {a1, a2, a3, a4, v1, v2, v3, v4, v5, v6, sl, fp, ip, lr}
 	@ Push context onto kernel stack
 	stmdb	sp!, {a1}
 	@ Pass sp to trap_handler_end, according to trap.s
