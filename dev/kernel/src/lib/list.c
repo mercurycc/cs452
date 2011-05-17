@@ -50,3 +50,12 @@ int list_remove_head( List** lst, List** elem )
 
 	return ERR_NONE;
 }
+
+int list_rotate_head( List** lst )
+{
+	ASSERT( lst & *lst );
+
+	*lst = (*lst)-> next;
+
+	return ERR_NONE;
+}
