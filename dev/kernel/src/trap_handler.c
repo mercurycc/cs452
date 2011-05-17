@@ -7,6 +7,7 @@
 #include <syscall.h>
 #include <trap_reason.h>
 #include <mem.h>
+#include <sched.h>
 
 int trap_init( Context* ctx )
 {
@@ -49,6 +50,19 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp )
 		temp = ctx->current_task;
 		ctx->current_task = ctx->last_task;
 		ctx->last_task = temp;
+
+		status = sched_pass( ctx, ctx->current_task );
+		if ( status ) {
+			reason->result = status;
+			break;
+		}
+
+		status = sched_schedule( ctx, ctx->current_task, &(ctx->current_task) );
+		if ( status ) {
+			reason->result = status;
+			break;
+		}
+		// TODO: change err codes
 		break;
 	case TRAP_EXIT:
 		
