@@ -58,6 +58,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	List* elem = ctx->scheduler->task_queue[priority];
 
 	*next = list_entry( Task, elem, queue);
+	(*next)->state = TASK_ACTIVE;
 
 	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current ptr is %x\n", ctx->scheduler->task_queue[priority] );
 
@@ -74,6 +75,7 @@ int sched_add( Context* ctx, Task* task ){
 	if (err) {
 		return err;
 	}
+	task->state = TASK_READY;
 
 	//change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
@@ -99,13 +101,13 @@ int sched_kill( Context* ctx, Task* task){
 		uint selector_modifier = ~(0x80000000 >> priority);
 		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
 		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
-
 	}
 
 	err = list_add_tail( zombie_queue_ptr, elem );
 	if (err) {
 		return err;
 	}
+	task->state = TASK_ZOMBIE;
 	DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
 
 	return 0;
@@ -120,6 +122,7 @@ int sched_pass( Context* ctx, Task* task ){
 
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	uint err = list_rotate_head( target_queue_ptr );
+	task->state = TASK_READY;
 
 	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: renewed ptr is %x\n", ctx->scheduler->task_queue[priority] );
 
