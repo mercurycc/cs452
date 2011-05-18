@@ -136,7 +136,22 @@ but it is also stored in the global kernel context for message passing syscalls
 to find the target task.
 
 
+- Scheduler
+
+The scheduler consists 32 scheduling queues, indexed from 0 to 31, indicating
+the 32 different priority levels. In order to quickly locate the first non-empty
+queue, a 32-bit selector, of which each bit indicates if a corresponding queue
+is empty or not. Moreover, the scheduler has a zombie queue for tasks that are
+finished. The scheduler will schedule the first task in the queue with highest
+priority. If there is not any task in any of the scheduling queues, the
+scheduler will tell the handler to run kernel.
+
+
 - Scheduling Queues
+
+The scheduling queue is basically a ring of double linked list, with a pointer
+points to the head. Since it is a ring, accessing the tail is simply finding the
+prev element of the head.
 
 
 - Console Descriptors
