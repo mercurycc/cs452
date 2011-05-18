@@ -1,0 +1,252 @@
+			   ==========================
+			   Pinball Kernel for TS-7200
+			      Design Documentation
+			   ==========================
+				    cs452_08
+
+1. Kernel Overview
+==================
+
+
+* Design Goal
+-------------
+
+The pinball kernel is designed to be a real time micro-kernel running on TS-7200
+board.  Its design goals includes:
+
+ - Constant trap time
+ - Cooperative multi-tasking
+ - Easy kernel programming interface
+ - Highly modularize
+
+
+* Functional Units and Data Strucutures
+---------------------------------------
+
+The kernel is composed of functional units including memory manager, task
+manager, scheduler, trap handler, and basic device drivers (UART and clock).
+
+Kernel data structures includes the global kernel context, task descriptor,
+generic ring buffer, doubly linked circular list, syscall descriptor, and data
+structures internal to each functional modules, such as memory descriptor, task
+array, scheduling queues, console descriptors etc.
+
+
+* Memory Management
+-------------------
+
+All memory needed are pre-allocated on the kernel stack and managed by the
+memory manager.
+
+
+2. Components Highlight
+=======================
+
+* Memory Manager
+----------------
+
+The memory manager manages allocation and deallocation of volatile data
+structures such as task descriptors and stack memory for user tasks.  For each
+type of memory the memory manager maintains a ring buffer initialized with all
+possible allocations.  Notice this can be done because both the size of a task
+descriptor and the size of a user stack are fixed, and so all the ring buffer
+need to record are the pointers to each one of the pre-allocated data structure.
+
+Then allocation is simply a ring buffer get operation and free is a put
+operation, both taking constant time.  Initialization can be done by a bunch of
+puts, and out of memory detection is equivalent to a ring buffer empty.
+
+
+* Global Kernel Context
+-----------------------
+
+To avoid using global variables to store global or local information, every
+functional unit was designed to keep its operational data into a data structure
+which is stored in the global kernel context.  The global kernel context is a
+data structure holding all the information needed by each of the functional
+units.  Itself and its contents are all allocated on the kernel stack.
+
+All kernel API takes a Context pointer pointing to the global kernel context and
+retrieve operational data from it, thus avoiding the use of global variables.
+The global kernel context is always saved on the top of the kernel stack once
+the system enters user mode, so the trap handler and other functional units can
+always find the global kernel context.
+
+
+* Syscall Descriptor
+--------------------
+
+Instead of passing the trap reason through paramter to swi, it was chosen to
+pass the the trap reason through a1 register.  This gave us more power.
+
+The reference passed into the kernel through a1 register is a data structure
+allocated on the user stack containing all possible parameter needed by the
+kernel, including the trap reason code, input data buffer, output data buffer,
+and syscall integer return value.  This allows very easy kernel programming
+especially when we start to implement message passing.
+
+
+3. Component Details
+====================
+
+* Data Structures
+-----------------
+
+- Generic Ring Buffer
+
+The generic ring buffer is supposed to be a simple and robust ring buffer
+implementation.  The ring buffer supports put and get operations.  Each instance
+has a pre-allocated buffer provided by user, get and put indices, and the
+element size.  The buffer contains a copy of the data sent to the buffer.  Each
+put and get thus requires a memcpy.
+
+This serve as a basic building block for many data structures.
+
+
+- Generic Doubly Linked Circular List
+
+The list implementation is partially taken from the Linux kernel list.h.  This
+list implementation has the advantage of being type neutural, thus enable the
+group to implement lists of different data structures easily.
+
+
+- Syscall Descriptor
+
+The syscall descriptor describes a syscall.  It is constructed on the user stack
+and passed into the trap handler every time a syscall occurs.
+
+A syscall descriptor contains the trap reason, return value, input buffer, and
+output buffer.  This makes trap handler much simpler because it does not need to
+search for the parameters passed into the kernel.
+
+
+- Memory Descriptor
+
+A memory descriptor is essentially a set of ring buffers.  Each ring buffer
+contains all possible allocations to a certain kind of memory, such as task
+descriptors or stack spaces.  The memory manager take an enum to distinguish on
+which ring buffer should the memory manager operates.
+
+
+- Task Array
+
+The task array is a pre-allocated array of all task descriptors on the kernel
+stack.  It is used for memory manager to initialize its task memory descriptor,
+but it is also stored in the global kernel context for message passing syscalls
+to find the target task.
+
+
+- Scheduling Queues
+
+
+- Console Descriptors
+
+The console descriptors contains the information needed by the console device
+driver.  It contains the specs of the UART port and result of read/write
+operations.
+
+
+* Functional Units
+------------------
+
+- Memory Manager
+
+The memory manager uses the memory descriptors to allocate memory.  Since the
+memory descriptors are simply ring buffers, a mem_alloc is just a wrapper of
+rbuf_get, and similarly a mem_free is just a rbuf_put.
+
+All memory needed by the memory manager, as well as all the operational data
+needed by all other units, are allocated in main and passed in to either the
+memory manager or the global kernel context.
+
+
+- Task Manager
+
+A task manager is used to create and initialize task descriptors and associated
+stack space.
+
+A new task will have its stack initialized as if the task was saved by the trap
+handler, and can be restored/launched by the trap handler.
+
+
+- Scheduler
+
+
+- Trap Handler
+
+The trap handler is the main entry point of the kernel space from the user space.
+
+For kernel assignment 1, the trap handler takes 1 parameter: the syscall
+descriptor.  At entry the trap handler entry code saves the current processor
+states out to the user's stack, and pass the syscall descriptor, user stack
+pointer and kernel stack pointer into the syscall handler.  The syscall handler
+handles the syscall, calls scheduler to schedule the next task, and then calls
+into the trap handler exit code.  The trap handler exit code will restore the
+scheduled task and set processor back into user space.
+
+One thing worth mention here is that the trap exit code is called by the syscall
+handler, rather than make the syscall handler return into the trap entry code to
+exit.  This is because the trap exit code needs some parameters from the syscall
+handler, so calling the trap exit code is more natural.
+
+The reason the kernel stack pointer is needed by the syscall handler is exactly
+because the trap exit code needs this address to forcifully restore the kernel
+stack.
+
+
+- Console Driver
+
+This driver is essentially the UART driver.  It supports everything the bwio
+supports, although the implementation was slightly different.  This driver is
+not doing busy wait by default, but report how many bytes were written to the
+port.  It also provides APIs for setting the cursor, so it would be easier to
+draw the UI.
+
+The reason bwio is not sufficient is because bwio is always doing busy waiting.
+Also a seperate implementation integrates with our code base better.
+
+
+- Clock Driver
+
+This driver setup the clock.  It mainly support reporting the number of cycles
+the clock has been up.
+
+
+4. Kernel Launch Process
+========================
+
+The kernel follows this process to launch:
+
+- Initialize task descriptor array, assigning initial tid
+- Initialize global kernel context, pass in all operational data structures
+- Pass all pre-allocated task descriptors and stack memory into memory manager
+- Initialize scheduler
+- Initialize device drivers
+- Allocate the first user task
+- Initialize/setup the first user task
+- Enter the user mode and launch the first user task through trap handler
+
+
+5. Trap Process
+===============
+
+The kernel follows this process when swi is issued:
+
+- Enters system mode
+- Save out user data
+- Pass user sp into a2
+- Enter supervisor mode
+- Save user pc and cpsr onto user stack
+- Go into syscall handler
+
+Once the syscall handler completes the syscall, it calls trap exit code which
+undo these steps.
+
+
+6. Source Code
+==============
+
+
+
+7. User Program Output
+======================
