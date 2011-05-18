@@ -30,6 +30,8 @@ int task_init_all( Task* array, uint count )
 
 int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint priority )
 {
+	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
+
 	ptr stack = 0;
 	int status = 0;
 
@@ -39,7 +41,7 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 	
 	task->tid = task_next_tid( task->tid );
 	task->stack = task_init( code, stack );
-	DEBUG_PRINT( DBG_TASK, "old stack 0x%x, new 0x%x, diff 0x%x\n", stack, task->stack, stack - task->stack );
+	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
 	task->priority = priority;
 	task->state = TASK_READY;
 	task->reason = 0;
@@ -48,6 +50,8 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 	/* Clear queue for scheduler */
 	list_init( &task->queue );
 
+
+	DEBUG_PRINT( DBG_TASK, "task tid 0x%x priority %d\n", task->tid, task->priority );
 	status = sched_add( ctx, task );
 	ASSERT( status == ERR_NONE );
 

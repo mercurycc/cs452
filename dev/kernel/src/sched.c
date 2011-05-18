@@ -13,6 +13,7 @@
 
 int sched_init( Context* ctx, Sched* scheduler ){
 	scheduler->selector = 0;
+	scheduler->zombie = 0;
 	int i;
 	for (i=0;i<32;i++){
 		scheduler->task_queue[i] = 0;
@@ -64,6 +65,7 @@ int sched_schedule( Context* ctx, Task** next ){
 int sched_add( Context* ctx, Task* task ){
 	uint priority = task->priority;
 	ASSERT( (0 <= priority) && (priority < 32) );
+	DEBUG_PRINT( DBG_SCHED, "task tid 0x%x priority %d\n", task->tid, priority );
 
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	uint err = list_add_tail( target_queue_ptr, &(task->queue) );
@@ -74,6 +76,7 @@ int sched_add( Context* ctx, Task* task ){
 	//change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
+	DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
 	return 0;
 }
 
@@ -88,10 +91,21 @@ int sched_kill( Context* ctx, Task* task){
 	if (err) {
 		return err;
 	}
+	DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
+
+	if (!(*target_queue_ptr)){
+		uint selector_modifier = ~(0x80000000 >> priority);
+		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
+		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
+
+	}
+
 	err = list_add_tail( zombie_queue_ptr, elem );
 	if (err) {
 		return err;
 	}
+	DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
+
 	return 0;
 }
 

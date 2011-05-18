@@ -4,12 +4,21 @@
 
 void init_user()
 {
-	bwprintf( COM2, "%s entered, tid 0x%x\n", __func__, MyTid() );
+	// create 4 tasks
+	int tid = 0;
+	tid = Create( 30, noise );
+	bwprintf( COM2, "Created: 0x%x\n",tid );
 
-	Create( 0, noise );
+	tid = Create( 30, noise );
+	bwprintf( COM2, "Created: 0x%x\n",tid );
 
-	while( 1 ){
-		Pass();
-		bwprintf( COM2, "%s reentered, tid 0x%x, parent tid 0x%x\n", __func__, MyTid(), MyParentTid() );
-	}
+	tid = Create( 0, noise );
+	bwprintf( COM2, "Created: 0x%x\n",tid );
+
+	tid = Create( 0, noise );
+	bwprintf( COM2, "Created: 0x%x\n",tid );
+
+	bwprintf( COM2, "First: exiting\n" );
+	Exit();
+
 }

@@ -6,6 +6,7 @@
 #include <task.h>
 #include <syscall.h>
 #include <trap_reason.h>
+#include <kernel.h>
 #include <mem.h>
 #include <sched.h>
 
@@ -19,9 +20,9 @@ int trap_init( Context* ctx )
 	return 0;
 }
 
-void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp )
+void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 {
-	Context* ctx = (Context*)(*kernelsp);
+	Context* ctx = (Context*)(*(uint*)kernelsp);
 	int status = 0;
 	Task* temp;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
@@ -56,40 +57,35 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp )
 		reason->result = task_tid( ctx->current_task->parent );
 		break;
 	case TRAP_PASS:
-		/*
-		temp = ctx->current_task;
-		ctx->current_task = ctx->last_task;
-		ctx->last_task = temp;
-		*/
 		DEBUG_NOTICE( DBG_TRAP, "TRAP PASS: sched passing...\n" );
 		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: current task addr = %x\n", ctx->current_task );
 
 		status = sched_pass( ctx, ctx->current_task );
 		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: status = %d\n", status );
 
-		if ( status ) {
-			reason->result = status;
-			break;
-		}
-
-		DEBUG_NOTICE( DBG_TRAP, "TRAP PASS: sched scheduling...\n" );
-		status = sched_schedule( ctx, &(ctx->current_task) );
-		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: status = %d\n", status );
-		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: tid = %d\n", ctx->current_task->tid );
-		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: new task addr = %x\n", ctx->current_task );
-
-
-		if ( status ) {
-			reason->result = status;
-			break;
-		}
+		ASSERT( status == ERR_NONE );
 
 		break;
 	case TRAP_EXIT:
-		
+
+		DEBUG_NOTICE( DBG_TRAP, "sched killing...\n" );
+
+		status = sched_kill( ctx, ctx->current_task );
+		ASSERT( status == ERR_NONE );
+
 		break;
 	default:
 		DEBUG_PRINT( DBG_TRAP, "%u not implemented\n", reason->code );
+	}
+
+	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );
+	status = sched_schedule( ctx, &(ctx->current_task) );
+	ASSERT( status == ERR_NONE );
+	DEBUG_PRINT( DBG_TRAP, "new task addr = %x\n", ctx->current_task );
+
+	if (!(ctx->current_task)){
+		DEBUG_NOTICE( DBG_TRAP, "shutting down...\n" );
+		kernel_shutdown( kernelsp );
 	}
 
 	trap_handler_end( reason, ctx->current_task->stack, mode, kernelsp );

@@ -41,12 +41,12 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SENSORCTL:
 	case DBG_PROMPT:
 	case DBG_SENSORUI:
-		// case DBG_TRAP:
-		// case DBG_KER:
+	case DBG_TRAP:
+	case DBG_KER:
 		// case DBG_TASK:
-		// case DBG_USER:
+	case DBG_USER:
 	case DBG_CMD:
-		//case DBG_SCHED:
+		// case DBG_SCHED:
 		return 0;
 	default:
 		return 1;
@@ -95,7 +95,7 @@ static inline int DEBUG_ENABLE( uint x )
 #define DEBUG_PRINT( level, fmt, arg... )
 #define DEBUG_NOTICE( level, msg )
 #define ASSERT( cond )
-#define ASSERT_M( cond, msg )
+#define ASSERT_M( cond, msg, arg... )
 #endif /* DEBUG */
 
 #ifdef TRACE

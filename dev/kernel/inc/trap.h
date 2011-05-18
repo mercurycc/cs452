@@ -13,9 +13,9 @@ int trap_init( Context* ctx );
 void trap_handler_begin( Syscall* reason, uint sp_usr );
 
 /* Trap handler body */
-void trap_handler( Syscall* reason, uint sp_caller, uint mode, uint* kernelsp );
+void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp );
 
 /* Trap hander return to userland through this */
-void trap_handler_end( Syscall* reason, uint sp_usr, uint mode, uint* kernelsp );
+void trap_handler_end( Syscall* reason, uint sp_usr, uint mode, ptr kernelsp );
 
 #endif /* _TRAP_H_ */

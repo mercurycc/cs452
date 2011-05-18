@@ -7,9 +7,9 @@ kernel_shutdown:
 	@ a1: kernel sp
 	mov	sp, a1
 	@ Pop kernel context
-	ldmdb	sp!, {a1}
+	ldmia	sp!, {a1}
 	@ Pop all kernel context
-	ldmdb	sp!, {a1, a2, a3, a4, v1, v2, v3, v4, v5, v6, sl, fp, ip, lr}
+	ldmia	sp!, {a1, a2, a3, a4, v1, v2, v3, v4, v5, v6, sl, fp, ip, lr}
 	@ Return to kernel main
 	mov	pc, lr
 	.size	kernel_shutdown, .-kernel_shutdown

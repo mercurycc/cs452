@@ -4,10 +4,13 @@
 
 void noise()
 {
-	bwprintf( COM2, "%s entered, tid 0x%x\n", __func__, MyTid() );
 
-	while( 1 ){
-		Pass();
-		bwprintf( COM2, "%s reentered, tid 0x%x, parent tid 0x%x\n", __func__, MyTid(), MyParentTid() );
-	}
+	bwprintf( COM2, "New task entered, tid = 0x%x, parent id = 0x%x\n", MyTid(), MyParentTid() );
+
+	Pass();
+
+	bwprintf( COM2, "New task entered, tid = 0x%x, parent id = 0x%x\n", MyTid(), MyParentTid() );
+
+	Exit();
+
 }

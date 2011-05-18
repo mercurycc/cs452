@@ -91,7 +91,8 @@ int main()
 	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td, 1 );
 	ASSERT( status == ERR_NONE );
 
-	status = task_setup( ctx, user_init_td, init_user, 0, 0 );
+//	DEBUG_PRINT( DBG_KER, "init task priority %d\n", KERNEL_INIT_TASK_PRIORITY );
+	status = task_setup( ctx, user_init_td, init_user, 0, KERNEL_INIT_TASK_PRIORITY );
 	ASSERT( status == ERR_NONE );
 
 	DEBUG_PRINT( DBG_KER, "User session, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
@@ -105,7 +106,7 @@ int main()
 	   continue execution. */
 	session_start( ctx, (uchar*)user_init_td->stack );
 
-	ASSERT_M( 0, "We should never reach here! %s\n", "crap" );
+	//ASSERT_M( 0, "We should never reach here! %s\n", "crap" );
 	
 	return 0;
 }
