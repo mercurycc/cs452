@@ -10,8 +10,6 @@
 #define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
 #define BIT_MASK { 0, 1, 2, 4 ,8 ,16 }
 
-/* TODO: Need to change the state of the task (active, ready, zombie, ...) */
-
 
 int sched_init( Context* ctx, Sched* scheduler ){
 	scheduler->selector = 0;
