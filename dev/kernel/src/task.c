@@ -32,6 +32,8 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 {
 	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
 
+	/* TODO: move all memory allocations regarding to tasks into this thing */
+
 	ptr stack = 0;
 	int status = 0;
 
