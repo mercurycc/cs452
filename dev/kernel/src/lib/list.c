@@ -18,16 +18,23 @@ int list_empty( List* lst )
 	return !lst;
 }
 
-int list_add_tail( List* lst, List* elem )
+int list_add_tail( List** lst, List* elem )
 {
-	List* tail = lst->prev;
+	List* tail;
+
+	if (!(*lst)) {
+		*lst = elem;
+		return ERR_NONE;
+	}
+
+	tail = (*lst)->prev;
 
 	elem->prev = tail;
-	elem->next = lst;
+	elem->next = *lst;
 
 	tail->next = elem;
 
-	lst->prev = elem;
+	(*lst)->prev = elem;
 
 	return ERR_NONE;
 }
@@ -53,7 +60,7 @@ int list_remove_head( List** lst, List** elem )
 
 int list_rotate_head( List** lst )
 {
-	ASSERT( lst & *lst );
+	ASSERT( lst && *lst );
 
 	*lst = (*lst)-> next;
 

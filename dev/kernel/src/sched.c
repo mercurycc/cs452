@@ -47,11 +47,17 @@ int sched_schedule( Context* ctx, Task** next ){
 		}
 		i -= 1;
 	}
+	priority = 31 - priority;
+
+	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current priority is %d\n", priority );
 
 	//get the corresponding element
 	List* elem = ctx->scheduler->task_queue[priority];
 
 	*next = list_entry( Task, elem, queue);
+
+	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current ptr is %x\n", ctx->scheduler->task_queue[priority] );
+
 	return 0;
 }
 
@@ -59,8 +65,8 @@ int sched_add( Context* ctx, Task* task ){
 	uint priority = task->priority;
 	ASSERT( (0 <= priority) && (priority < 32) );
 
-	List* target_queue = ctx->scheduler->task_queue[priority];
-	uint err = list_add_tail( target_queue, &(task->queue) );
+	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
+	uint err = list_add_tail( target_queue_ptr, &(task->queue) );
 	if (err) {
 		return err;
 	}
@@ -74,15 +80,15 @@ int sched_add( Context* ctx, Task* task ){
 int sched_kill( Context* ctx, Task* task){
 	uint priority = task->priority;
 	ASSERT( (0 <= priority) && (priority < 32) );
-	List* target_queue = ctx->scheduler->task_queue[priority];
-	List* zombie_queue = ctx->scheduler->zombie;
+	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
+	List** zombie_queue_ptr = &(ctx->scheduler->zombie);
 
 	List* elem;
-	uint err = list_remove_head( &(target_queue), &elem );
+	uint err = list_remove_head( target_queue_ptr, &elem );
 	if (err) {
 		return err;
 	}
-	err = list_add_tail( &(zombie_queue), elem );
+	err = list_add_tail( zombie_queue_ptr, elem );
 	if (err) {
 		return err;
 	}
@@ -90,9 +96,17 @@ int sched_kill( Context* ctx, Task* task){
 }
 
 int sched_pass( Context* ctx, Task* task ){
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current task is %d\n", task->tid );
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current priority is %d\n", task->priority );
+	
 	uint priority = task->priority;
-	List* target_queue = ctx->scheduler->task_queue[priority];
-	uint err = list_rotate_head( &(target_queue) );
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current ptr is %x\n", ctx->scheduler->task_queue[priority] );
+
+	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
+	uint err = list_rotate_head( target_queue_ptr );
+
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: renewed ptr is %x\n", ctx->scheduler->task_queue[priority] );
+
 	return err;
 }
 

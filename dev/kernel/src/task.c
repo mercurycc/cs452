@@ -5,6 +5,7 @@
 #include <task.h>
 #include <mem.h>
 #include <lib/list.h>
+#include <sched.h>
 
 /* As defined in task_init.s */
 ptr task_init( void (*code)(), ptr stack );
@@ -46,6 +47,9 @@ int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint pri
 
 	/* Clear queue for scheduler */
 	list_init( &task->queue );
+
+	status = sched_add( ctx, task );
+	ASSERT( status == ERR_NONE );
 
 	return ERR_NONE;
 }

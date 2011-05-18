@@ -22,7 +22,8 @@ enum Debug_type {
 	DBG_KER,
 	DBG_TASK,
 	DBG_USER,
-	DBG_COUNT
+	DBG_COUNT,
+	DBG_SCHED
 };
 
 #ifdef DEBUG
@@ -45,6 +46,7 @@ static inline int DEBUG_ENABLE( uint x )
 		// case DBG_TASK:
 		// case DBG_USER:
 	case DBG_CMD:
+		//case DBG_SCHED:
 		return 0;
 	default:
 		return 1;
