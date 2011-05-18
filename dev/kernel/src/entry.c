@@ -88,25 +88,15 @@ int main()
 	DEBUG_NOTICE( DBG_KER, "Kernel init done\n" );
 
 	/* Start user session by getting into the init */
-	status = mem_alloc( ctx, MEM_TASK, ( void** )&user_init_td, 1 );
-	ASSERT( status == ERR_NONE );
-
-//	DEBUG_PRINT( DBG_KER, "init task priority %d\n", KERNEL_INIT_TASK_PRIORITY );
-	status = task_setup( ctx, user_init_td, init_user, 0, KERNEL_INIT_TASK_PRIORITY );
+	status = task_setup( ctx, &user_init_td, init_user, 0, KERNEL_INIT_TASK_PRIORITY );
 	ASSERT( status == ERR_NONE );
 
 	DEBUG_PRINT( DBG_KER, "User session, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
 
-	/* Hack for testing */
+	/* Hardcode first user task */
 	ctx->current_task = user_init_td;
 
-	/* TODO: We do need to save the kernel context here on the
-	   stack if we ever want to correctly exit the kernel.  To
-	   exit, just restore the kernel context we saved here and
-	   continue execution. */
 	session_start( ctx, (uchar*)user_init_td->stack );
-
-	//ASSERT_M( 0, "We should never reach here! %s\n", "crap" );
 	
 	return 0;
 }

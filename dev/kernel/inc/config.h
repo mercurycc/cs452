@@ -2,11 +2,12 @@
 #define _CONFIG_H_
 
 #define USE_BWIO
-//#define DEBUG
+// #define DEBUG
 
 /* Kernel parameters */
 #define KERNEL_NUM_CONSOLES           2
-#define KERNEL_MAX_NUM_TASKS          128
+#define KERNEL_TID_SIZE               7   
+#define KERNEL_MAX_NUM_TASKS          ( 1 << KERNEL_TID_SIZE )
 #define KERNEL_STACK_PAGE             4
 #define KERNEL_PAGE_SIZE              4096
 #define KERNEL_MAX_PRIORITY           128	/* not used */

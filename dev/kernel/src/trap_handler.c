@@ -35,33 +35,27 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 
 	switch( reason->code ){
 	case TRAP_CREATE:
-		status = mem_alloc( ctx, MEM_TASK, ( void** )&temp, 1 );
-		if( status == ERR_OUT_OF_MEMORY ){
-			reason->result = -1;
+		task_setup( ctx, &temp, reason->data, ctx->current_task, reason->datalen );
+		if ( status ) {
+			reason->result = status;
+			break;
 		} else {
-			task_setup( ctx, temp, reason->data, ctx->current_task, reason->datalen );
 			reason->result = task_tid( temp );
-			if ( status ) {
-				reason->result = status;
-				break;
-			}
-			DEBUG_PRINT( DBG_TRAP, "new task created at addr %x\n", temp);
-			DEBUG_PRINT( DBG_TRAP, "new task list ptr addr %x\n", &(temp->queue) );
-
 		}
+		DEBUG_PRINT( DBG_TRAP, "new task created at addr 0x%x, list ptr 0x%x\n", temp, &(temp->queue));
 		break;
 	case TRAP_MY_TID:
 		reason->result = task_tid( ctx->current_task );
 		break;
 	case TRAP_MY_PARENT_TID:
-		reason->result = task_tid( ctx->current_task->parent );
+		reason->result = task_parent_tid( ctx->current_task );
 		break;
 	case TRAP_PASS:
-		DEBUG_NOTICE( DBG_TRAP, "TRAP PASS: sched passing...\n" );
-		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: current task addr = %x\n", ctx->current_task );
+		DEBUG_NOTICE( DBG_TRAP, "sched passing...\n" );
+		DEBUG_PRINT( DBG_TRAP, "current task addr = %x\n", ctx->current_task );
 
 		status = sched_pass( ctx, ctx->current_task );
-		DEBUG_PRINT( DBG_TRAP, "TRAP PASS: status = %d\n", status );
+		DEBUG_PRINT( DBG_TRAP, "status = %d\n", status );
 
 		ASSERT( status == ERR_NONE );
 
@@ -71,6 +65,10 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		DEBUG_NOTICE( DBG_TRAP, "sched killing...\n" );
 
 		status = sched_kill( ctx, ctx->current_task );
+		ASSERT( status == ERR_NONE );
+
+		/* Release resources */
+		status = task_zombiefy( ctx, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 
 		break;
@@ -83,6 +81,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	ASSERT( status == ERR_NONE );
 	DEBUG_PRINT( DBG_TRAP, "new task addr = %x\n", ctx->current_task );
 
+	/* Shutdown kernel if no ready task can be scheduled */
 	if (!(ctx->current_task)){
 		DEBUG_NOTICE( DBG_TRAP, "shutting down...\n" );
 		kernel_shutdown( kernelsp );

@@ -12,7 +12,7 @@ ptr task_init( void (*code)(), ptr stack );
 
 static inline uint task_next_tid( uint tid )
 {
-	tid += (1 << 16) ;
+	tid += KERNEL_MAX_NUM_TASKS;
 
 	return tid;
 }
@@ -28,33 +28,54 @@ int task_init_all( Task* array, uint count )
 	return ERR_NONE;
 }
 
-int task_setup( Context* ctx, Task* task, void (*code)(), Task* parent, uint priority )
+int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority )
 {
-	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
-
-	/* TODO: move all memory allocations regarding to tasks into this thing */
-
+	Task* newtask;
 	ptr stack = 0;
 	int status = 0;
+
+	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
+
+	status = mem_alloc( ctx, MEM_TASK, ( void** )&newtask, 1 );
+	ASSERT( status == ERR_NONE );
 
 	/* Allocate user stack */
 	status = mem_alloc( ctx, MEM_STACK, ( void** )&stack, 1 );
 	ASSERT( status == ERR_NONE );
 	
-	task->tid = task_next_tid( task->tid );
-	task->stack = task_init( code, stack );
+	newtask->stack_orig = stack;
+	newtask->stack = task_init( code, stack );
 	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
-	task->priority = priority;
-	task->state = TASK_READY;
-	task->reason = 0;
-	task->parent = parent;
+	newtask->priority = priority;
+	newtask->state = TASK_READY;
+	newtask->reason = 0;
+	newtask->parent_tid = task_tid( parent );
+	newtask->parent = parent;
 
 	/* Clear queue for scheduler */
-	list_init( &task->queue );
+	list_init( &newtask->queue );
 
+	DEBUG_PRINT( DBG_TASK, "task tid 0x%x priority %d\n", newtask->tid, newtask->priority );
+	status = sched_add( ctx, newtask );
+	ASSERT( status == ERR_NONE );
 
-	DEBUG_PRINT( DBG_TASK, "task tid 0x%x priority %d\n", task->tid, task->priority );
-	status = sched_add( ctx, task );
+	/* Return task if asked */
+	if( task ){
+		*task = newtask;
+	}
+
+	return ERR_NONE;
+}
+
+int task_zombiefy( Context* ctx, Task* task )
+{
+	int status = 0;
+
+	ASSERT( task );
+	
+	task->tid = task_next_tid( task->tid );
+
+	status = mem_free( ctx, MEM_STACK, ( void** )task->stack_orig, 1 );
 	ASSERT( status == ERR_NONE );
 
 	return ERR_NONE;
@@ -69,7 +90,17 @@ uint task_tid( Task* task )
 	}
 }
 
+uint task_parent_tid( Task* task )
+{
+	ASSERT( task );
+	if( task->parent_tid != task_tid( task->parent ) ){
+		return 0;
+	} else {
+		return task->parent_tid;
+	}
+}
+
 uint task_array_index( Task* task )
 {
-	return task->tid & 0xffff;
+	return task->tid & ( KERNEL_MAX_NUM_TASKS - 1 );
 }

@@ -2,8 +2,12 @@
 #define _USER_SYSCALL_H_
 
 enum SyscallError {
-	SYSCALL_CREATE_INVALID_PRIORITY = -1,
-	SYSCALL_CREATE_OUT_OF_TASK_DESCRIPTOR = -2
+	/* TODO: Implement all the error codes */
+	/* Create */
+	CREATE_INVALID_PRIORITY = -1,
+	CREATE_OUT_OF_TASK_DESCRIPTOR = -2,
+	/* MyParentTid */
+	MY_PARENT_TID_BURIED = -1
 };
 
 /* Task Creation */

@@ -49,8 +49,8 @@ The memory manager manages allocation and deallocation of volatile data
 structures such as task descriptors and stack memory for user tasks.  For each
 type of memory the memory manager maintains a ring buffer initialized with all
 possible allocations.  Notice this can be done because both the size of a task
-descriptor and the size of a user stack are fixed, and so all the ring buffer
-need to record are the pointers to each one of the pre-allocated data structure.
+descriptor and the size of a user stack are fixed, so all the ring buffer need
+to record are the pointers to each one of the pre-allocated data structure.
 
 Then allocation is simply a ring buffer get operation and free is a put
 operation, both taking constant time.  Initialization can be done by a bunch of
@@ -136,17 +136,6 @@ but it is also stored in the global kernel context for message passing syscalls
 to find the target task.
 
 
-- Scheduler
-
-The scheduler consists 32 scheduling queues, indexed from 0 to 31, indicating
-the 32 different priority levels. In order to quickly locate the first non-empty
-queue, a 32-bit selector, of which each bit indicates if a corresponding queue
-is empty or not. Moreover, the scheduler has a zombie queue for tasks that are
-finished. The scheduler will schedule the first task in the queue with highest
-priority. If there is not any task in any of the scheduling queues, the
-scheduler will tell the handler to run kernel.
-
-
 - Scheduling Queues
 
 The scheduling queue is basically a ring of double linked list, with a pointer
@@ -185,6 +174,14 @@ handler, and can be restored/launched by the trap handler.
 
 
 - Scheduler
+
+The scheduler consists 32 scheduling queues, indexed from 0 to 31, indicating
+the 32 different priority levels. In order to quickly locate the first non-empty
+queue, a 32-bit selector, of which each bit indicates if a corresponding queue
+is empty or not. Moreover, the scheduler has a zombie queue for tasks that are
+finished. The scheduler will schedule the first task in the queue with highest
+priority. If there is not any task in any of the scheduling queues, the
+scheduler will tell the handler to run kernel.
 
 
 - Trap Handler
@@ -232,14 +229,14 @@ the clock has been up.
 
 The kernel follows this process to launch:
 
-- Initialize task descriptor array, assigning initial tid
-- Initialize global kernel context, pass in all operational data structures
-- Pass all pre-allocated task descriptors and stack memory into memory manager
-- Initialize scheduler
-- Initialize device drivers
-- Allocate the first user task
-- Initialize/setup the first user task
-- Enter the user mode and launch the first user task through trap handler
+ - Initialize task descriptor array, assigning initial tid
+ - Initialize global kernel context, pass in all operational data structures
+ - Pass all pre-allocated task descriptors and stack memory into memory manager
+ - Initialize scheduler
+ - Initialize device drivers
+ - Allocate the first user task
+ - Initialize/setup the first user task
+ - Enter the user mode and launch the first user task through trap handler
 
 
 5. Trap Process
@@ -258,10 +255,86 @@ Once the syscall handler completes the syscall, it calls trap exit code which
 undo these steps.
 
 
-6. Source Code
+6. User Space Syscall Wrapper
+=============================
+
+The userland program make a syscall by calling one of the user space syscall
+routine.  Each syscall routine sets up its own syscall descriptor, then calls
+into the syscall wrapper.  The syscall wrapper will have its first parameter
+being the syscall descriptor, so that once in the kernel the trap handler can
+obtain the syscall descriptor from a1 register.
+
+The syscall wrapper then simply executes swi.
+
+
+7. Source Code
 ==============
 
+96239336f69abb4811068eb20388fce2  ./doc/README
+84678f2a844934c4f361c5c7ec84b2c7  ./src/trap_handler.c
+b7ff01e9c47a33b3470e48b5303bf18f  ./src/lib/str.c
+bc90c13edcc639b184647bf08ae7a897  ./src/lib/rbuf.c
+08e2c47b535f69bb0e04026355be28a9  ./src/lib/list.c
+e3a418b77c67ae44d4f498b322964674  ./src/trap.s
+55aa24310c45e8f964900863b838a918  ./src/kernel.mk
+3f5a53aa6ccde06cd558a99bd72ceba7  ./src/init.c
+aa17ef6556000d68525a0d25764c2451  ./src/entry.c
+e4da8cae9acb838a0527fc585f2d7055  ./src/session_start.s
+1728770837756c3411983926087c7b2d  ./src/devices/clock.c
+485f1a99e81baa5d5f27199a30ff3d38  ./src/devices/console.c
+2bf5b04b22e9c4cac91df86036f8497d  ./src/devices/bwio.c
+6b4842cb158b593c637691f5705f66e7  ./src/userland/apps/init_user/main.c
+a6c9892ac75c228e261ed864b9da5173  ./src/userland/apps/noise/main.c
+fafba5c6bd9b73d1de326d4023024256  ./src/userland/lib/syscall.c
+49cd21645174f563715c8842372425bc  ./src/sched.c
+dcab7b127681f28b18a758aa88ccf31c  ./src/task_init.s
+32c650c99e2bd1402ba2698c08962b65  ./src/task.c
+68ef8d87574d965db28e0a9525f62e05  ./src/kernel_shutdown.s
+b08067b13bb0b468d7f01951b4179a34  ./src/mem.c
+e05902d8eb928f7b7f4a68be4675a768  ./src/context.c
+d41d8cd98f00b204e9800998ecf8427e  ./bin/.gitignore
+d9b106b8ed7f38d14d84d93a2027d5f5  ./inc/user/syscall.h
+db18e5645cfb3e96a9423777478f69f3  ./inc/user/apps_entry.h
+c6e0cfc3120fee891ac66ab51dbe65e8  ./inc/task.h
+02c4361f40a7e2505bef66aa7cd4dc27  ./inc/kernel.h
+598c7e0203b7f45ee5ff0ad6f0e39af9  ./inc/types.h
+16eb2e0956e0d51380e4497dd9f1616a  ./inc/lib/str.h
+85b44137dfef528703bd80f122428306  ./inc/lib/rbuf.h
+5a6b35c23ce5b4384b94cb49f1047a34  ./inc/lib/list.h
+ff2cfda94638ea8b32f098d3cb002881  ./inc/panic.h
+1683a1bc077e2ad73fb17f19ee9282dc  ./inc/err.h
+9362895f947ee525821efaaa82a059c1  ./inc/regopts.h
+d117423d6a1b0af67f41bcdfc6d85ac9  ./inc/trap.h
+44618caf2bfd8b7c5b7930e9fa7fa0bd  ./inc/bwio.h
+469f1f1a4d1eb203fded63f188a65809  ./inc/config.h
+c44f271844976edfc86d8d5d213b0cce  ./inc/ts7200.h
+d7d6e916ec8c65bb1914282718ceb5a0  ./inc/devices/clock.h
+748a423fc63602fbc0bf0f19f3ba6fe6  ./inc/devices/console.h
+055a5ec8f7401235a753fcfe4ff0cb22  ./inc/sched.h
+cba56e0ca540d314b45a828142d5b215  ./inc/context.h
+c5c38d8ed1cd98feb911c74dcdc3f976  ./inc/valist.h
+093330ed6988d50b191747db485fad37  ./inc/trap_reason.h
+4fe504b84107d88ee0790edd0e533832  ./inc/syscall.h
+4b74f2a49fcf513fca3352e168c9d384  ./inc/mem.h
+fe42a1e47a2a09050edbe4b69495688d  ./inc/session.h
+4aa618b9753c5292e5d9e5c95d297f10  ./build/orex.ld
+d41d8cd98f00b204e9800998ecf8427e  ./built/.gitignore
+a468e852fd0510e51f0624e793d17cf8  ./Makefile
 
 
-7. User Program Output
+8. User Program Output
 ======================
+
+Created: 0x1
+Created: 0x2
+New task entered, tid = 0x3, parent id = 0x0
+New task entered, tid = 0x3, parent id = 0x0
+Created: 0x3
+New task entered, tid = 0x4, parent id = 0x0
+New task entered, tid = 0x4, parent id = 0x0
+Created: 0x4
+First: exiting
+New task entered, tid = 0x1, parent id = 0x0
+New task entered, tid = 0x2, parent id = 0x0
+New task entered, tid = 0x1, parent id = 0x0
+New task entered, tid = 0x2, parent id = 0x0
