@@ -8,6 +8,7 @@
 
 struct Sched_s {
 	uint selector;
+	uint highest_priority;
 	List* task_queue[32];
 	List* zombie;
 };
@@ -17,6 +18,6 @@ int sched_schedule( Context* ctx, Task** next );
 int sched_add( Context* ctx, Task* task );
 int sched_kill( Context* ctx, Task* task );
 int sched_pass( Context* ctx, Task* task );
-
+int sched_block( Context* ctx, task* task );
 
 #endif /* _SCHED_H_ */

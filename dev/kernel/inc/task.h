@@ -11,7 +11,8 @@
 enum TaskStates {
 	TASK_READY,
 	TASK_ACTIVE,
-	TASK_ZOMBIE
+	TASK_ZOMBIE,
+	TASK_BLOCK
 };
 
 struct Task_s {

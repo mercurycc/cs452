@@ -10,28 +10,13 @@
 #define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
 #define BIT_MASK { 0, 1, 2, 4 ,8 ,16 }
 
-
-int sched_init( Context* ctx, Sched* scheduler ){
-	scheduler->selector = 0;
-	scheduler->zombie = 0;
-	int i;
-	for (i=0;i<32;i++){
-		scheduler->task_queue[i] = 0;
-	}
-	ctx->scheduler = scheduler;
-
-	return 0;
-}
-
-int sched_schedule( Context* ctx, Task** next ){
-	uint selector = ctx->scheduler->selector;
-	if (selector == 0) {
-		//no task in scheduler
-		*next = 0;
-		return 0;
-	}
-
+int sched_update_highest( Context* ctx ){
 	//find the highest priority queue
+	uint selector = ctx->scheduler->selector;
+	if ( !selector ) {
+		ctx->scheduler->highest_priority = 32;
+		return ERROR_NONE;
+	}
 	uint priority = 0;
 	uint masks[] = SELECTOR_MASK;
 	uint bits[] = BIT_MASK;
@@ -48,8 +33,32 @@ int sched_schedule( Context* ctx, Task** next ){
 		}
 		i -= 1;
 	}
-	priority = 31 - priority;
+	ctx->scheduler->highest_priority = 31 - priority;
+	return ERROR_NONE;
+}
 
+int sched_init( Context* ctx, Sched* scheduler ){
+	scheduler->selector = 0;
+	scheduler->highest_priority = 32;
+	scheduler->zombie = 0;
+	int i;
+	for (i=0;i<32;i++){
+		scheduler->task_queue[i] = 0;
+	}
+	ctx->scheduler = scheduler;
+
+	return 0;
+}
+
+int sched_schedule( Context* ctx, Task** next ){
+	uint selector = ctx->scheduler->selector;
+	if ( !selector ) {
+		//no task in scheduler
+		*next = 0;
+		return 0;
+	}
+
+	uint priority = ctx->scheduler->highest_priority;
 	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current priority is %d\n", priority );
 
 	//get the corresponding element
@@ -78,6 +87,8 @@ int sched_add( Context* ctx, Task* task ){
 	//change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
+	err = sched_update_highest( ctx );
+	ASSERT( err == 0 );
 	DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
 	return 0;
 }
@@ -98,6 +109,8 @@ int sched_kill( Context* ctx, Task* task){
 	if (!(*target_queue_ptr)){
 		uint selector_modifier = ~(0x80000000 >> priority);
 		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
+		err = sched_update_highest( ctx );
+		ASSERT( err == 0 );
 		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
 	}
 
@@ -127,3 +140,6 @@ int sched_pass( Context* ctx, Task* task ){
 	return err;
 }
 
+int sched_block( Context* ctx, task* task ) {
+
+}
