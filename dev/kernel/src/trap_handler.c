@@ -37,16 +37,20 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		/* Task management */
 	case TRAP_CREATE:
 		task_setup( ctx, &temp, reason->data, ctx->current_task, reason->datalen );
-		if ( status ) {
-			reason->result = status;
-			break;
+		if ( status == ERR_INVALID_PRIORITY ) {
+			reason->result = CREATE_INVALID_PRIORITY;
+		} else if ( status == ERR_OUT_OF_TASK_DESCRIPTOR ){
+			reason->result = CREATE_OUT_OF_TASK_DESCRIPTOR;
 		} else {
 			reason->result = task_tid( temp );
+			DEBUG_PRINT( DBG_TRAP, "new task created at addr 0x%x, list ptr 0x%x\n", temp, &(temp->queue));
 		}
-		DEBUG_PRINT( DBG_TRAP, "new task created at addr 0x%x, list ptr 0x%x\n", temp, &(temp->queue));
 		break;
 	case TRAP_MY_TID:
 		reason->result = task_tid( ctx->current_task );
+		if( reason->result == ERR_PARENT_EXIT ){
+			reason->result = MY_PARENT_TID_BURIED;
+		}
 		break;
 	case TRAP_MY_PARENT_TID:
 		reason->result = task_parent_tid( ctx->current_task );

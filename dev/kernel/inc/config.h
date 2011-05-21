@@ -10,7 +10,8 @@
 #define KERNEL_MAX_NUM_TASKS          ( 1 << KERNEL_TID_SIZE )
 #define KERNEL_STACK_PAGE             4
 #define KERNEL_PAGE_SIZE              4096
-#define KERNEL_MAX_PRIORITY           128	/* not used */
+#define KERNEL_HIGH_PRIORITY          0
+#define KERNEL_LOW_PRIORITY           31
 #define KERNEL_INIT_TASK_PRIORITY     10
 
 /* Userland parameters */

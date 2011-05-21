@@ -7,7 +7,21 @@ enum SyscallError {
 	CREATE_INVALID_PRIORITY = -1,
 	CREATE_OUT_OF_TASK_DESCRIPTOR = -2,
 	/* MyParentTid */
-	MY_PARENT_TID_BURIED = -1
+	MY_PARENT_TID_BURIED = -1,          /* Parent is zombiefied or destroied */
+	/* Pass cannot have recoverable failure */
+	/* Exit cannot have recoverable failure */
+	/* Send */
+	SEND_INVALID_TASK_ID = -1,
+	SEND_TASK_DOES_NOT_EXIST = -2,
+	SEND_INCOMPLETE_TRANSACTION = -3,
+	/* Receive cannot fail */
+	/* Reply */
+	REPLY_INVALID_TASK_ID = -1,
+	REPLY_TASK_DOES_NOT_EXIST = -2,
+	REPLY_TASK_IN_WRONG_STATE = -3,
+	/* RegisterAs */
+	REGISTER_AS_INVALID_NAMESERVER = -1,
+	REGISTER_AS_FALSE_NAME_SERVER = -2
 };
 
 /* Task Creation */

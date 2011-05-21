@@ -119,7 +119,10 @@ enum Error {
 	ERR_UI_PROMPT_NOT_DONE             = 6,
 	ERR_COMMAND_NOT_SUPPORTED          = 7,
 	ERR_COMMAND_WRONG_PARAMETER        = 8,
-	ERR_UNKNOWN                        = 9
+	ERR_UNKNOWN                        = 9,
+	ERR_INVALID_PRIORITY               = 10,
+	ERR_OUT_OF_TASK_DESCRIPTOR         = 11,
+	ERR_PARENT_EXIT                    = 12
 };
 
 #endif /* _ERR_H_ */
