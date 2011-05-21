@@ -10,16 +10,19 @@ static void syscall_trap( Syscall* reason )
 	asm volatile( "swi 0" );
 }
 
-static int syscall_make( uint reason, void* data, uint datalen, void* buffer, uint bufferlen )
+static inline int syscall_make( uint reason, uint target_pid, void* data, uint datalen, void* buffer, uint bufferlen )
 {
 	Syscall call_reason = { 0 };
 
+	/* Setup syscall parameters */
 	call_reason.code = reason;
+	call_reason.target_pid = target_pid;
 	call_reason.data = data;
 	call_reason.datalen = datalen;
 	call_reason.buffer = buffer;
 	call_reason.bufferlen = bufferlen;
 
+	/* Trap into kernel */
 	syscall_trap( &call_reason );
 
 	return call_reason.result;
@@ -28,25 +31,50 @@ static int syscall_make( uint reason, void* data, uint datalen, void* buffer, ui
 int Create( int priority, void(*code)() )
 {
 	/* TODO: code must be word-aligned non NULL pointer */
-	return syscall_make( TRAP_CREATE, code, priority, 0, 0 );
+	return syscall_make( TRAP_CREATE, 0, code, priority, 0, 0 );
 }
 
 int MyTid()
 {
-	return syscall_make( TRAP_MY_TID, 0, 0, 0, 0 );
+	return syscall_make( TRAP_MY_TID, 0, 0, 0, 0, 0 );
 }
 
 int MyParentTid()
 {
-	return syscall_make( TRAP_MY_PARENT_TID, 0, 0, 0, 0 );
+	return syscall_make( TRAP_MY_PARENT_TID, 0, 0, 0, 0, 0 );
 }
 
 void Pass()
 {
-	syscall_make( TRAP_PASS, 0, 0, 0, 0 );
+	syscall_make( TRAP_PASS, 0, 0, 0, 0, 0 );
 }
 
 void Exit()
 {
-	syscall_make( TRAP_EXIT, 0, 0, 0, 0 );
+	syscall_make( TRAP_EXIT, 0, 0, 0, 0, 0 );
+}
+
+int Send( int tid, char* msg, int msglen, char* reply, int replylen )
+{
+	return syscall_make( TRAP_SEND, tid, msg, msglen, reply, replylen );
+}
+
+int Receive( int* tid, char* msg, int msglen )
+{
+	return syscall_make( TRAP_RECEIVE, 0, tid, 0, msg, msglen );
+}
+
+int Reply( int tid, char* reply, int replylen )
+{
+	return syscall_make( TRAP_REPLY, tid, reply, replylen, 0, 0 );
+}
+
+int RegisterAs( char* name )
+{
+	return syscall_make( TRAP_REGISTER_AS, 0, name, 0, 0, 0 );
+}
+
+int WhoIs( char* name )
+{
+	return syscall_make( TRAP_WHO_IS, 0, name, 0, 0, 0 );
 }

@@ -34,6 +34,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	// TODO: change err codes
 
 	switch( reason->code ){
+		/* Task management */
 	case TRAP_CREATE:
 		task_setup( ctx, &temp, reason->data, ctx->current_task, reason->datalen );
 		if ( status ) {
@@ -72,8 +73,24 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		ASSERT( status == ERR_NONE );
 
 		break;
+		/* Message passing */
+	case TRAP_SEND:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
+	case TRAP_RECEIVE:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
+	case TRAP_REPLY:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
+	case TRAP_REGISTER_AS:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
+	case TRAP_WHO_IS:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
 	default:
-		DEBUG_PRINT( DBG_TRAP, "%u not implemented\n", reason->code );
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 	}
 
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );

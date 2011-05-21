@@ -17,7 +17,7 @@ int MyParentTid();
 void Pass();
 void Exit();
 /* Inter-task Communication */
-int Send( int fid, char* msg, int msglen, char* reply, int replylen );
+int Send( int tid, char* msg, int msglen, char* reply, int replylen );
 int Receive( int* tid, char* msg, int msglen );
 int Reply( int tid, char* reply, int replylen );
 /* Name Server */
