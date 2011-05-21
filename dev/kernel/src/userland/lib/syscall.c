@@ -10,13 +10,13 @@ static void syscall_trap( Syscall* reason )
 	asm volatile( "swi 0" );
 }
 
-static inline int syscall_make( uint reason, uint target_pid, void* data, uint datalen, void* buffer, uint bufferlen )
+static inline int syscall_make( uint reason, uint target_tid, void* data, uint datalen, void* buffer, uint bufferlen )
 {
 	Syscall call_reason = { 0 };
 
 	/* Setup syscall parameters */
 	call_reason.code = reason;
-	call_reason.target_pid = target_pid;
+	call_reason.target_tid = target_tid;
 	call_reason.data = data;
 	call_reason.datalen = datalen;
 	call_reason.buffer = buffer;
