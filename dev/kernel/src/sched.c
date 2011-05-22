@@ -140,8 +140,9 @@ int sched_pass( Context* ctx, Task* task ){
 	return err;
 }
 
-int sched_block( Context* ctx, Task* task ) {
+int sched_block( Context* ctx ) {
 	//remove from head of the queue
+	Task* task = ctx->current_task;
 	uint priority = task->priority;
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	List* elem;
@@ -155,21 +156,6 @@ int sched_block( Context* ctx, Task* task ) {
 	return ERR_NONE;
 }
 
-int sched_rcv_block( Context* ctx, Task* task ){
-	sched_block( ctx, task );
-	task->state = TASK_RCV_BLOCK;
-}
-
-int sched_rpl_block( Context* ctx, Task* task ){
-	sched_block( ctx, task );
-	task->state = TASK_RPL_BLOCK;
-}
-
-int sched_send_block( Context* ctx, Task* task ){
-	sched_block( ctx, task );
-	task->state = TASK_SEND_BLOCK;
-}
-
 int sched_signal( Context* ctx, Task* task ){
-	sched_add( ctx, task );
+	return sched_add( ctx, task );
 }
