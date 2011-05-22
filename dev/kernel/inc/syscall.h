@@ -5,6 +5,8 @@
 
 struct Syscall_s {
 	uint code;
+	/* Target tig */
+	uint target_tid;
 	/* For obtaining the input */
 	void* data;
 	uint datalen;

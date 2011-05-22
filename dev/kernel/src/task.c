@@ -36,8 +36,14 @@ int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint pr
 
 	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
 
+	if( priority < KERNEL_HIGH_PRIORITY || priority > KERNEL_LOW_PRIORITY ){
+		return ERR_INVALID_PRIORITY;
+	}
+
 	status = mem_alloc( ctx, MEM_TASK, ( void** )&newtask, 1 );
-	ASSERT( status == ERR_NONE );
+	if( status == ERR_OUT_OF_MEMORY ){
+		return ERR_OUT_OF_TASK_DESCRIPTOR;
+	}
 
 	/* Allocate user stack */
 	status = mem_alloc( ctx, MEM_STACK, ( void** )&stack, 1 );
@@ -94,7 +100,7 @@ uint task_parent_tid( Task* task )
 {
 	ASSERT( task );
 	if( task->parent_tid != task_tid( task->parent ) ){
-		return 0;
+		return ERR_PARENT_EXIT;
 	} else {
 		return task->parent_tid;
 	}
