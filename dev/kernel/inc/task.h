@@ -12,7 +12,10 @@ enum TaskStates {
 	TASK_READY,
 	TASK_ACTIVE,
 	TASK_ZOMBIE,
-	TASK_BLOCK
+	TASK_BLOCK,
+	TASK_RCV_BLOCK,
+	TASK_RPL_BLOCK,
+	TASK_SEND_BLOCK
 };
 
 struct Task_s {
@@ -25,6 +28,7 @@ struct Task_s {
 	Syscall* reason;
 	Task* parent;
 	List queue;
+	List* send_queue;
 };
 
 int task_init_all( Task* array, uint count );
@@ -34,5 +38,6 @@ int task_zombiefy( Context* ctx, Task* task );
 uint task_tid( Task* task );
 uint task_parent_tid( Task* task );
 uint task_array_index( Task* task );
+uint task_array_index_tid( uint tid );
 
 #endif /* _TASK_H_ */

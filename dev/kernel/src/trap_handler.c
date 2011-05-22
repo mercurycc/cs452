@@ -25,6 +25,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	Context* ctx = (Context*)(*(uint*)kernelsp);
 	int status = 0;
 	Task* temp;
+	Task* sender_task;
+	Task* receiver_task;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
 	DEBUG_PRINT( DBG_TRAP, "Trap handler called with reason 0x%x, sp = 0x%x\n", reason->code, sp_caller );
 
@@ -79,12 +81,39 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
+		receiver_task = ctx->task_array( task_array_index_tid( reason->target_tid ) );
+		sender_task = ctx->current_task;
+		if ( receiver_task->state == TASK_SEND_BLK ) {
+			//copy message
+			//block sender
+			//signal receiver
+		}
+		else {
+			//block sender
+			//add to send queue
+		}
+
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_RECEIVE:
+		receiver_task = ctx->current_task;
+		if ( receiver_task->send_queue ) {
+			//get sender;
+			//copy message
+			//signal receiver
+		}
+		else {
+			//block receiver
+		}
+
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_REPLY:
+		receiver_task = ctx->current_task;
+		send_task = ctx->task_array( task_array_index_tid( reason->target_tid ) );
+		//copy message
+		//signal sender
+
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_REGISTER_AS:

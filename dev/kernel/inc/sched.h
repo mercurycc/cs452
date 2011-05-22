@@ -18,8 +18,13 @@ int sched_schedule( Context* ctx, Task** next );
 int sched_add( Context* ctx, Task* task );
 int sched_kill( Context* ctx, Task* task );
 int sched_pass( Context* ctx, Task* task );
-int sched_block( Context* ctx, Task* task );
-int sched_unblock( Context* ctx, Task* task );
-int sched_signal( Context* ctx, uint tid );
+
+int sched_block( Context* ctx, Task* task )
+int sched_rcv_block( Context* ctx, Task* task );
+int sched_rpl_block( Context* ctx, Task* task );
+int sched_send_block( Context* ctx, Task* task );
+
+int sched_signal( Context* ctx, Task* task );
+
 
 #endif /* _SCHED_H_ */

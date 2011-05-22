@@ -57,6 +57,7 @@ int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint pr
 	newtask->reason = 0;
 	newtask->parent_tid = task_tid( parent );
 	newtask->parent = parent;
+	newtask->send_queue = 0;
 
 	/* Clear queue for scheduler */
 	list_init( &newtask->queue );
@@ -109,4 +110,9 @@ uint task_parent_tid( Task* task )
 uint task_array_index( Task* task )
 {
 	return task->tid & ( KERNEL_MAX_NUM_TASKS - 1 );
+}
+
+uint task_array_index_tid( uint tid )
+{
+	return tid & ( KERNEL_MAX_NUM_TASKS - 1 );
 }

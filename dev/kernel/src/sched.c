@@ -155,6 +155,21 @@ int sched_block( Context* ctx, Task* task ) {
 	return ERR_NONE;
 }
 
-int sched_unblock( Context* ctx, Task* task ){
-	return sched_add( ctx, task );
+int sched_rcv_block( Context* ctx, Task* task ){
+	sched_block( ctx, task );
+	task->state = TASK_RCV_BLOCK;
+}
+
+int sched_rpl_block( Context* ctx, Task* task ){
+	sched_block( ctx, task );
+	task->state = TASK_RPL_BLOCK;
+}
+
+int sched_send_block( Context* ctx, Task* task ){
+	sched_block( ctx, task );
+	task->state = TASK_SEND_BLOCK;
+}
+
+int sched_signal( Context* ctx, Task* task ){
+	sched_add( ctx, task );
 }
