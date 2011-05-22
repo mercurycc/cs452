@@ -15,7 +15,7 @@ int sched_update_highest( Context* ctx ){
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
 		ctx->scheduler->highest_priority = 32;
-		return ERROR_NONE;
+		return ERR_NONE;
 	}
 	uint priority = 0;
 	uint masks[] = SELECTOR_MASK;
@@ -34,7 +34,7 @@ int sched_update_highest( Context* ctx ){
 		i -= 1;
 	}
 	ctx->scheduler->highest_priority = 31 - priority;
-	return ERROR_NONE;
+	return ERR_NONE;
 }
 
 int sched_init( Context* ctx, Sched* scheduler ){
@@ -140,6 +140,21 @@ int sched_pass( Context* ctx, Task* task ){
 	return err;
 }
 
-int sched_block( Context* ctx, task* task ) {
+int sched_block( Context* ctx, Task* task ) {
+	//remove from head of the queue
+	uint priority = task->priority;
+	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
+	List* elem;
+	uint err = list_remove_head( target_queue_ptr, &elem );
+	if ( err ){
+		return err;
+	}
+	ASSERT( task == elem );
+	
+	task->state = TASK_BLOCK;
+	return ERR_NONE;
+}
 
+int sched_unblock( Context* ctx, Task* task ){
+	return sched_add( ctx, task );
 }
