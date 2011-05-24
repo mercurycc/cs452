@@ -17,3 +17,4 @@ uint hashtable_find( Hashtable* hashtable, char* str, ptr* elem );
 uint hashtable_remove( Hashtable* hashtable, char* str );
 
 #endif
+

@@ -96,15 +96,21 @@ static inline int DEBUG_ENABLE( uint x )
 #define DEBUG_NOTICE( level, msg )
 #define ASSERT( cond )
 #define ASSERT_M( cond, msg, arg... )
+#define WORDBINDUMP( word )
 #endif /* DEBUG */
 
 #ifdef TRACE
 #define ENTERFUNC()							\
 	do {								\
-		bwprintf( COM2, "%s (%d): %s\n", __FILE__, __LINE__, __func__ ); \
+		bwprintf( COM2, "[TRACE/ENTER] %s (%d): %s\n", __FILE__, __LINE__, __func__ ); \
+	} while( 0 )
+#define LEAVEFUNC()				\
+	do {								\
+		bwprintf( COM2, "[TRACE/LEAVE] %s (%d): %s\n", __FILE__, __LINE__, __func__ ); \
 	} while( 0 )
 #else
 #define ENTERFUNC()
+#define LEAVEFUNC()
 #endif
 
 
