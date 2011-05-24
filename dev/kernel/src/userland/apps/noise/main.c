@@ -7,9 +7,19 @@ void noise()
 
 	bwprintf( COM2, "New task entered, tid = 0x%x, parent id = 0x%x\n", MyTid(), MyParentTid() );
 
+	char msg[256];
+	char* reply = "WELCOME!";
+	int tid = 55555;
+
+	Receive( &tid, msg, 256 );
+
+	bwprintf( COM2, "task 0x%x: message received from 0x%x\n", MyTid(), tid);
+
 	Pass();
 
-	bwprintf( COM2, "New task entered, tid = 0x%x, parent id = 0x%x\n", MyTid(), MyParentTid() );
+	Reply( tid, reply, 8 );
+
+	bwprintf( COM2, "task 0x%x: reply sent to 0x%x\n", MyTid(), tid);
 
 	Exit();
 
