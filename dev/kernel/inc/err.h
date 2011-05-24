@@ -17,6 +17,7 @@ enum Debug_type {
 	DBG_SENSORUI,
 	DBG_SENSORCTL,
 	DBG_TEMP,
+	DBG_TMP,
 	DBG_CMD,
 	DBG_TRAP,
 	DBG_KER,
@@ -43,7 +44,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SENSORUI:
 	case DBG_TRAP:
 	case DBG_KER:
-		// case DBG_TASK:
+	case DBG_TASK:
 	case DBG_USER:
 	case DBG_CMD:
 		// case DBG_SCHED:

@@ -88,7 +88,7 @@ int sched_add( Context* ctx, Task* task ){
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
 
-	if ( priority > ctx->scheduler->highest_priority ) {
+	if ( priority < ctx->scheduler->highest_priority ) {
 		ctx->scheduler->highest_priority = priority;
 	}
 	DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
@@ -152,7 +152,7 @@ int sched_block( Context* ctx ) {
 	if ( err ){
 		return err;
 	}
-	ASSERT( task == elem );
+	ASSERT( &(task->queue) == elem );
 
 	if ( !(ctx->scheduler->task_queue[priority]) ){
 		uint selector_modifier = ~(0x80000000 >> priority);
@@ -162,6 +162,7 @@ int sched_block( Context* ctx ) {
 		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
 	}
 
+	DEBUG_PRINT( DBG_SCHED, "task blocked: 0x%x\n", task->tid );
 	task->state = TASK_BLOCK;
 	return ERR_NONE;
 }

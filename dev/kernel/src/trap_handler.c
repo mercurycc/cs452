@@ -86,13 +86,15 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		sender_task = ctx->current_task;
 		if ( receiver_task->state == TASK_SEND_BLK ) {
 			// copy message
-			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
+			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
+			//pass sender tid to receiver
+			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
 			status = sched_block( ctx );
 			ASSERT( status == ERR_NONE );
 			sender_task->state = TASK_RPL_BLK;
 			// signal receiver
-			status = sched_signal( ctx, sender_task );
+			status = sched_signal( ctx, receiver_task );
 			ASSERT( status == ERR_NONE );
 		}
 		else {
@@ -113,7 +115,9 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			ASSERT( status == ERR_NONE );
 			sender_task = list_entry( Task, elem, queue );
 			//copy message
-			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
+			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
+			//pass sender tid to receiver
+			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			//change sender to reply block
 			sender_task->state = TASK_RPL_BLK;
 		}
@@ -128,7 +132,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = ctx->current_task;
 		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		//copy message
-		DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
+		DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
 		//signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );
