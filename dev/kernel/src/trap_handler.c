@@ -27,6 +27,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	Task* temp;
 	Task* sender_task;
 	Task* receiver_task;
+	List* elem;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
 	DEBUG_PRINT( DBG_TRAP, "Trap handler called with reason 0x%x, sp = 0x%x\n", reason->code, sp_caller );
 
@@ -81,16 +82,27 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
-		receiver_task = ctx->task_array( task_array_index_tid( reason->target_tid ) );
+		receiver_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		sender_task = ctx->current_task;
 		if ( receiver_task->state == TASK_SEND_BLK ) {
 			//copy message
-			//block sender
+			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
+			//reply block sender
+			status = sched_block( ctx );
+			ASSERT( status == ERR_NONE );
+			sender_task->state = TASK_RPL_BLK;
 			//signal receiver
+			status = sched_signal( ctx, sender_task );
+			ASSERT( status == ERR_NONE );
 		}
 		else {
-			//block sender
+			//receive block sender
+			sched_block( ctx );
+			ASSERT( status == ERR_NONE );
+			sender_task->state = TASK_RCV_BLK;
 			//add to send queue
+			status = list_add_tail( &(receiver_task->send_queue), &(sender_task->queue) );
+			ASSERT( status == ERR_NONE );
 		}
 
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
@@ -99,20 +111,31 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = ctx->current_task;
 		if ( receiver_task->send_queue ) {
 			//get sender;
+			status = list_remove_head( &(receiver_task->send_queue), &elem );
+			ASSERT( status == ERR_NONE );
+			sender_task = list_entry( Task, elem, queue );
 			//copy message
-			//signal receiver
+			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
+			//change sender to reply block
+			sender_task->state = TASK_RPL_BLK;
 		}
 		else {
-			//block receiver
+			//send block receiver
+			status = sched_block( ctx );
+			ASSERT( status == ERR_NONE );
+			receiver_task->state = TASK_SEND_BLK;
 		}
 
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_REPLY:
 		receiver_task = ctx->current_task;
-		send_task = ctx->task_array( task_array_index_tid( reason->target_tid ) );
+		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		//copy message
+		DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
 		//signal sender
+		status = sched_signal( ctx, sender_task );
+		ASSERT( status == ERR_NONE );
 
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;

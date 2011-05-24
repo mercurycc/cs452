@@ -19,10 +19,7 @@ int sched_add( Context* ctx, Task* task );
 int sched_kill( Context* ctx, Task* task );
 int sched_pass( Context* ctx, Task* task );
 
-int sched_block( Context* ctx, Task* task )
-int sched_rcv_block( Context* ctx, Task* task );
-int sched_rpl_block( Context* ctx, Task* task );
-int sched_send_block( Context* ctx, Task* task );
+int sched_block( Context* ctx );
 
 int sched_signal( Context* ctx, Task* task );
 
