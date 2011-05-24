@@ -122,7 +122,9 @@ enum Error {
 	ERR_UNKNOWN                        = 9,
 	ERR_INVALID_PRIORITY               = 10,
 	ERR_OUT_OF_TASK_DESCRIPTOR         = 11,
-	ERR_PARENT_EXIT                    = 12
+	ERR_PARENT_EXIT                    = 12,
+	ERR_HASHTABLE_FULL                 = 13,
+	ERR_HASHTABLE_NOTFOUND             = 14
 };
 
 #endif /* _ERR_H_ */
