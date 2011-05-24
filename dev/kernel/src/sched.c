@@ -87,8 +87,10 @@ int sched_add( Context* ctx, Task* task ){
 	//change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
-	err = sched_update_highest( ctx );
-	ASSERT( err == 0 );
+
+	if ( priority > ctx->scheduler->highest_priority ) {
+		ctx->scheduler->highest_priority = priority;
+	}
 	DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
 	return 0;
 }
@@ -106,11 +108,11 @@ int sched_kill( Context* ctx, Task* task){
 	}
 	DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
 
-	if (!(*target_queue_ptr)){
+	if ( !(*target_queue_ptr) ){
 		uint selector_modifier = ~(0x80000000 >> priority);
 		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
 		err = sched_update_highest( ctx );
-		ASSERT( err == 0 );
+		ASSERT( err == ERR_NONE );
 		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
 	}
 
@@ -151,7 +153,15 @@ int sched_block( Context* ctx ) {
 		return err;
 	}
 	ASSERT( task == elem );
-	
+
+	if ( !(ctx->scheduler->task_queue[priority]) ){
+		uint selector_modifier = ~(0x80000000 >> priority);
+		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
+		err = sched_update_highest( ctx );
+		ASSERT( err == ERR_NONE );
+		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
+	}
+
 	task->state = TASK_BLOCK;
 	return ERR_NONE;
 }

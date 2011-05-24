@@ -113,12 +113,9 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			//get sender;
 			status = list_remove_head( &(receiver_task->send_queue), &elem );
 			ASSERT( status == ERR_NONE );
-			sender_task = list_entry( Task, elem, queue);
+			sender_task = list_entry( Task, elem, queue );
 			//copy message
 			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
-			//signal receiver
-			status = sched_signal( ctx, receiver_task );
-			ASSERT( status == ERR_NONE );
 			//change sender to reply block
 			sender_task->state = TASK_RPL_BLK;
 		}
