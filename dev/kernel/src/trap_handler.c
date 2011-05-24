@@ -85,13 +85,13 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		sender_task = ctx->current_task;
 		if ( receiver_task->state == TASK_SEND_BLK ) {
-			//copy message
+			// copy message
 			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied" );
-			//reply block sender
+			// reply block sender
 			status = sched_block( ctx );
 			ASSERT( status == ERR_NONE );
 			sender_task->state = TASK_RPL_BLK;
-			//signal receiver
+			// signal receiver
 			status = sched_signal( ctx, sender_task );
 			ASSERT( status == ERR_NONE );
 		}
@@ -104,8 +104,6 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			status = list_add_tail( &(receiver_task->send_queue), &(sender_task->queue) );
 			ASSERT( status == ERR_NONE );
 		}
-
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_RECEIVE:
 		receiver_task = ctx->current_task;
@@ -128,8 +126,6 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			ASSERT( status == ERR_NONE );
 			receiver_task->state = TASK_SEND_BLK;
 		}
-
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_REPLY:
 		receiver_task = ctx->current_task;
@@ -139,8 +135,6 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		//signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );
-
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	case TRAP_REGISTER_AS:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );

@@ -4,7 +4,9 @@
 #include <lib/hashtable.h>
 
 uint hash( char* str ){
-	//TODO: find a good hash function
+	// TODO: find a good hash function
+	// Comment: how about djb hash?  Not in public domain, but we
+	// are not using it for commercial purpose anyway.
 	return 0;
 }
 
