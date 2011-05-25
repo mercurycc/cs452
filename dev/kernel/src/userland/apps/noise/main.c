@@ -14,19 +14,9 @@ void noise()
 	// receive
 	Receive( &tid, msg, 256 );
 
-	bwprintf( COM2, "task 0x%x: message received from 0x%x\n", MyTid(), tid);
-
-	Pass();
+	bwprintf( COM2, "task 0x%x: message received from 0x%x: %s\n", MyTid(), tid, msg );
 
 	Reply( tid, reply, 8 );
-
-	bwprintf( COM2, "task 0x%x: reply sent to 0x%x\n", MyTid(), tid);
-
-	// then send message
-	char* msg2 = "INFO!";
-	char reply2[256];
-	Send( tid, msg2, 6, reply2, 256 );
-	bwprintf( COM2, "task 0x%x: message sent to: 0x%x\n", MyTid(), tid );
 
 	bwprintf( COM2, "task 0x%x:exiting...\n", MyTid());
 	Exit();
