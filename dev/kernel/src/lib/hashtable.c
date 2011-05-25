@@ -20,7 +20,7 @@ uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, ui
 	hashtable->strlen = maxstrlen;
 	int i = 0;
 	for ( i = 0; i < hashtable->size; i++ ){
-		hashtable->key[i] = 0;
+		hashtable->key[i][0] = 0;
 		hashtable->elem[i] = 0;
 	}
 	return ERR_NONE;
@@ -37,7 +37,7 @@ uint hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
 		if ( i == hash_value )
 			return ERR_HASHTABLE_FULL;
 	}
-	hashtable->key[i] = str;
+	memcpy( hashtable->key[i], str, strlen(str) );
 	hashtable->elem[i] = elem;
 	return ERR_NONE;
 }
@@ -68,7 +68,7 @@ uint hashtable_remove( Hashtable* hashtable, char* str ){
 		if ( ( i == hash_value ) || ( hashtable->key[i] == 0 ) )
 			return ERR_HASHTABLE_NOTFOUND;
 	}
-	hashtable->key[i] = 0;
+	hashtable->key[i][0] = 0;
 	hashtable->elem[i] = 0;
 	return ERR_NONE;
 }
