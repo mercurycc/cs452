@@ -3,5 +3,6 @@
 
 void init_user();
 void noise();
+void name_server_main();
 
 #endif /* _USER_APPS_ENTRY_H_ */
