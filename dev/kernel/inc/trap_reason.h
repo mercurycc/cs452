@@ -13,15 +13,8 @@ enum TrapReason {
 	TRAP_SEND,
 	TRAP_RECEIVE,
 	TRAP_REPLY,
-	/* Name Server */
-	TRAP_REGISTER_AS,
-	TRAP_WHO_IS,
 	/* Interrupt Processing */
 	TRAP_AWAIT_EVENT,
-	/* Clock Server */
-	TRAP_DELAY,
-	TRAP_TIME,
-	TRAP_DELAY_UNTIL,
 	/* Input/Output */
 	TRAP_GETC,
 	TRAP_PUTC

@@ -68,13 +68,3 @@ int Reply( int tid, char* reply, int replylen )
 {
 	return syscall_make( TRAP_REPLY, tid, reply, replylen, 0, 0 );
 }
-
-int RegisterAs( char* name )
-{
-	return syscall_make( TRAP_REGISTER_AS, 0, name, 0, 0, 0 );
-}
-
-int WhoIs( char* name )
-{
-	return syscall_make( TRAP_WHO_IS, 0, name, 0, 0, 0 );
-}

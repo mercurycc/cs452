@@ -3,6 +3,7 @@
 
 enum SyscallError {
 	/* TODO: Implement all the error codes */
+	SYSCALL_SUCCESS = 0,
 	/* Create */
 	CREATE_INVALID_PRIORITY = -1,
 	CREATE_OUT_OF_TASK_DESCRIPTOR = -2,
@@ -19,9 +20,6 @@ enum SyscallError {
 	REPLY_INVALID_TASK_ID = -1,
 	REPLY_TASK_DOES_NOT_EXIST = -2,
 	REPLY_TASK_IN_WRONG_STATE = -3,
-	/* RegisterAs */
-	REGISTER_AS_INVALID_NAMESERVER = -1,
-	REGISTER_AS_FALSE_NAME_SERVER = -2
 };
 
 /* Task Creation */
@@ -34,9 +32,6 @@ void Exit();
 int Send( int tid, char* msg, int msglen, char* reply, int replylen );
 int Receive( int* tid, char* msg, int msglen );
 int Reply( int tid, char* reply, int replylen );
-/* Name Server */
-int RegisterAs( char* name );
-int WhoIs( char* name );
 /* Interrupt Processing */
 int AwaitEvent( int eventid );
 /* or ( int eventid, char* event, int eventlen ) */
