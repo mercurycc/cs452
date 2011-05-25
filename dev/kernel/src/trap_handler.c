@@ -11,6 +11,7 @@
 #include <sched.h>
 
 int copy_msg( Task* sender, Task* receiver ){
+	// TODO: implement with assemble?
 	char* data = sender->reason->data;
 	uint datalen = sender->reason->datalen;
 	char* buffer = receiver->reason->buffer;
