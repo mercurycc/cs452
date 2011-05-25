@@ -13,10 +13,11 @@ uint hash( char* str ){
 	return h;
 }
 
-uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, uint table_size ){
+uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, uint table_size, uint maxstrlen ){
 	hashtable->size = table_size;
 	hashtable->key = key_table;
 	hashtable->elem = elem_table;
+	hashtable->strlen = maxstrlen;
 	int i = 0;
 	for ( i = 0; i < hashtable->size; i++ ){
 		hashtable->key[i] = 0;
@@ -26,6 +27,9 @@ uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, ui
 }
 
 uint hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
+	if ( strlen(str) > hashtable->strlen ){
+		return ERR_HASHTABLE_OVERLENGTH;
+	}
 	uint hash_value = hash( str ) % ( hashtable->size );
 	uint i = hash_value;
 	while ( hashtable->elem[i] ) {
@@ -39,6 +43,9 @@ uint hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
 }
 
 uint hashtable_find( Hashtable* hashtable, char* str, ptr* elem ){
+	if ( strlen(str) > hashtable->strlen ){
+		return ERR_HASHTABLE_OVERLENGTH;
+	}
 	uint hash_value = hash( str ) % ( hashtable->size );
 	uint i = hash_value;
 	while ( !strcmp( hashtable->key[i], str )  ) {
@@ -51,6 +58,9 @@ uint hashtable_find( Hashtable* hashtable, char* str, ptr* elem ){
 }
 
 uint hashtable_remove( Hashtable* hashtable, char* str ){
+	if ( strlen(str) > hashtable->strlen ){
+		return ERR_HASHTABLE_OVERLENGTH;
+	}
 	uint hash_value = hash( str ) % ( hashtable->size );
 	uint i = hash_value;
 	while ( !strcmp( hashtable->key[i], str )  ) {

@@ -132,7 +132,7 @@ enum Error {
 	ERR_PARENT_EXIT                    = 12,
 	ERR_HASHTABLE_FULL                 = 13,
 	ERR_HASHTABLE_NOTFOUND             = 14,
-	ERR_MESSAGE_COPY                   = 15
+	ERR_HASHTABLE_OVERLENGTH           = 15
 };
 
 #endif /* _ERR_H_ */
