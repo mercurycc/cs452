@@ -105,7 +105,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			reason->result = SEND_INVALID_TASK_ID;
 			break;
 		}
-		
+
 		receiver_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		sender_task = ctx->current_task;
 		if ( ( receiver_task->tid != reason->target_tid )||( receiver_task->state == TASK_UNUSED )||( receiver_task->state == TASK_ZOMBIE ) ) {
@@ -166,7 +166,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			reason->result = REPLY_TASK_DOES_NOT_EXIST;
 			break;
 		}
-		
+
 		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		receiver_task = ctx->current_task;
 		if ( sender_task->state != TASK_RPL_BLK ) {
@@ -180,6 +180,12 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		status = copy_msg( receiver_task, sender_task );
 		receiver_task->reason->result = ERR_NONE;
 		sender_task->reason->result = status;
+		break;
+	case TRAP_REGISTER_AS:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+		break;
+	case TRAP_WHO_IS:
+		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
