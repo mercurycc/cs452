@@ -181,12 +181,6 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task->reason->result = ERR_NONE;
 		sender_task->reason->result = status;
 		break;
-	case TRAP_REGISTER_AS:
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
-		break;
-	case TRAP_WHO_IS:
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
-		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 	}
