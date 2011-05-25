@@ -17,13 +17,16 @@ static inline int copy_msg( Task* sender, Task* receiver ){
 	char* buffer = receiver->reason->buffer;
 	uint bufferlen = receiver->reason->bufferlen;
 
+	uint size = 0;
 	if ( datalen > bufferlen ){
-		return ERR_MESSAGE_COPY;
+		size = bufferlen;
+	}
+	else {
+		size = datalen;
 	}
 
-	uint status = memcpy( (uchar*)buffer, (uchar*)data, datalen );
-
-	return status;
+	memcpy( (uchar*)buffer, (uchar*)data, size );
+	return size;
 }
 
 int trap_init( Context* ctx )
@@ -98,12 +101,17 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
+		if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
+			reason->result = SEND_INVALID_TASK_ID;
+			break;
+		}
+		
 		receiver_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		sender_task = ctx->current_task;
-		if ( receiver_task->state == TASK_SEND_BLK ) {
-			// copy message
-			status = copy_msg( sender_task, receiver_task );
-			ASSERT( status == ERR_NONE );
+		if ( ( receiver_task->tid != reason->target_tid )||( receiver_task->state == TASK_UNUSED )||( receiver_task->state == TASK_ZOMBIE ) ) {
+			reason->result = SEND_TASK_DOES_NOT_EXIST;
+			break;
+		} else if ( receiver_task->state == TASK_SEND_BLK ) {
 			//pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
@@ -113,6 +121,9 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			// signal receiver
 			status = sched_signal( ctx, receiver_task );
 			ASSERT( status == ERR_NONE );
+			// copy message
+			status = copy_msg( sender_task, receiver_task );
+			receiver_task->reason->result = status;
 		}
 		else {
 			//receive block sender
@@ -131,13 +142,13 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			status = list_remove_head( &(receiver_task->send_queue), &elem );
 			ASSERT( status == ERR_NONE );
 			sender_task = list_entry( Task, elem, queue );
-			//copy message
-			status = copy_msg( sender_task, receiver_task );
-			ASSERT( status == ERR_NONE );
-			//pass sender tid to receiver
-			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			//change sender to reply block
 			sender_task->state = TASK_RPL_BLK;
+			//pass sender tid to receiver
+			*(uint*)(receiver_task->reason->data) = sender_task->tid;
+			//copy message
+			status = copy_msg( sender_task, receiver_task );
+			receiver_task->reason->result = status;
 		}
 		else {
 			//send block receiver
@@ -147,14 +158,28 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		}
 		break;
 	case TRAP_REPLY:
-		receiver_task = ctx->current_task;
+		if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
+			reason->result = REPLY_INVALID_TASK_ID;
+			break;
+		}
+		if ( ( sender_task->tid != reason->target_tid )||( sender_task->state == TASK_UNUSED )||( sender_task->state == TASK_ZOMBIE ) ) {
+			reason->result = REPLY_TASK_DOES_NOT_EXIST;
+			break;
+		}
+		
 		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
-		//copy message
-		status = copy_msg( receiver_task, sender_task );
-		ASSERT( status == ERR_NONE );
+		receiver_task = ctx->current_task;
+		if ( sender_task->state != TASK_RPL_BLK ) {
+			receiver_task->reason->result = REPLY_TASK_IN_WRONG_STATE;
+			break;
+		}
 		//signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );
+		//copy message
+		status = copy_msg( receiver_task, sender_task );
+		receiver_task->reason->result = ERR_NONE;
+		sender_task->reason->result = status;
 		break;
 	case TRAP_REGISTER_AS:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );

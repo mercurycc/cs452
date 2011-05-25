@@ -9,6 +9,7 @@
 #include <user/syscall.h>
 
 enum TaskStates {
+	TASK_UNUSED,
 	TASK_READY,
 	TASK_ACTIVE,
 	TASK_ZOMBIE,
