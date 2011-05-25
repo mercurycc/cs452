@@ -15,16 +15,16 @@ int copy_msg( Task* sender, Task* receiver ){
 	uint datalen = sender->reason->datalen;
 	char* buffer = receiver->reason->buffer;
 	uint bufferlen = receiver->reason->bufferlen;
-	
+
 	if ( datalen < bufferlen ){
 		return ERR_MESSAGE_COPY;
 	}
-	
+
 	uint i = 0;
 	for ( i = 0; i < datalen; i++ ){
 		buffer[i] = datalen[i];
 	}
-	
+
 	return ERR_NONE;
 }
 
