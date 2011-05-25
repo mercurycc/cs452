@@ -16,7 +16,7 @@ void noise()
 
 	bwprintf( COM2, "task 0x%x: message received from 0x%x: %s\n", MyTid(), tid, msg );
 
-	Reply( tid, reply, 8 );
+	Reply( tid, reply, 9 );
 
 	bwprintf( COM2, "task 0x%x:exiting...\n", MyTid());
 	Exit();

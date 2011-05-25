@@ -10,23 +10,20 @@
 #include <mem.h>
 #include <sched.h>
 
-int copy_msg( Task* sender, Task* receiver ){
+static inline int copy_msg( Task* sender, Task* receiver ){
 	// TODO: implement with assemble?
 	char* data = sender->reason->data;
 	uint datalen = sender->reason->datalen;
 	char* buffer = receiver->reason->buffer;
 	uint bufferlen = receiver->reason->bufferlen;
 
-	if ( datalen < bufferlen ){
+	if ( datalen > bufferlen ){
 		return ERR_MESSAGE_COPY;
 	}
 
-	uint i = 0;
-	for ( i = 0; i < datalen; i++ ){
-		buffer[i] = datalen[i];
-	}
+	uint status = memcpy( (uchar*)buffer, (uchar*)data, datalen );
 
-	return ERR_NONE;
+	return status;
 }
 
 int trap_init( Context* ctx )
@@ -106,7 +103,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		if ( receiver_task->state == TASK_SEND_BLK ) {
 			// copy message
 			status = copy_msg( sender_task, receiver_task );
-			ASSERT( status = ERR_NONE );
+			ASSERT( status == ERR_NONE );
 			//pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
@@ -136,7 +133,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			sender_task = list_entry( Task, elem, queue );
 			//copy message
 			status = copy_msg( sender_task, receiver_task );
-			ASSERT( status = ERR_NONE );
+			ASSERT( status == ERR_NONE );
 			//pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			//change sender to reply block
@@ -153,8 +150,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = ctx->current_task;
 		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		//copy message
-		status = copy_msg( receiverer_task, sender_task );
-		ASSERT( status = ERR_NONE );
+		status = copy_msg( receiver_task, sender_task );
+		ASSERT( status == ERR_NONE );
 		//signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );

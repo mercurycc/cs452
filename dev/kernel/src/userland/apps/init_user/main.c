@@ -12,7 +12,7 @@ void init_user()
 	// send message
 	char* msg = "HELLO!";
 	char reply[256];
-	Send( tid, msg, 6, reply, 256 );
+	Send( tid, msg, 7, reply, 256 );
 	bwprintf( COM2, "task 0x%x: message sent and reply received: %s\n", MyTid(), reply );
 
 	bwprintf( COM2, "task 0x%x:exiting...\n", MyTid());
