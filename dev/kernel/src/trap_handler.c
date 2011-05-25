@@ -10,6 +10,24 @@
 #include <mem.h>
 #include <sched.h>
 
+int copy_msg( Task* sender, Task* receiver ){
+	char* data = sender->reason->data;
+	uint datalen = sender->reason->datalen;
+	char* buffer = receiver->reason->buffer;
+	uint bufferlen = receiver->reason->bufferlen;
+	
+	if ( datalen < bufferlen ){
+		return ERR_MESSAGE_COPY;
+	}
+	
+	uint i = 0;
+	for ( i = 0; i < datalen; i++ ){
+		buffer[i] = datalen[i];
+	}
+	
+	return ERR_NONE;
+}
+
 int trap_init( Context* ctx )
 {
 	uint* trap_vector_base = (uint*)0x28;
@@ -86,7 +104,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		sender_task = ctx->current_task;
 		if ( receiver_task->state == TASK_SEND_BLK ) {
 			// copy message
-			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
+			status = copy_msg( sender_task, receiver_task );
+			ASSERT( status = ERR_NONE );
 			//pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
@@ -115,7 +134,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			ASSERT( status == ERR_NONE );
 			sender_task = list_entry( Task, elem, queue );
 			//copy message
-			DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
+			status = copy_msg( sender_task, receiver_task );
+			ASSERT( status = ERR_NONE );
 			//pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			//change sender to reply block
@@ -132,7 +152,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = ctx->current_task;
 		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
 		//copy message
-		DEBUG_NOTICE( DBG_TRAP, "test only, message not copied\n" );
+		status = copy_msg( receiverer_task, sender_task );
+		ASSERT( status = ERR_NONE );
 		//signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );

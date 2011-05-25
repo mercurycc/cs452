@@ -11,7 +11,7 @@
 #define BIT_MASK { 0, 1, 2, 4 ,8 ,16 }
 
 int sched_update_highest( Context* ctx ){
-	//find the highest priority queue
+	// find the highest priority queue
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
 		ctx->scheduler->highest_priority = 32;
@@ -53,7 +53,7 @@ int sched_init( Context* ctx, Sched* scheduler ){
 int sched_schedule( Context* ctx, Task** next ){
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
-		//no task in scheduler
+		// no task in scheduler
 		*next = 0;
 		return 0;
 	}
@@ -61,7 +61,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint priority = ctx->scheduler->highest_priority;
 	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current priority is %d\n", priority );
 
-	//get the corresponding element
+	// get the corresponding element
 	List* elem = ctx->scheduler->task_queue[priority];
 
 	*next = list_entry( Task, elem, queue);
@@ -84,7 +84,7 @@ int sched_add( Context* ctx, Task* task ){
 	}
 	task->state = TASK_READY;
 
-	//change the bit in selector
+	// change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
 	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
 
@@ -143,7 +143,7 @@ int sched_pass( Context* ctx, Task* task ){
 }
 
 int sched_block( Context* ctx ) {
-	//remove from head of the queue
+	// remove self from head of the queue
 	Task* task = ctx->current_task;
 	uint priority = task->priority;
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
