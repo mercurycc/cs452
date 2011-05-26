@@ -3,7 +3,7 @@
 #include <lib/str.h>
 #include <lib/hashtable.h>
 
-uint hash( char* str ){
+static inline uint hash( char* str ){
 	// djb hash
 	uint h = 5381;
 	char* c;
@@ -13,7 +13,7 @@ uint hash( char* str ){
 	return h;
 }
 
-uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, uint table_size, uint maxstrlen ){
+int hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, uint table_size, uint maxstrlen ){
 	hashtable->size = table_size;
 	hashtable->key = key_table;
 	hashtable->elem = elem_table;
@@ -26,7 +26,7 @@ uint hashtable_init( Hashtable* hashtable, char** key_table, ptr* elem_table, ui
 	return ERR_NONE;
 }
 
-uint hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
+int hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
 	if ( strlen(str) > hashtable->strlen ){
 		return ERR_HASHTABLE_OVERLENGTH;
 	}
@@ -37,18 +37,22 @@ uint hashtable_insert( Hashtable* hashtable, char* str, ptr elem ){
 		if ( i == hash_value )
 			return ERR_HASHTABLE_FULL;
 	}
-	memcpy( hashtable->key[i], str, strlen(str) );
+	memcpy( ( uchar* )hashtable->key[i], ( uchar* )str, strlen(str) );
 	hashtable->elem[i] = elem;
 	return ERR_NONE;
 }
 
-uint hashtable_find( Hashtable* hashtable, char* str, ptr* elem ){
+int hashtable_find( Hashtable* hashtable, char* str, ptr* elem ){
+	DEBUG_NOTICE( DBG_HASH, "called\n" );
 	if ( strlen(str) > hashtable->strlen ){
 		return ERR_HASHTABLE_OVERLENGTH;
 	}
 	uint hash_value = hash( str ) % ( hashtable->size );
 	uint i = hash_value;
-	while ( !strcmp( hashtable->key[i], str )  ) {
+
+	DEBUG_PRINT( DBG_HASH, "str: %s, hash: %u\n", str, hash_value );
+	
+	while ( strcmp( hashtable->key[i], str )  ) {
 		i = ( i + 1 ) % hashtable->size;
 		if ( ( i == hash_value ) || ( hashtable->key[i] == 0 ) )
 			return ERR_HASHTABLE_NOTFOUND;
@@ -57,13 +61,13 @@ uint hashtable_find( Hashtable* hashtable, char* str, ptr* elem ){
 	return ERR_NONE;
 }
 
-uint hashtable_remove( Hashtable* hashtable, char* str ){
+int hashtable_remove( Hashtable* hashtable, char* str ){
 	if ( strlen(str) > hashtable->strlen ){
 		return ERR_HASHTABLE_OVERLENGTH;
 	}
 	uint hash_value = hash( str ) % ( hashtable->size );
 	uint i = hash_value;
-	while ( !strcmp( hashtable->key[i], str )  ) {
+	while ( strcmp( hashtable->key[i], str )  ) {
 		i = ( i + 1 ) % hashtable->size;
 		if ( ( i == hash_value ) || ( hashtable->key[i] == 0 ) )
 			return ERR_HASHTABLE_NOTFOUND;
@@ -72,5 +76,3 @@ uint hashtable_remove( Hashtable* hashtable, char* str ){
 	hashtable->elem[i] = 0;
 	return ERR_NONE;
 }
-
-

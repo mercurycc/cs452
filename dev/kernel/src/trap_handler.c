@@ -158,6 +158,9 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		}
 		break;
 	case TRAP_REPLY:
+		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
+		receiver_task = ctx->current_task;
+		
 		if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
 			reason->result = REPLY_INVALID_TASK_ID;
 			break;
@@ -167,25 +170,17 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			break;
 		}
 
-		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
-		receiver_task = ctx->current_task;
 		if ( sender_task->state != TASK_RPL_BLK ) {
 			receiver_task->reason->result = REPLY_TASK_IN_WRONG_STATE;
 			break;
 		}
-		//signal sender
+		// signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );
 		//copy message
 		status = copy_msg( receiver_task, sender_task );
 		receiver_task->reason->result = ERR_NONE;
 		sender_task->reason->result = status;
-		break;
-	case TRAP_REGISTER_AS:
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
-		break;
-	case TRAP_WHO_IS:
-		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );

@@ -4,7 +4,7 @@
 /* This is including the \0.  name[ NAME_SERVER_NAME_MAX_LENGTH - 1 ]
    = '\0' will be executed right after any string came into the name
    server. */
-static const unsigned int NAME_SERVER_NAME_MAX_LENGTH = 16;
+#define NAME_SERVER_NAME_MAX_LENGTH        16
 
 enum NameServerErrors {
 	/* RegisterAs */

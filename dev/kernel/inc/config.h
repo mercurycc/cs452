@@ -8,14 +8,15 @@
 #define KERNEL_NUM_CONSOLES           2
 #define KERNEL_TID_SIZE               7   
 #define KERNEL_MAX_NUM_TASKS          ( 1 << KERNEL_TID_SIZE )
-#define KERNEL_STACK_PAGE             4
+#define KERNEL_STACK_PAGE             16
 #define KERNEL_PAGE_SIZE              4096
 #define KERNEL_HIGH_PRIORITY          0
 #define KERNEL_LOW_PRIORITY           31
 #define KERNEL_INIT_TASK_PRIORITY     10
 
 /* Userland parameters */
-#define USER_STACK_PAGE               1
+#define USER_STACK_PAGE               8
+#define NAME_SERVER_HASH_ENTRIES      512
 
 /* Trap */
 #define TRAP_BASE                     0x20

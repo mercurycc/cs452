@@ -24,7 +24,9 @@ enum Debug_type {
 	DBG_TASK,
 	DBG_USER,
 	DBG_COUNT,
-	DBG_SCHED
+	DBG_SCHED,
+	DBG_NS,              /* Name server */
+	DBG_HASH
 };
 
 #ifdef DEBUG
@@ -47,7 +49,9 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_TASK:
 	case DBG_USER:
 	case DBG_CMD:
-		// case DBG_SCHED:
+	case DBG_SCHED:
+	case DBG_NS:
+	case DBG_HASH:
 		return 0;
 	default:
 		return 1;
