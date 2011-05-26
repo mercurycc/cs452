@@ -1,0 +1,134 @@
+cs452_08
+
+
+Installation and Execution
+==========================
+
+
+
+
+
+
+
+
+1. Kernel Overview
+==================
+
+* Functional Units and Data Structures
+--------------------------------------
+
+In this assignments we added a few more system calls to our kernel. There is no new data structure introduced, but fixed some bugs and made some improvements in old data structures.
+
+* Userland
+----------
+
+A few more new features are added to userland too. The most noteworthy one is the name server, as well as its API.
+
+
+
+2. Major Kernel Component Changes
+=======================
+
+* Syscall Descriptor
+--------------------
+
+Now our kernel supports a few more syscalls:
+ - Send/Receive/Reply
+
+
+3. Kernel Component Changes Details
+====================
+
+* Data Structures
+-----------------
+
+- Doubly Linked Circular List
+
+We fixed a bug in the remove_from_head() method.
+
+- Syscall Descriptor
+
+We added some fields in the syscall descriptor to allow the kernel to support the communication between tasks. Typically, 2 pointers are added pointing to the message location and the buffer location in the task's stack. There are also 2 unsigned integers in the descriptor to indicate the size of message and the size of the buffer.
+
+- Task Descriptor
+
+The task descriptor consists information needed for each task. For last assignment, the task descriptor keeps record of tid, state (ACTIVE/READY/ZOMBIE/etc.), priority, stack pointer, parent tid, parent pointer (point to parent task), syscall descrioptor, and a list structure that allows it to build double linked circular list. Now, in this assignment, we added a sending queue to the task descriptor. When sender task make a Send syscall, it would be blocked and added to the send queue of the receiver task if the receiver task is not send blocked.
+
+Notive that the send queue uses the same list component as the scheduler (e.g. the queue variable in the task descriptor). This means when a task is in shceduling queue, it cannot be in the any of the send queues. This is what supposed to happen, because when a task in a send queue, it means that task is blocked and cannot be scheduled. One task cannot exist in 2 queues at the same time. So we decided to implement send queue without adding new field to task descriptor.
+
+
+* Functional Units
+------------------
+
+- Scheduler
+
+In order to improve scheduler operation time, we improved its algorithm a little bit. It used to check for the highest priority when we schedule for new tasks. This action (to find the non-empty queue with highest priority) costs 5 iterations, and is not very efficient if we have to call it every time we schedule. Now, the scheduler keeps a record of highest priority amoung all tasks. This piece of record may only change when a task is removed from a queue (either by blocking or killing that task). Thus now, scheduling is much faster, which improves the speed of our kernel significantly.
+
+- Trap Handler
+
+Trap handler is modified to be able to resolve Send/Receive/Reply syscalls. When one of these syscall happens, the trap handler will copy the corresponding message from the source location to the destination, and it may block the task if necessary.
+
+
+4. Major User Component Changes
+===============================
+
+* Name Server
+-------------
+
+In user space we have a name server task, which is used for tid lookups. Any task can register at name server with RegisterAs() API, and look up tid with task name using WhoIs() API.
+
+* RPS game
+----------
+
+In order to test our kernel's ability, we create a RPS game task, which will then create a RPS server and several RPS clients to play to Rock-Paper-Scissors game.
+
+* Random Generator
+------------------
+
+We create a random generator for user land tasks.
+
+5. User Component Change Details
+================================
+
+* Name Server
+-------------
+
+In this assignment we added a new userland task: name server. The name server is the second task created in when executing. It is directly created by the first task. The name server's tid is fixed to 2 in our system, that other tasks are able to find it directly. The name server is running at the highest priority (priority 0). Any task created later can register their name domain at name server.
+
+The name server uses a hash table to keep records of name-tid pairs of the registerd tasks. We fixed the length of names in the userland to 16 characters. 
+
+* RPS game
+----------
+
+- RPS game
+
+This is the task that is responsible for creating and destroying the RPS server and RPS clients. It will create a few pairs of RPS clients and a RPS server. It will send the server exit command when all client are done playing.
+
+- RPS server
+
+The RPS server will pair up clients signed up and let them play Rock-Paper-Scissors game. It uses a greedy algorithm for pairing up, which means, whenever 2 tasks signed up, they are paired. The RPS server register these 2 clients as a group, and send back the group number both of them. The Server can maximumly handle 32 groups of players.
+
+In order to keep the RPS server easy, we made the communication simple. The message from the client to the server consist only 2 elements. The first is the command from the player. The second is the group number assigned to the client. The RPS server then can easily parse the command and do corresponding responses. Note, The server always send replies in pairs, to both of the clients in a group. Even if one player send the quit command, the server will wait for the other player's command before it sends back any information.
+
+- RPS client
+
+The clients will first look up RPS server by communicating to the name server. Then they will sign up to the RPS server and play the game. The client will play at random. When the RPS client is on a non-win streak, and has lost for more than twice, then it has 50% to quit. When it quits, it will send a message to RPS game task to tell that this client task is quiting, so RPS game can keep a track of how many client task is still executing.
+
+* Random Generator
+------------------
+
+This is actually a pseudorandom generator. It is no more than a bit scrambler. The output is depending on the initial seed given to the random generator. For now, each task uses their tid as the initial seed to generate pseudorandom outputs. In the future, we are actually planning to combine tid with clock reading to create the initial seed to achieve better randomness, if necessary.
+
+7. Sourse Code
+==============
+
+md5sum ...
+
+
+
+8. User Output
+==============
+
+
+
+
