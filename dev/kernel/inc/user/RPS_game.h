@@ -11,6 +11,14 @@ enum COMMAND
 	SUICIDE			// game server exit
 };
 
+enum RESPONSE
+{
+	QUIT,			// opponent quit
+	WIN,
+	LOSE,
+	DRAW
+};
+
 struct RPSmsg {
 	int command;
 	int group_num;
