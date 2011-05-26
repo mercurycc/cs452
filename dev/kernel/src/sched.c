@@ -96,6 +96,7 @@ int sched_add( Context* ctx, Task* task ){
 }
 
 int sched_kill( Context* ctx, Task* task){
+	/* TODO: Combine the first portion with sched_block */
 	uint priority = task->priority;
 	ASSERT( (0 <= priority) && (priority < 32) );
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
