@@ -16,18 +16,25 @@ void rps_game()
 	RPSmsg msg;
 	RPSreply reply;
 
-	/* Launch rps_client */
+	/* Launch rps_client at priority level 5 */
 	for( i = 0; i < ( CLIENT_GROUP_COUNT * 2 ); i += 1 ){
-		status = Create( 4 + i - i % 2, rps_client );
+		status = Create( 5, rps_client );
 		assert( status >= 0 );
 	}
+
+	/* Launch rps_client at priority level 4 */
+	for( i = 0; i < ( CLIENT_GROUP_COUNT * 2 ); i += 1 ){
+		status = Create( 4, rps_client );
+		assert( status >= 0 );
+	}
+
 
 	/* Launch rps_server */
 	server_tid = Create( 3, RPSServer );
 	assert( server_tid >= 0 );
 
 	/* Synchronize */
-	for( i = 0; ( i < CLIENT_GROUP_COUNT * 2 ); i += 1 ){
+	for( i = 0; ( i < CLIENT_GROUP_COUNT * 4 ); i += 1 ){
 		status = Receive( &tid, ( char* )&buf, sizeof( buf ) );
 		assert( status == sizeof( buf ) );
 		status = Reply( tid, ( char* )&buf, sizeof( buf ) );

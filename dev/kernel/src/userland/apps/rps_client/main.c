@@ -8,10 +8,10 @@
 
 #define CLIENT_PRINT( fmt, args... )					\
 	do {								\
-		if( group_id < 0 ){					\
-			bwprintf( COM2, "Ungrouped RPSClient %d: " fmt, tid, args ); \
+		if( group_id < 0 ){	 				\
+			bwprintf( COM2, "Tid %d: " fmt, tid, args );	\
 		} else {						\
-			bwprintf( COM2, "Group %d RPSClient %d: " fmt, group_id, tid, args ); \
+			bwprintf( COM2, "GRP %d / TID %d: " fmt, group_id, tid, args ); \
 		}							\
 	} while( 0 )
 
@@ -67,29 +67,26 @@ void rps_client()
 			default:
 				assert( 0 );
 			}
-			CLIENT_PRINT( "requesting server for %s\n", decision );
+			CLIENT_PRINT( "[requesting server] for %s\n", decision );
 		}
 		
 		status = Send( server_tid, ( char* )&msg, sizeof( msg ), ( char* )&reply, sizeof( reply ) );
 		assert( status == sizeof( reply ) );
 
 		if( reply.result == RESULT_QUIT ){
-			CLIENT_PRINT( "server says I should quit\n", 0 );
+			CLIENT_PRINT( "[server says] I should quit\n", 0 );
 			break;
 		} else if( reply.result == RESULT_WIN ){
-			CLIENT_PRINT( "server says I win\n", 0 );
+			CLIENT_PRINT( "[server says] I win\n", 0 );
 			losings = 0;
 		} else if( reply.result == RESULT_LOSE ){
-			CLIENT_PRINT( "server says I lose\n", 0 );
+			CLIENT_PRINT( "[server says] I lose\n", 0 );
 			losings += 1;
 		} else if( reply.result == RESULT_DRAW ){
-			CLIENT_PRINT( "server says we draw\n", 0 );
+			CLIENT_PRINT( "[server says] we draw\n", 0 );
 		} else {
 			assert( 0 );
 		}
-
-		/* Pause */
-		bwgetc( COM2 );
 	}
 
 	/* Signal parent */

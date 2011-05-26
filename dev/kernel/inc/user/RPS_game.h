@@ -1,7 +1,7 @@
 #ifndef _RPS_GAME_H_
 #define _RPS_GAME_H_
 
-#define CLIENT_GROUP_COUNT             5
+#define CLIENT_GROUP_COUNT             4
 
 enum COMMAND
 {

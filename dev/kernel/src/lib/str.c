@@ -104,10 +104,24 @@ int strcmp( const char* str1, const char* str2 )
 int memcpy( uchar* dst, const uchar* src, uint size )
 {
 	uint i;
+	uint remain = size % sizeof( uint );
+	uint* dstint = (uint*)dst;
+	uint* srcint = (uint*)src;
 	
 	ASSERT( dst && src );
 	
+	size /= sizeof( uint );
+
 	for( i = 0; i < size; i += 1 ){
+		*dstint = *srcint;
+		dstint++;
+		srcint++;		
+	}
+
+	dst = (uchar*)dstint;
+	src = (uchar*)srcint;
+	
+	for( i = 0; i < remain; i += 1 ){
 		*dst = *src;
 		dst++;
 		src++;

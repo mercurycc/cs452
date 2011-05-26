@@ -13,6 +13,7 @@ struct Group {
 };
 
 void RPSServer() {
+	char* rps_server_play_names[ 3 ];
 	int quit = 0;
 	struct Group group[32] = {{0}};
 	int index = 0;
@@ -20,6 +21,11 @@ void RPSServer() {
 	int winner = 0;
 	int status;
 	int i = 0;
+
+	rps_server_play_names[ 0 ] = "ROCK";
+	rps_server_play_names[ 1 ] = "PAPER";
+	rps_server_play_names[ 2 ] = "SCISSORS";
+	
 	
 	bwprintf( COM2, "RPS Server start.\n" );
 
@@ -56,10 +62,9 @@ void RPSServer() {
 		case SIGN_UP:
 			if ( signup_waiter == -1 ) {
 				signup_waiter = tid;
-			}
-			else {
+			} else {
 				index = 0;
-				while ( ( index < 32 )&& group[index].occupied ){
+				while ( ( index < 32 ) && group[index].occupied ){
 					index++;
 				}
 				if ( index >= 32 ) {
@@ -71,7 +76,6 @@ void RPSServer() {
 				group[index].c = 0;
 
 				reply.result = index;
-				
 				status = Reply( signup_waiter, (char*)&reply, sizeof( reply ) );
 				DEBUG_PRINT( DBG_USER, "return status = %d\n", status );
 				assert( status == SYSCALL_SUCCESS );
@@ -96,7 +100,6 @@ void RPSServer() {
 					assert( status == SYSCALL_SUCCESS );
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
-
 				} else if ( winner == 1 ) {
 					reply.result = RESULT_WIN;
 					status = Reply( group[index].p, (char*)&reply, sizeof( reply ) );
@@ -119,6 +122,26 @@ void RPSServer() {
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 				}
+
+				if( ( group[index].c == QUIT ) || ( msg.command == QUIT ) ){
+					bwprintf( COM2, "[ Server ] Group %d requested quit\n", index );
+				} else {
+					bwprintf( COM2, "[ Server ] Group %d player %d bet %s, player %d bet %s ",
+						  index,
+						  group[ index ].p, rps_server_play_names[ group[ index ].c - ROCK ],
+						  tid, rps_server_play_names[ msg.command - ROCK ] );
+					if( winner == 1 ){
+						bwprintf( COM2, "winner %d\n", group[ index ].p );
+					} else if( winner == 2 ) {
+						bwprintf( COM2, "winner %d\n", tid );
+					} else {
+						bwprintf( COM2, "draw\n" );
+					}
+				}
+				
+				/* Pause */
+				bwgetc( COM2 );
+				
 				group[index].p = 0;
 				group[index].c = 0;
 			} else {
