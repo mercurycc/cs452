@@ -13,10 +13,10 @@ enum COMMAND
 
 enum RESPONSE
 {
-	QUIT,			// opponent quit
-	WIN,
-	LOSE,
-	DRAW
+	RESULT_QUIT,			// opponent quit
+	RESULT_WIN,
+	RESULT_LOSE,
+	RESULT_DRAW
 };
 
 struct RPSmsg {
