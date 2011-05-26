@@ -2,6 +2,7 @@
 #define _ERR_H_
 
 #include <config.h>
+#include <types.h>
 #ifdef DEBUG
 #include <bwio.h>
 #endif

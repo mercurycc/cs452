@@ -1,9 +1,10 @@
 #include <user/syscall.h>
 #include <user/apps_entry.h>
 #include <user/name_server.h>
-#include <bwio.h>
 #include <user/RPS_game.h>
 #include <user/assert.h>
+#include <err.h>
+#include <bwio.h>
 
 struct Group {
 	int occupied;
@@ -12,18 +13,23 @@ struct Group {
 };
 
 void RPSServer() {
+	int quit = 0;
+	struct Group group[32] = {{0}};
+	int index = 0;
+	int signup_waiter = -1;
+	int winner = 0;
+	int status;
+	int i = 0;
+	
 	bwprintf( COM2, "RPS Server start.\n" );
 
-	int quit = 0;
-	struct Group group[32];
-	int index = 0;
-	int waiter = -1;
-	int winner = 0;
-
-	int i = 0;
 	for ( i = 0; i < 32; i++ ){
 		group[i].occupied = 0;
 	}
+
+	/* Register */
+	status = RegisterAs( "RPSServer" );
+	assert( status == 0 );
 
 	while ( !quit ) {
 		int tid;
@@ -32,19 +38,24 @@ void RPSServer() {
 		int status = 0;
 
 		status = Receive( &tid, (char*)&msg, sizeof( msg ) );
-		assert( status <= 2 );
+		assert( status == sizeof( msg ) );
 
 		// parse command
 		switch ( msg.command ) {
 		case SUICIDE:
-			if ( tid != MyParentTid() )
+			if ( tid != MyParentTid() ){
 				bwprintf( COM2, "Receive fake suicide command from task 0x%x\n", tid );
-			else
+			} else {
 				quit = 1;
+				/* At this point all clients should have already quited */
+				reply.result = RESULT_QUIT;
+				status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+				assert( status == SYSCALL_SUCCESS );
+			}
 			break;
 		case SIGN_UP:
-			if ( waiter == -1 ) {
-				waiter = tid;
+			if ( signup_waiter == -1 ) {
+				signup_waiter = tid;
 			}
 			else {
 				index = 0;
@@ -60,12 +71,15 @@ void RPSServer() {
 				group[index].c = 0;
 
 				reply.result = index;
-				waiter = -1;
-
-				status = Reply( waiter, (char*)&reply, sizeof( reply ) );
+				
+				status = Reply( signup_waiter, (char*)&reply, sizeof( reply ) );
+				DEBUG_PRINT( DBG_USER, "return status = %d\n", status );
 				assert( status == SYSCALL_SUCCESS );
 				status = Reply( tid, (char*)&reply, sizeof( reply ) );
 				assert( status == SYSCALL_SUCCESS );
+
+				/* Reset signup_waiter */
+				signup_waiter = -1;
 			}
 			break;
 		case QUIT:
@@ -74,26 +88,25 @@ void RPSServer() {
 		case SCISSORS:
 			index = msg.group_num;
 			if ( group[index].c ) {
-				if ( ( group[index].c == 1 )||( msg.command == 1 ) ) {
+				winner = ( ( group[index].c + 1 ) - ( msg.command - 2 ) ) % 3;
+				if ( ( group[index].c == QUIT ) || ( msg.command == QUIT ) ) {
 					// both quit
 					reply.result = RESULT_QUIT;
-					status = Reply( group[index].c, (char*)&reply, sizeof( reply ) );
+					status = Reply( group[index].p, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 
-				}
-				winner = ((group[index].c + 1) - (msg.command - 2)) % 3;
-				if ( winner == 1 ) {
+				} else if ( winner == 1 ) {
 					reply.result = RESULT_WIN;
-					status = Reply( group[index].c, (char*)&reply, sizeof( reply ) );
+					status = Reply( group[index].p, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 					reply.result = RESULT_LOSE;
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 				} else if ( winner == 2 ) {
 					reply.result = RESULT_LOSE;
-					status = Reply( group[index].c, (char*)&reply, sizeof( reply ) );
+					status = Reply( group[index].p, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 					reply.result = RESULT_WIN;
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
@@ -101,13 +114,14 @@ void RPSServer() {
 				} else {
 					// draw
 					reply.result = RESULT_DRAW;
-					status = Reply( group[index].c, (char*)&reply, sizeof( reply ) );
+					status = Reply( group[index].p, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 					status = Reply( tid, (char*)&reply, sizeof( reply ) );
 					assert( status == SYSCALL_SUCCESS );
 				}
-			}
-			else {
+				group[index].p = 0;
+				group[index].c = 0;
+			} else {
 				group[index].p = tid;
 				group[index].c = msg.command;
 			}

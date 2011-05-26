@@ -8,13 +8,14 @@
 
 #define CLIENT_PRINT( fmt, args... )					\
 	do {								\
-	if( group_id < 0 ){						\
-		bwprintf( COM2, "Ungrouped RPSClient %d: " fmt, tid, args ); \
-	} else {							\
-		bwprintf( COM2, "Group %d RPSClient %d: " fmt, group_id, tid, args ); \
+		if( group_id < 0 ){					\
+			bwprintf( COM2, "Ungrouped RPSClient %d: " fmt, tid, args ); \
+		} else {						\
+			bwprintf( COM2, "Group %d RPSClient %d: " fmt, group_id, tid, args ); \
+		}							\
 	} while( 0 )
 
-void rps_clients()
+void rps_client()
 {
 	unsigned int server_tid = 0;
 	unsigned int tid = MyTid();
@@ -24,14 +25,14 @@ void rps_clients()
 	RPSreply reply;
 	unsigned int losings = 0;
 	int status = 0;
-	
+
 	/* Query server */
 	server_tid = WhoIs( "RPSServer" );
 	CLIENT_PRINT( "RSPServer tid found: 0x%d\n", server_tid );
 	
 	/* Signup */
-	msg.command = SING_UP;
-	status = Send( server_tid, &msg, sizeof( msg ), &reply, sizeof( reply ) );
+	msg.command = SIGN_UP;
+	status = Send( server_tid, ( char* )&msg, sizeof( msg ), ( char* )&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
 
 	group_id = reply.result;
@@ -45,7 +46,7 @@ void rps_clients()
 			CLIENT_PRINT( "lost too much, will quit now\n", 0 );
 			msg.command = QUIT;
 		} else {
-			msg.command = random( &seed ) % 3 + ROCK;
+			msg.command = ( random( &seed ) % 3 ) + ROCK;
 		}
 
 		{
@@ -66,10 +67,10 @@ void rps_clients()
 			default:
 				assert( 0 );
 			}
-			CLIENT_PRINT( "requesting server for %s\n", decison );
+			CLIENT_PRINT( "requesting server for %s\n", decision );
 		}
 		
-		status = Send( server_tid, &msg, sizeof( msg ), &reply, sizeof( reply ) );
+		status = Send( server_tid, ( char* )&msg, sizeof( msg ), ( char* )&reply, sizeof( reply ) );
 		assert( status == sizeof( reply ) );
 
 		if( reply.result == RESULT_QUIT ){
@@ -84,8 +85,18 @@ void rps_clients()
 		} else if( reply.result == RESULT_DRAW ){
 			CLIENT_PRINT( "server says we draw\n", 0 );
 		} else {
-			assert( ( "What the hell?", 0 ) );
+			assert( 0 );
 		}
+
+		/* Pause */
+		bwgetc( COM2 );
+	}
+
+	/* Signal parent */
+	{
+		unsigned int buf;
+		status = Send( MyParentTid(), ( char* )&buf, sizeof( buf ), ( char* )&buf, sizeof( buf ) );
+		assert( status == sizeof( buf ) );
 	}
 
 	Exit();

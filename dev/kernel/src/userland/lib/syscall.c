@@ -68,3 +68,8 @@ int Reply( int tid, char* reply, int replylen )
 {
 	return syscall_make( TRAP_REPLY, tid, reply, replylen, 0, 0 );
 }
+
+int Exist( int tid )
+{
+	return syscall_make( TRAP_EXIST, tid, 0, 0, 0, 0 );
+}

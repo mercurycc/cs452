@@ -28,6 +28,8 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 	response.magic = NAME_SERVER_MAGIC;
 
 	do {
+		success = 0;
+		
 		switch( request->type ){
 		case NAME_SERVER_REQUEST_REGISTER_AS:
 			status = hashtable_insert( table, request->name, source_tid );
@@ -37,14 +39,14 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 			break;
 		case NAME_SERVER_REQUEST_WHO_IS:
 			status = hashtable_find( table, request->name, &response.status );
-			if( status == ERR_NONE ){
-				DEBUG_NOTICE( DBG_NS, "Element found\n" );
+			if( status == ERR_NONE && Exist( response.status ) ){
 				success = 1;
-			} else if( status == ERR_HASHTABLE_NOTFOUND ){
-				success = 0;
-			} else {
+			} else if( status != ERR_HASHTABLE_NOTFOUND ){
 				assert( 0 );
 			}
+			break;
+		case NAME_SERVER_DEINIT:
+			success = 1;
 			break;
 		default:
 			assert( 0 );
@@ -64,7 +66,7 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 
 	status = Reply( source_tid, ( char* )&response, sizeof( response ) );
 	DEBUG_PRINT( DBG_NS, "reply status = %d\n", status );
-	assert( status == 0 );
+	assert( status == SYSCALL_SUCCESS );
 
 	DEBUG_NOTICE( DBG_NS, "response sent\n" );
 }
@@ -84,13 +86,13 @@ static int name_server_listen( Hashtable* table )
 
 	DEBUG_PRINT( DBG_NS, "received request, source: 0x%x, type: 0x%x, name: %s\n", source_tid, request.type, request.name );
 
+	name_server_handler( table, &request, source_tid );
+
 	/* Destroy name server if requested */
 	if( request.type == NAME_SERVER_DEINIT ){
 		DEBUG_NOTICE( DBG_NS, "Received deinit\n" );
 		return 1;
 	}
-
-	name_server_handler( table, &request, source_tid );
 	
 	return 0;
 }
@@ -143,8 +145,9 @@ static int name_server_request( unsigned int type, char* name )
 		}
 		memcpy( ( uchar* )request.name, ( uchar* )name, size );
 	}
-	
+
 	status = Send( NAME_SERVER_TID, ( char* )&request, sizeof( request ), ( char* )&response, sizeof( response ) );
+	DEBUG_PRINT( DBG_NS, "tid: %d, Status retained: %d\n", MyTid(), status );
 	assert( status == sizeof( response ) );
 	assert( response.magic == NAME_SERVER_MAGIC );
 	assert( response.type == type );

@@ -10,7 +10,7 @@
 #include <mem.h>
 #include <sched.h>
 
-static inline int copy_msg( Task* sender, Task* receiver ){
+static inline int msg_copy( Task* sender, Task* receiver ){
 	// TODO: implement with assemble?
 	char* data = sender->reason->data;
 	uint datalen = sender->reason->datalen;
@@ -48,7 +48,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	Task* receiver_task;
 	List* elem;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
-	DEBUG_PRINT( DBG_TRAP, "Trap handler called with reason 0x%x, sp = 0x%x\n", reason->code, sp_caller );
+	DEBUG_PRINT( DBG_TRAP, "Trap handler called by tid: %d, with reason 0x%x, sp = 0x%x\n", ctx->current_task->tid, reason->code, sp_caller );
 
 	ctx->current_task->stack = sp_caller;
 	ctx->current_task->reason = reason;
@@ -70,27 +70,19 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		break;
 	case TRAP_MY_TID:
 		reason->result = task_tid( ctx->current_task );
-		if( reason->result == ERR_PARENT_EXIT ){
+		break;
+	case TRAP_MY_PARENT_TID:
+		status = task_parent_tid( ctx->current_task, &reason->result );
+		if( status == ERR_PARENT_EXIT ){
 			reason->result = MY_PARENT_TID_BURIED;
 		}
 		break;
-	case TRAP_MY_PARENT_TID:
-		reason->result = task_parent_tid( ctx->current_task );
-		break;
 	case TRAP_PASS:
-		DEBUG_NOTICE( DBG_TRAP, "sched passing...\n" );
-		DEBUG_PRINT( DBG_TRAP, "current task addr = %x\n", ctx->current_task );
-
 		status = sched_pass( ctx, ctx->current_task );
-		DEBUG_PRINT( DBG_TRAP, "status = %d\n", status );
-
 		ASSERT( status == ERR_NONE );
 
 		break;
 	case TRAP_EXIT:
-
-		DEBUG_NOTICE( DBG_TRAP, "sched killing...\n" );
-
 		status = sched_kill( ctx, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 
@@ -101,18 +93,17 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
-		if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
-			reason->result = SEND_INVALID_TASK_ID;
-			break;
-		}
-
-		receiver_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
+		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		sender_task = ctx->current_task;
-		if ( ( receiver_task->tid != reason->target_tid )||( receiver_task->state == TASK_UNUSED )||( receiver_task->state == TASK_ZOMBIE ) ) {
-			reason->result = SEND_TASK_DOES_NOT_EXIST;
+		if ( ! receiver_task ) {
+			if ( reason->target_tid > KERNEL_MAX_NUM_TASKS ) {
+				reason->result = SEND_INVALID_TASK_ID;
+			} else {
+				reason->result = SEND_TASK_DOES_NOT_EXIST;
+			}
 			break;
 		} else if ( receiver_task->state == TASK_SEND_BLK ) {
-			//pass sender tid to receiver
+			// pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
 			status = sched_block( ctx );
@@ -122,15 +113,14 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			status = sched_signal( ctx, receiver_task );
 			ASSERT( status == ERR_NONE );
 			// copy message
-			status = copy_msg( sender_task, receiver_task );
+			status = msg_copy( sender_task, receiver_task );
 			receiver_task->reason->result = status;
-		}
-		else {
-			//receive block sender
+		} else {
+			// receive block sender
 			sched_block( ctx );
 			ASSERT( status == ERR_NONE );
 			sender_task->state = TASK_RCV_BLK;
-			//add to send queue
+			// add to send queue
 			status = list_add_tail( &(receiver_task->send_queue), &(sender_task->queue) );
 			ASSERT( status == ERR_NONE );
 		}
@@ -138,35 +128,37 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	case TRAP_RECEIVE:
 		receiver_task = ctx->current_task;
 		if ( receiver_task->send_queue ) {
-			//get sender;
+			// get sender;
 			status = list_remove_head( &(receiver_task->send_queue), &elem );
 			ASSERT( status == ERR_NONE );
 			sender_task = list_entry( Task, elem, queue );
-			//change sender to reply block
+			// change sender to reply block
 			sender_task->state = TASK_RPL_BLK;
-			//pass sender tid to receiver
+			// pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
-			//copy message
-			status = copy_msg( sender_task, receiver_task );
+			// copy message
+			status = msg_copy( sender_task, receiver_task );
 			receiver_task->reason->result = status;
 		}
 		else {
-			//send block receiver
+			// send block receiver
 			status = sched_block( ctx );
 			ASSERT( status == ERR_NONE );
 			receiver_task->state = TASK_SEND_BLK;
 		}
 		break;
 	case TRAP_REPLY:
-		sender_task = &( ctx->task_array[ task_array_index_tid( reason->target_tid ) ] );
+		sender_task = task_get_by_tid( ctx, reason->target_tid );
 		receiver_task = ctx->current_task;
-		
-		if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
-			reason->result = REPLY_INVALID_TASK_ID;
-			break;
-		}
-		if ( ( sender_task->tid != reason->target_tid )||( sender_task->state == TASK_UNUSED )||( sender_task->state == TASK_ZOMBIE ) ) {
-			reason->result = REPLY_TASK_DOES_NOT_EXIST;
+
+		DEBUG_PRINT( DBG_TRAP, "Target_tid = %d\n", reason->target_tid );
+
+		if( ! sender_task ){
+			if ( reason->target_tid >= KERNEL_MAX_NUM_TASKS ) {
+				reason->result = REPLY_INVALID_TASK_ID;
+			} else {
+				reason->result = REPLY_TASK_DOES_NOT_EXIST;
+			}
 			break;
 		}
 
@@ -174,13 +166,20 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			receiver_task->reason->result = REPLY_TASK_IN_WRONG_STATE;
 			break;
 		}
+		
+		// copy message
+		status = msg_copy( receiver_task, sender_task );
+		receiver_task->reason->result = ERR_NONE;
+		sender_task->reason->result = status;
+
 		// signal sender
 		status = sched_signal( ctx, sender_task );
 		ASSERT( status == ERR_NONE );
-		//copy message
-		status = copy_msg( receiver_task, sender_task );
-		receiver_task->reason->result = ERR_NONE;
-		sender_task->reason->result = status;
+		
+		break;
+	case TRAP_EXIST:
+		receiver_task = task_get_by_tid( ctx, reason->target_tid );
+		reason->result = receiver_task != 0;
 		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
@@ -189,7 +188,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );
 	status = sched_schedule( ctx, &(ctx->current_task) );
 	ASSERT( status == ERR_NONE );
-	DEBUG_PRINT( DBG_TRAP, "new task addr = %x\n", ctx->current_task );
+	DEBUG_PRINT( DBG_TRAP, "new task addr = 0x%x, tid = 0x%x, priority: %d, state = %d\n",
+		     ctx->current_task, ctx->current_task->tid, ctx->current_task->priority, ctx->current_task->state );
 
 	/* Shutdown kernel if no ready task can be scheduled */
 	if (!(ctx->current_task)){

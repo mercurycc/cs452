@@ -8,6 +8,7 @@
 #include <lib/list.h>
 #include <user/syscall.h>
 
+/* Tid end with 0x00 used for special purpose, so tid start with 1 */
 enum TaskStates {
 	TASK_UNUSED,
 	TASK_READY,
@@ -37,8 +38,10 @@ int task_init_all( Task* array, uint count );
 int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority );
 int task_zombiefy( Context* ctx, Task* task );
 uint task_tid( Task* task );
-uint task_parent_tid( Task* task );
+int task_parent_tid( Task* task, int* ret );
 uint task_array_index( Task* task );
 uint task_array_index_tid( uint tid );
+/* Return 0 if tid does not map to an existing task */
+Task* task_get_by_tid( Context* ctx, uint tid );
 
 #endif /* _TASK_H_ */

@@ -1,6 +1,8 @@
 #ifndef _RPS_GAME_H_
 #define _RPS_GAME_H_
 
+#define CLIENT_GROUP_COUNT             5
+
 enum COMMAND
 {
 	SIGN_UP,		// sign up
@@ -19,15 +21,18 @@ enum RESPONSE
 	RESULT_DRAW
 };
 
-struct RPSmsg {
+typedef struct RPSmsg {
 	int command;
 	int group_num;
-};
+} RPSmsg;
 
-struct RPSreply {
+typedef struct RPSreply {
 	int result;
-};
+} RPSreply;
 
+/* Server and client entry */
+void RPSServer();
+void rps_client();
 
 #endif
 

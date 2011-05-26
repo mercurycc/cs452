@@ -55,6 +55,9 @@ int list_remove_head( List** lst, List** elem )
 		*lst = (*lst)->next;
 	}
 
+	/* Presever single element property (i.e. single node circular list) */
+	list_init( *elem );
+
 	return ERR_NONE;
 }
 

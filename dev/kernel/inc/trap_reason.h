@@ -13,6 +13,7 @@ enum TrapReason {
 	TRAP_SEND,
 	TRAP_RECEIVE,
 	TRAP_REPLY,
+	TRAP_EXIST,
 	/* Interrupt Processing */
 	TRAP_AWAIT_EVENT,
 	/* Input/Output */

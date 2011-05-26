@@ -34,6 +34,7 @@ KERNELSRC += userland/apps/init_user/main.c
 KERNELSRC += userland/apps/noise/main.c
 KERNELSRC += userland/apps/rps_client/main.c
 KERNELSRC += userland/apps/RPSServer/main.c
+KERNELSRC += userland/apps/rps_game/main.c
 
 # Libraries
 KERNELSRC += userland/lib/syscall.c

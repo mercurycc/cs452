@@ -20,6 +20,7 @@ enum SyscallError {
 	REPLY_INVALID_TASK_ID = -1,
 	REPLY_TASK_DOES_NOT_EXIST = -2,
 	REPLY_TASK_IN_WRONG_STATE = -3,
+	/* Exist will only return true ( !0 ) or false ( 0 ) */
 };
 
 /* Task Creation */
@@ -32,6 +33,7 @@ void Exit();
 int Send( int tid, char* msg, int msglen, char* reply, int replylen );
 int Receive( int* tid, char* msg, int msglen );
 int Reply( int tid, char* reply, int replylen );
+int Exist( int tid );
 /* Interrupt Processing */
 int AwaitEvent( int eventid );
 /* or ( int eventid, char* event, int eventlen ) */

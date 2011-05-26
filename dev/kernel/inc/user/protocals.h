@@ -6,7 +6,7 @@
 
 /* Name server */
 #define NAME_SERVER_MAGIC     0x11a111e0
-#define NAME_SERVER_TID       0x1
+#define NAME_SERVER_TID       0x2
 
 typedef struct Name_server_request_s Name_server_request;
 typedef struct Name_server_response_s Name_server_response;

@@ -103,6 +103,9 @@ int sched_kill( Context* ctx, Task* task){
 
 	List* elem;
 	uint err = list_remove_head( target_queue_ptr, &elem );
+
+	ASSERT( &(task->queue) == elem );
+	
 	if (err) {
 		return err;
 	}
@@ -154,7 +157,7 @@ int sched_block( Context* ctx ) {
 	}
 	ASSERT( &(task->queue) == elem );
 
-	if ( !(ctx->scheduler->task_queue[priority]) ){
+	if ( !(*target_queue_ptr) ){
 		uint selector_modifier = ~(0x80000000 >> priority);
 		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
 		err = sched_update_highest( ctx );

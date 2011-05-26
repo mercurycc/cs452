@@ -7,6 +7,6 @@ void init_user();
 void noise();
 
 /* Rock paper scissors */
-void rps_clients();
+void rps_game();
 
 #endif /* _USER_APPS_ENTRY_H_ */
