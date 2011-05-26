@@ -6,4 +6,7 @@ void user_init();
 void init_user();
 void noise();
 
+/* Rock paper scissors */
+void rps_clients();
+
 #endif /* _USER_APPS_ENTRY_H_ */
