@@ -15,11 +15,10 @@
 /* Context */
 #include <context.h>
 
-/* Memory management */
-#include <mem.h>
-
-/* User space */
-#include <session.h>
+static inline void kernel_clk_init( Context* ctx )
+{
+	
+}
 
 int kernel_init( Context* ctx )
 {
@@ -28,9 +27,9 @@ int kernel_init( Context* ctx )
 	/* Install trap handler */
 	trap_init( ctx );
 
-	/* We need at least 2 clocks: one for preemption (not needed
-	   for K1), one for timing */
-	// clock_init( ctx );
+	/* We need at least 2 clocks: one for preemption (optional),
+	   one for timing */
+	kernel_clk_init( ctx );
 
 	/* Initialize terminal console */
 	status = console_setup( ctx->terminal, CONSOLE_2, 115200, 0, 0, 0 );

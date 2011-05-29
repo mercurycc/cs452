@@ -11,6 +11,7 @@ typedef uint time_t;
 typedef struct Context_s Context;
 typedef struct Memmgr_s Memmgr;
 typedef struct Task_s Task;
+typedef struct Clock_s Clock;
 typedef struct Console_s Console;
 typedef struct Sched_s Sched;
 typedef struct List_s List;

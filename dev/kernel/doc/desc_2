@@ -1,19 +1,9 @@
-B1;2800;0ccs452_08
-
-
-Installation and Execution
-==========================
-
-
-
-
-
-
-
-Pinball Kernel
-Release K2
-What's New
-==============
+			   ==========================
+			   Pinball Kernel for TS-7200
+				   Release K2
+				   What's New
+			   ==========================
+				    cs452_08
 
 1. Overview
 ===========
@@ -32,8 +22,9 @@ implementation.
 * Userland
 ----------
 
-A few more new features are added to userland including libraries and, most
-noteworthy, the name server, as well as its APIs (RegisterAs/WhoIs).
+A few more new features are added to userland including the RPS game
+server/client, a simple random number generation library, and, most noteworthy,
+the name server, as well as its APIs (RegisterAs/WhoIs).
 
 
 2. Kernel Component Changes Details
@@ -44,32 +35,34 @@ noteworthy, the name server, as well as its APIs (RegisterAs/WhoIs).
 
 - Doubly Linked Circular List
 
-We fixed a bug in the remove_from_head() method.
+We fixed a bug in the remove_from_head() method.  This bug would only cause
+problem when a task is blocked and then added back to its scheduling queue when
+the queue is empty.  Therefore K1 is not affected, as it does not provide such
+ability to block a task.
 
 - Syscall Descriptor
 
-2 pointers and unsigned integers are added to track the buffer locations on the
-task's stack.  Their uses differs according to the syscall that uses them.
+Fields to track the buffer locations on the task's stack are added, namely 2
+pointers and size.  Their uses differ according to the syscalls that use them.
+These 2 pointes should suffice all syscall that is going to be implemented, in
+particularly, Send and Receive.
 
 - Task Descriptor
 
 The task descriptor consists information needed for each task.
 
-The task descriptor keeps record of tid, state (ACTIVE/READY/ZOMBIE/etc.),
-priority, current stack pointer, parent tid, parent pointer (point to parent
-task), syscall descrioptor, and a list structure that allows it to build double
-linked circular list. Now, in this assignment, we added a sending queue to the
-task descriptor. When sender task make a Send syscall, it would be blocked and
-added to the send queue of the receiver task if the receiver task is not send
-blocked.
+In K1, the task descriptor keeps record of tid, state
+(ACTIVE/READY/ZOMBIE/etc.), priority, current stack pointer, parent tid, parent
+pointer (point to parent task), syscall descrioptor, and a listhead.
 
-Notive that the send queue uses the same list component as the scheduler
-(e.g. the queue variable in the task descriptor). This means when a task is in
-shceduling queue, it cannot be in the any of the send queues. This is what
-supposed to happen, because when a task in a send queue, it means that task is
-blocked and cannot be scheduled. One task cannot exist in 2 queues at the same
-time. So we decided to implement send queue without adding new field to task
-descriptor.
+For K2 a send queue is added to the task descriptor.  When a sender task make a
+Send syscall, it would be added to the send queue of the receiver task if the
+receiver task is not send blocked.
+
+To implement blocking we simply remove the task from the ready queue it belongs
+to and put it in a queue (the send queue for instance) that sooner or later
+someone will come and responde to.  When the response is completed the task is
+back to the ready queue, essentially unblock the task.
 
 
 * Functional Units
@@ -77,14 +70,12 @@ descriptor.
 
 - Scheduler
 
-In order to improve scheduler operation time, we improved its algorithm a little
-bit. It used to check for the highest priority when we schedule for new
-tasks. This action (to find the non-empty queue with highest priority) costs 5
-iterations, and is not very efficient if we have to call it every time we
-schedule. Now, the scheduler keeps a record of highest priority amoung all
+The K1 scheduler used to check for the highest priority every time a task is
+scheduled.  The scheduler now keeps a record of highest priority amoung all
 tasks. This piece of record may only change when a task is removed from a queue
-(either by blocking or killing that task). Thus now, scheduling is much faster,
-which improves the speed of our kernel significantly.
+(either by blocking or killing that task) or when a new task is added to the
+scheduler.  Scheduling is much faster, which improves the speed of our kernel
+significantly.
 
 - Trap Handler
 
@@ -93,65 +84,111 @@ one of these syscall happens, the trap handler will copy the corresponding
 message from the source location to the destination, and it may block the task
 if necessary.
 
+The copy operation is unavoidibly linear time.
 
-4. Major User Component Changes
-===============================
+* Trap Time
+-----------
 
-* Name Server
--------------
+By far except Send/Receive, all operations in the kernel should be of constant
+time, including scheduling where some times it needs to compute the new highest
+priority, as we only have a constant number of priorities.
 
-In user space we have a name server task, which is used for tid lookups. Any task can register at name server with RegisterAs() API, and look up tid with task name using WhoIs() API.
+Specific trap time data is not available yet.
 
-* RPS game
-----------
 
-In order to test our kernel's ability, we create a RPS game task, which will then create a RPS server and several RPS clients to play to Rock-Paper-Scissors game.
-
-* Random Generator
-------------------
-
-We create a random generator for user land tasks.
-
-5. User Component Change Details
+3. User Component Change Details
 ================================
 
 * Name Server
 -------------
 
-In this assignment we added a new userland task: name server. The name server is the second task created in when executing. It is directly created by the first task. The name server's tid is fixed to 2 in our system, that other tasks are able to find it directly. The name server is running at the highest priority (priority 0). Any task created later can register their name domain at name server.
+In this assignment we added a new userland task: name server. The name server is
+the second task created in when executing. It is directly created by the first
+task.  The name server's tid is fixed to 2 in our system, so that other tasks
+can to find it directly.  The name server is running at the highest priority
+(priority 0) to minimize response time in initialization.
 
-The name server uses a hash table to keep records of name-tid pairs of the registerd tasks. We fixed the length of names in the userland to 16 characters. 
+This property means we assume all user tasks should be initialized fully before
+they need any real-time response time.  After initialization if any task calls
+into name server, variable time response time could be introduced.
+
+The name server uses a hash table to keep records of name-tid pairs of the
+registerd tasks. We fixed the length of names in the userland to atmost 16
+characters.  The hash table has 512 entries, while we only allow at most 128
+tasks to co-exist.  Although this still do not guarantee constant time response
+time, given the assumption that all tasks should calls into name server only
+before they need real time service, it is considered okay to leave the name
+server slow.
+
+In other words, the user should be aware that the use of name server will cause
+non-constant response time.
+
 
 * RPS game
 ----------
 
 - RPS game
 
-This is the task that is responsible for creating and destroying the RPS server and RPS clients. It will create a few pairs of RPS clients and a RPS server. It will send the server exit command when all client are done playing.
+This is the task that is responsible for creating and destroying the RPS server
+and RPS clients. It will create a few pairs of RPS clients and a RPS server. It
+will send the server exit command when all client are done playing.
+
+It sychronizes with the RPS clients by expecting Send calls from the clients.
+Once all Receive and Reply are executed, it will know that all RPS clients have
+completed.
 
 - RPS server
 
-The RPS server will pair up clients signed up and let them play Rock-Paper-Scissors game. It uses a greedy algorithm for pairing up, which means, whenever 2 tasks signed up, they are paired. The RPS server register these 2 clients as a group, and send back the group number both of them. The Server can maximumly handle 32 groups of players.
+The RPS server will pair up clients signed up and let them play
+Rock-Paper-Scissors game.  It uses a greedy algorithm for pairing up, which
+means, whenever 2 tasks signed up, they are paired.  The RPS server register
+these 2 clients as a group, and send back the group number to both of them. The
+Server can handle 32 groups of players.
 
-In order to keep the RPS server easy, we made the communication simple. The message from the client to the server consist only 2 elements. The first is the command from the player. The second is the group number assigned to the client. The RPS server then can easily parse the command and do corresponding responses. Note, The server always send replies in pairs, to both of the clients in a group. Even if one player send the quit command, the server will wait for the other player's command before it sends back any information.
+The communication protocal from clients to server is defined as a struct of 2
+elements: the command from the player (sign-up, rock, paper, scissors, or quit),
+and the group number assigned to the client.
+
+The server always send replies in pairs, to both of the clients in a group.
+When one player from a group sends a request (even if it is a quit), the server
+stores the request in the group's buffer, and wait for the next player to
+request.  This allows the server to handle out-of-order requests received from
+different groups.
 
 - RPS client
 
-The clients will first look up RPS server by communicating to the name server. Then they will sign up to the RPS server and play the game. The client will play at random. When the RPS client is on a non-win streak, and has lost for more than twice, then it has 50% to quit. When it quits, it will send a message to RPS game task to tell that this client task is quiting, so RPS game can keep a track of how many client task is still executing.
+The clients will first look up RPS server by communicating to the name server.
+Then they will sign up to the RPS server and play the game.
 
-* Random Generator
-------------------
+The client will play at random. When the RPS client is on a non-win streak, and
+has lost for more than twice, then it has 50% chance to quit.
 
-This is actually a pseudorandom generator. It is no more than a bit scrambler. The output is depending on the initial seed given to the random generator. For now, each task uses their tid as the initial seed to generate pseudorandom outputs. In the future, we are actually planning to combine tid with clock reading to create the initial seed to achieve better randomness, if necessary.
+The communication protocal from the server to the clients (replys from the
+server) is defined as a struct, which at the moment only has 1 element: the
+command from the server to the client.  The command could be a win/lose message,
+or a quit command which causes the client to quit.
 
-7. Sourse Code
+
+* Random Number Generator
+-------------------------
+
+This random number generator is taken from CS 246 PRNG.h. It is no more than a
+bit scrambler.  The output is depending on the initial seed given to the random
+generator.  For now, each task uses their tid as the initial seed to generate
+pseudorandom outputs.
+
+There is plan to combine tid with clock reading to create the initial seed to
+achieve better randomness, if necessary.
+
+
+4. Sourse Code
 ==============
 
 md5sum ...
 
 
 
-8. User Output
+5. User Output
 ==============
 
 
