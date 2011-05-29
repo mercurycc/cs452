@@ -9,4 +9,7 @@ void noise();
 /* Rock paper scissors */
 void rps_game();
 
+/* Send/Receive/Reply benchmark */
+void srr_bench();
+
 #endif /* _USER_APPS_ENTRY_H_ */

@@ -33,7 +33,6 @@ void Exit();
 int Send( int tid, char* msg, int msglen, char* reply, int replylen );
 int Receive( int* tid, char* msg, int msglen );
 int Reply( int tid, char* reply, int replylen );
-int Exist( int tid );
 /* Interrupt Processing */
 int AwaitEvent( int eventid );
 /* or ( int eventid, char* event, int eventlen ) */
@@ -44,5 +43,8 @@ int DelayUntil( int ticks );
 /* Input/Output */
 int Getc( int channel );
 int Putc( int channel );
+/* Non-standard syscall */
+int Exist( int tid );
+int KernelContext( void** target );       /* Obtain the kernel context.  This is really hacky, only used for performance measurements */
 
 #endif /* _USER_SYSCALL_H_ */

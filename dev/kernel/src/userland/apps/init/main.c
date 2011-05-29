@@ -24,7 +24,14 @@ void user_init()
 	assert( status == sizeof( buf ) );
 	status = Reply( tid, ( char* )&buf, sizeof( buf ) );
 	assert( status == SYSCALL_SUCCESS );
-	
+
+	/* Launch Send/Receive/Reply benchmark */
+	Create( 2, srr_bench );
+	/* Synchronize with srr_bench */
+	status = Receive( &tid, ( char* )&buf, sizeof( buf ) );
+	assert( status == sizeof( buf ) );
+	status = Reply( tid, ( char* )&buf, sizeof( buf ) );
+	assert( status == SYSCALL_SUCCESS );
 
 	DEBUG_NOTICE( DBG_USER, "killing name server\n" );
 	name_server_stop();

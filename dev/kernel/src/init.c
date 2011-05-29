@@ -17,7 +17,11 @@
 
 static inline void kernel_clk_init( Context* ctx )
 {
+	/* Kernel timer */
+	int status = 0;
 	
+	status = clk_enable( ctx->timer, CLK_3, TIME_CLK_MODE, TIME_CLK_SRC, 0xffffffff );
+	ASSERT( status == ERR_NONE );
 }
 
 int kernel_init( Context* ctx )

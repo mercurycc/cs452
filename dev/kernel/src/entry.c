@@ -10,6 +10,8 @@
 #include <context.h>
 #include <mem.h>
 #include <session.h>
+#include <devices/console.h>
+#include <devices/clock.h>
 #include <user/apps_entry.h>
 
 int main()
@@ -22,6 +24,9 @@ int main()
 
 	/* Console descriptor */
 	Console console_descriptors[ KERNEL_NUM_CONSOLES ] = {{0}};
+
+	/* Clock descriptors */
+	Clock clock_descriptors[ CLK_COUNT ] = {{0}};
 
 	/* Memory manager */
 	Memmgr membody = {0};
@@ -62,10 +67,14 @@ int main()
 
 	status = ctx_init( ctx );
 	ASSERT( status == ERR_NONE );
-	
+
+	/* Assign consoles */
 	ctx->mem = &membody;
 	ctx->terminal = console_descriptors;
 	ctx->train_set = console_descriptors + 1;
+
+	/* Assign timers */
+	ctx->timer_clk = clock_descriptors + CLK_3;
 
 	/* Initialize the memory manager */
 	/* Tasks */

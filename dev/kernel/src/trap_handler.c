@@ -181,6 +181,9 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		reason->result = receiver_task != 0;
 		break;
+	case TRAP_KERNEL_CONTEXT:
+		*((Context**)(reason->buffer)) = ctx;
+		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 	}
