@@ -22,7 +22,7 @@ static void srr_bench_sender()
 	assert( tid > 0 );
 
 	/* Obtain kernel context */
-	KernelContext( &ctx );
+	KernelContext( (void**)&ctx );
 
 	clk = ctx->timer_clk;
 
@@ -61,15 +61,15 @@ static void srr_bench_receiver()
 	assert( status == REGISTER_AS_SUCCESS );
 
 	/* 64 bytes */
-	status = Receive( &tid, test_buffer, 64 );
+	status = Receive( &tid, (char*)test_buffer, 64 );
 	assert( status == 64 );
-	status = Reply( &tid, test_buffer, 64 );
+	status = Reply( tid, (char*)test_buffer, 64 );
 	assert( status == 0 );
 
 	/* 4 bytes */
-	status = Receive( &tid, test_buffer, 4 );
+	status = Receive( &tid, (char*)test_buffer, 4 );
 	assert( status == 4 );
-	status = Reply( &tid, test_buffer, 4 );
+	status = Reply( tid, (char*)test_buffer, 4 );
 	assert( status == 0 );
 
 	Exit();

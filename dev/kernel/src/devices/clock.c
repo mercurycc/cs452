@@ -6,8 +6,6 @@
 #include <devices/clock.h>
 #include <regopts.h>
 
-static uint clkLastVal[ CLK_COUNT ] = { 0 };
-
 /* Obtain the base pointer to the specific clock */
 static inline ptr clk_getbase( Clock* clk )
 {

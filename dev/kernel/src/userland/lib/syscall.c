@@ -76,5 +76,5 @@ int Exist( int tid )
 
 int KernelContext( void** target )
 {
-	return syscall_make( TRAP_KERNEL_CONTEXT, 0, 0, target, 0 );
+	return syscall_make( TRAP_KERNEL_CONTEXT, 0, 0, 0, (char*)target, 0 );
 }
