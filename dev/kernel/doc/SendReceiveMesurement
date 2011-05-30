@@ -10,10 +10,18 @@
 * 64 bytes Send
 ---------------
 
+The communication finished within 2 clock ticks, which means it took 0.5 ~ 1 ms.
+
 
 * 4 bytes Send
 --------------
 
+The communication finished within 1 clock tick, which means it took less than 0.5 ms.
+
 
 2. Analysis
 ===========
+
+In our test, the messages are send one right after another. In the system, there are no other tasks are executing at that time. Therefore, the two communication are done in generally the same routine. The 64-byte send takes clearly more time than 4-byte send. This shows that the part the most time spend on when two tasks communicating with each other is message copying. 
+
+
