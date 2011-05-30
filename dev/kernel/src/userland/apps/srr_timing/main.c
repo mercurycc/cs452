@@ -77,7 +77,7 @@ static void srr_bench_receiver()
 
 void srr_bench()
 {
-	int tid;
+	int tid,tid0;
 	int status = 0;
 	
 	tid = Create( 2, srr_bench_sender );
@@ -87,7 +87,7 @@ void srr_bench()
 	assert( tid > 0 );
 
 	/* Synchronize with srr_bench_sender */
-	status = Receive( &tid, ( char* )&tid, sizeof( tid ) );
+	status = Receive( &tid, ( char* )&tid0, sizeof( tid0 ) );
 	assert( status == sizeof( tid ) );
 	status = Reply( tid, ( char* )&tid, sizeof( tid ) );
 	assert( status == SYSCALL_SUCCESS );
