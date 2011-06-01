@@ -14,7 +14,7 @@ task_init:
 	@ Use v2 to store user pc
 	mov	v2, a1
 	@ Setup initial stack
-	sub	a2, a2, #56
+	sub	a2, a2, #80
 	@ ==============================================================
 	@ Setup user mode initial cpsr in spsr
 	mrs	v1, cpsr

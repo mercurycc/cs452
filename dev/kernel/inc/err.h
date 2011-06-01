@@ -46,7 +46,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_PROMPT:
 	case DBG_SENSORUI:
 	case DBG_TRAP:
-	case DBG_KER:
+		// case DBG_KER:
 	case DBG_TASK:
 	case DBG_USER:
 	case DBG_CMD:
