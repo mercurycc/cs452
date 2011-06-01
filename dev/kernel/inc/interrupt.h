@@ -7,5 +7,6 @@ void interrupt_trap();
 int interrupt_init( Context* ctx );
 int interrupt_enable( Context* ctx, uint interrupt_id );
 int interrupt_disable( Context* ctx, uint interrupt_id );
+void interrupt_test();
 
 #endif /* _INTERRUPT_H_ */

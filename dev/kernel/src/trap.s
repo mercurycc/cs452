@@ -29,7 +29,7 @@ trap_handler_begin:
 	@ Clear mode
 	bic	ip, ip, #0x1f
 	@ Set IRQ mode
-	orr	ip, ip, #12
+	orr	ip, ip, #18
 	@ move into cpsr
 	msr	cpsr_c, ip
 	@ ==============================================================
@@ -82,7 +82,7 @@ trap_handler_end:
 	@ Clear mode
 	bic	ip, ip, #0x1f
 	@ Set IRQ mode
-	orr	ip, ip, #12
+	orr	ip, ip, #18
 	@ move into cpsr
 	msr	cpsr_c, ip
 	@ ==============================================================

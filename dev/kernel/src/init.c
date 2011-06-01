@@ -6,7 +6,7 @@
 #include <trap.h>
 
 /* Interrupt */
-// #include <interrupt.h>
+#include <interrupt.h>
 
 /* Task */
 #include <task.h>
@@ -46,6 +46,9 @@ int kernel_init( Context* ctx )
 	ASSERT( status == ERR_NONE );
 	status = console_init( ctx->train_set );
 	ASSERT( status == ERR_NONE );
+
+	/* Initialize interrupt */
+	interrupt_init( ctx );
 
 	return ERR_NONE;
 }

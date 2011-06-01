@@ -18,8 +18,9 @@ task_init:
 	@ ==============================================================
 	@ Setup user mode initial cpsr in spsr
 	mrs	v1, cpsr
-	@ Clear nzcv bits and mode bits
+	@ Clear nzcv bits, I bit and mode bits
 	bic	v1, v1, #0xf0000000
+	bic	v1, v1, #0x80
 	bic	v1, v1, #0x1f
 	@ Set user mode in cpsr
 	orr	v1, v1, #0x10

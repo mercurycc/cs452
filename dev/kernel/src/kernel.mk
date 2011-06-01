@@ -14,6 +14,7 @@ KERNELSRC += context.c
 KERNELSRC += sched.c
 KERNELSRC += kernel_shutdown.s
 KERNELSRC += interrupt.s
+KERNELSRC += interrupt_handler.c
 
 # Devices
 KERNELSRC += devices/console.c
