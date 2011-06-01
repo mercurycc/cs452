@@ -31,10 +31,10 @@ static inline int msg_copy( Task* sender, Task* receiver ){
 
 int trap_init( Context* ctx )
 {
-	uint* trap_vector_base = (uint*)0x28;
+	uint* trap_addr = (uint*)0x28;
 	
 	/* All interrupt are handled by trap_handler_begin.  For K1, only swi is setup */
-	*trap_vector_base = (uint)trap_handler_begin;
+	*trap_addr = (uint)trap_handler_begin;
 
 	return 0;
 }

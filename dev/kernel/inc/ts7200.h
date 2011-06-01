@@ -5,6 +5,9 @@
  *
  */
 
+#ifndef _TS7200_H_
+#define _TS7200_H_
+
 #define TIMER1_BASE     0x80810000
 #define TIMER2_BASE     0x80810020
 #define TIMER3_BASE     0x80810080
@@ -147,4 +150,14 @@
 #define VIC_INT_EN_CLEAR_OFFSET       0x14
 #define VIC_SOFT_INT_OFFSET           0x18
 #define VIC_SOFT_INT_CLEAR_OFFSET     0x1C
-#define VIC_
+#define VIC_PROTECTION_OFFSET         0x20
+#define VIC_VECT_ADDR_OFFSET          0x30
+#define VIC_DEF_VECT_ADDR_OFFSET      0x34
+#define VIC_VECT_ADDR_OFFSET_OF(n)    ( 0x100 + 4 * n )
+#define VIC_VECT_CNTL_OFFSET_OF(n)    ( 0x200 + 4 * n )
+#define VIC_PERIPH_ID0_OFFSET         0x0FE0
+#define VIC_PERIPH_ID1_OFFSET         0x0FE4
+#define VIC_PERIPH_ID2_OFFSET         0x0FE8
+#define VIC_PERIPH_ID3_OFFSET         0x0FEC
+
+#endif /* _TS7200_H_ */
