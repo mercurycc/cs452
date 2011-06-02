@@ -47,4 +47,4 @@ KERNELSRC += userland/lib/prng.c
 KERNELSRC += userland/drivers/clock/main.c
 
 # Services
-# KERNELSRC += userland/apps/time/main.c
+KERNELSRC += userland/apps/time/main.c
