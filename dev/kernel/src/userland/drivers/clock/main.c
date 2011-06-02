@@ -11,7 +11,9 @@
 
 #define CLOCK_CLK_SRC                CLK_SRC_2KHZ
 #define CLOCK_TICKS_PER_MS           ( CLK_SRC_2KHZ_SPEED / 1000 )
-#define CLOCK_ACTUAL_TICK( ticks )   ( ( ticks ) * CLOCK_COUNT_DOWN_MS_PER_TICK *CLOCK_TICKS_PER_MS )
+#define CLOCK_ACTUAL_TICKS_FACTOR    ( CLOCK_COUNT_DOWN_MS_PER_TICK *CLOCK_TICKS_PER_MS )
+#define CLOCK_USER_TICK_TO_SYSTEM_TICK( user_ticks )   ( ( user_ticks ) * CLOCK_ACTUAL_TICKS_FACTOR )
+#define CLOCK_SYSTEM_TICK_TO_USER_TICK( system_ticks )   ( ( system_ticks ) / CLOCK_ACTUAL_TICKS_FACTOR )
 
 enum Clock_request_internal {
 	CLOCK_COUNT_DOWN_COMPLETE = CLOCK_QUIT + 1
@@ -91,12 +93,13 @@ void clock_main()
 	Clock clock_3 = {0};         /* For timer */
 	Clock_request request;
 	Clock_reply reply;
-	uint current_time;
 	int event_handler_tid = 0;
 	int request_tid;
-	uint current_val;
+	int time_tid = MyParentTid();
+	uint current_time = 0;
+	uint current_cd = 0;
 	uint event_handling = 0;
-	uint actual_ticks;
+	uint cd_ticks;
 	int execute = 1;
 	int status = 0;
 
@@ -126,30 +129,37 @@ void clock_main()
 		switch( request.type ){
 		case CLOCK_CURRENT_TICK:
 		case CLOCK_COUNT_DOWN:
-			break;
 		case CLOCK_QUIT:
-			assert( request_tid == MyParentTid() );
+			assert( request_tid == time_tid );
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:
 			assert( request_tid == event_handler_tid );
 			break;
+		default:
+			assert( 0 );
 		}
 #endif
 
+		/* Update current time */
+		status = clk_diff_cycles( &clock_3, &reply.data );
+		assert( status == ERR_NONE );
+
+		current_time += reply.data;
+
+		/* Process request */
 		switch( request.type ){
 		case CLOCK_CURRENT_TICK:
-			status = clk_value( &clock_3, &reply.data );
-			assert( status == ERR_NONE );
+			reply.data = CLOCK_SYSTEM_TICK_TO_USER_TICK( current_time );
 			break;
 		case CLOCK_COUNT_DOWN:
-			status = clk_value( &clock_1, &current_val );
+			status = clk_value( &clock_1, &current_cd );
 			assert( status == ERR_NONE );
 
-			actual_ticks = CLOCK_ACTUAL_TICK( request.data );
+			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data ) - current_time;
 
 			/* Reset clock interrupt */
-			if( ( ! event_handling ) || actual_ticks < ( current_val + CLOCK_OPERATION_TICKS ) ){
-				status = clk_reset( &clock_1, actual_ticks );
+			if( ( ! event_handling ) || cd_ticks < ( current_cd + CLOCK_OPERATION_TICKS ) ){
+				status = clk_reset( &clock_1, cd_ticks );
 				assert( status == ERR_NONE );
 			}
 
@@ -161,7 +171,6 @@ void clock_main()
 			}
 			break;
 		case CLOCK_QUIT:
-			assert( request_tid == MyParentTid() );
 			execute = 0;
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:
