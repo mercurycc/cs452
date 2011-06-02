@@ -42,6 +42,7 @@ KERNELSRC += userland/apps/rps_game/main.c
 KERNELSRC += userland/lib/syscall.c
 KERNELSRC += userland/lib/name_server.c
 KERNELSRC += userland/lib/prng.c
+KERNELSRC += userland/lib/heap.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock/main.c
