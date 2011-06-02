@@ -80,7 +80,7 @@ void srr_bench()
 	int tid,tid0;
 	int status = 0;
 	
-	tid = Create( 2, srr_bench_sender );
+	tid = Create( 3, srr_bench_sender );
 	assert( tid > 0 );
 
 	tid = Create( 2, srr_bench_receiver );

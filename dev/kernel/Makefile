@@ -12,7 +12,15 @@ MKDIR   = mkdir -p
 CP      = cp
 RMRF    = rm -rf
 
+ifdef PINBALL_LOCAL_MAKE
+XCCLIB = ${HOME}/cs452/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
+else
+ifdef MERCURYCC_STATUE
+XCCLIB = ${HOME}/rt/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
+else
 XCCLIB = /u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
+endif
+endif
 
 INCLUDE = inc
 

@@ -7,6 +7,9 @@
 #include <config.h>
 #include <err.h>
 
+#define NAME_SERVER_MAGIC     0x11a111e0
+#define NAME_SERVER_TID       0x2
+
 /* The name_server_handler/listen is separate from the
    name_server_main in order to keep unsatisfied request on the name
    server's stack.  Each time a request cannot be satisfied the

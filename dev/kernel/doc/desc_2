@@ -1,9 +1,9 @@
-			   ==========================
-			   Pinball Kernel for TS-7200
-				   Release K2
-				   What's New
-			   ==========================
-				    cs452_08
+                           ==========================
+                           Pinball Kernel for TS-7200
+                                   Release K2
+                                   What's New
+                           ==========================
+                                    cs452_08
 
 1. Overview
 ===========
@@ -105,12 +105,24 @@ Specific trap time data is not available yet.
 In this assignment we added a new userland task: name server. The name server is
 the second task created in when executing. It is directly created by the first
 task.  The name server's tid is fixed to 2 in our system, so that other tasks
-can to find it directly.  The name server is running at the highest priority
-(priority 0) to minimize response time in initialization.
+can to find it directly.
 
-This property means we assume all user tasks should be initialized fully before
-they need any real-time response time.  After initialization if any task calls
-into name server, variable time response time could be introduced.
+A query to the name server via WhoIs call could block the task if the target
+name does not present in the server's records.  A problem encountered there is
+that a stacking mechanism is needed to stack all unhandled requests, because
+first an unhandled request should not block other requests, which could possibly
+satisfy the current unhandled request, and second we have to make sure the
+unhandled request is not lost.  This is done by making the name server request
+handler to recursivly call itself to satisfy the next request if the current
+request is not satisfied.  Enough stack space is assigned to the name server so
+it will never run out of stack space, given the maximum number of tasks the
+system support.
+
+The name server is running at the highest priority (priority 0) to minimize
+response time in initialization. This property means we assume all user tasks
+should be initialized fully before they need any real-time response time.  After
+initialization if any task calls into name server, variable time response time
+could be introduced.
 
 The name server uses a hash table to keep records of name-tid pairs of the
 registerd tasks. We fixed the length of names in the userland to atmost 16
@@ -136,6 +148,16 @@ will send the server exit command when all client are done playing.
 It sychronizes with the RPS clients by expecting Send calls from the clients.
 Once all Receive and Reply are executed, it will know that all RPS clients have
 completed.
+
+Currently the RPS game will create 8 groups, i.e. 16 RPS clients.  8 of them
+will be on one priority level and the other 8 will be on another.  The lower
+priority group will be launched first.  The RPS server is launched last.  There
+is no particular reason to do this other than to observe the expected effect
+given the implementation of name server and RPS server, that all tasks will all
+discover the registration of the RPS server because the lower priority level
+tasks will be on front of the send queue of the name server.  The higher
+priority groups will play the game first as expected.  Then the lower priority
+groups play the game after all the higher priority groups quited.
 
 - RPS server
 
@@ -192,4 +214,63 @@ md5sum ...
 ==============
 
 
+RPS Server start.
+Tid 12: RSPServer tid found: 0x20
+Tid 13: RSPServer tid found: 0x20
+Tid 14: RSPServer tid found: 0x20
+Tid 15: RSPServer tid found: 0x20
+Tid 16: RSPServer tid found: 0x20
+Tid 17: RSPServer tid found: 0x20
+Tid 18: RSPServer tid found: 0x20
+Tid 19: RSPServer tid found: 0x20
+GRP 0 / TID 12: signup'ed, group assigned: 0
+GRP 0 / TID 12: [requesting server] for ROCK
+GRP 0 / TID 13: signup'ed, group assigned: 0
+GRP 0 / TID 13: [requesting server] for ROCK
+[ Server ] Group 0 player 12 bet ROCK, player 13 bet ROCK draw
+GRP 1 / TID 14: signup'ed, group assigned: 1
+GRP 1 / TID 14: [requesting server] for ROCK
+GRP 1 / TID 15: signup'ed, group assigned: 1
+GRP 1 / TID 15: [requesting server] for ROCK
+[ Server ] Group 1 player 14 bet ROCK, player 15 bet ROCK draw
+GRP 2 / TID 16: signup'ed, group assigned: 2
+GRP 2 / TID 16: [requesting server] for ROCK
+GRP 2 / TID 17: signup'ed, group assigned: 2
+GRP 2 / TID 17: [requesting server] for ROCK
+[ Server ] Group 2 player 16 bet ROCK, player 17 bet ROCK draw
+GRP 3 / TID 18: signup'ed, group assigned: 3
+GRP 3 / TID 18: [requesting server] for ROCK
+GRP 3 / TID 19: signup'ed, group assigned: 3
+GRP 3 / TID 19: [requesting server] for ROCK
+[ Server ] Group 3 player 18 bet ROCK, player 19 bet ROCK draw
+GRP 0 / TID 12: [server says] we draw
+GRP 0 / TID 12: [requesting server] for ROCK
+GRP 0 / TID 13: [server says] we draw
+GRP 0 / TID 13: [requesting server] for PAPER
+[ Server ] Group 0 player 12 bet ROCK, player 13 bet PAPER winner 13
+
+... [ Game progress information ] ...
+
+[ Server ] Group 5 player 6 bet SCISSORS, player 7 bet SCISSORS draw
+GRP 5 / TID 6: [server says] we draw
+GRP 5 / TID 6: [requesting server] for SCISSORS
+GRP 5 / TID 7: [server says] we draw
+GRP 5 / TID 7: [requesting server] for ROCK
+[ Server ] Group 5 player 6 bet SCISSORS, player 7 bet ROCK winner 7
+GRP 5 / TID 6: [server says] I lose
+GRP 5 / TID 6: [requesting server] for SCISSORS
+GRP 5 / TID 7: [server says] I win
+GRP 5 / TID 7: [requesting server] for ROCK
+[ Server ] Group 5 player 6 bet SCISSORS, player 7 bet ROCK winner 7
+GRP 5 / TID 6: [server says] I lose
+GRP 5 / TID 6: lost too much, will quit now
+GRP 5 / TID 6: [requesting server] for QUIT
+GRP 5 / TID 7: [server says] I win
+GRP 5 / TID 7: [requesting server] for PAPER
+[ Server ] Group 5 requested quit
+GRP 5 / TID 6: [server says] I should quit
+GRP 5 / TID 7: [server says] I should quit
+RPS Server exit.
+64 bytes Send took 1 ticks, which is equivalent to 0 ms
+4 bytes Send took 2 ticks, which is equivalent to 1 ms
 

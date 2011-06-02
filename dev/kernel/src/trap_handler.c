@@ -7,8 +7,13 @@
 #include <syscall.h>
 #include <trap_reason.h>
 #include <kernel.h>
+#include <ts7200.h>
+#include <ep9302.h>
+#include <interrupt.h>
 #include <mem.h>
 #include <sched.h>
+#include <regopts.h>
+#include <devices/clock.h>
 
 static inline int msg_copy( Task* sender, Task* receiver ){
 	// TODO: implement with assemble?
@@ -31,29 +36,21 @@ static inline int msg_copy( Task* sender, Task* receiver ){
 
 int trap_init( Context* ctx )
 {
-	uint* trap_vector_base = (uint*)0x28;
+	uint* trap_addr = (uint*)0x28;
 	
 	/* All interrupt are handled by trap_handler_begin.  For K1, only swi is setup */
-	*trap_vector_base = (uint)trap_handler_begin;
+	*trap_addr = (uint)trap_handler_begin;
 
 	return 0;
 }
 
-void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
+static void syscall_handler( Context* ctx, Syscall* reason )
 {
-	Context* ctx = (Context*)(*(uint*)kernelsp);
-	int status = 0;
 	Task* temp;
 	Task* sender_task;
 	Task* receiver_task;
 	List* elem;
-	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
-	DEBUG_PRINT( DBG_TRAP, "Trap handler called by tid: %d, with reason 0x%x, sp = 0x%x\n", ctx->current_task->tid, reason->code, sp_caller );
-
-	ctx->current_task->stack = sp_caller;
-	ctx->current_task->reason = reason;
-
-	// TODO: change err codes
+	int status = 0;
 
 	switch( reason->code ){
 		/* Task management */
@@ -184,14 +181,57 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	case TRAP_KERNEL_CONTEXT:
 		*((Context**)(reason->buffer)) = ctx;
 		break;
+	case TRAP_AWAIT_EVENT:
+		status = interrupt_register( ctx, ctx->current_task, reason->target_tid );
+		if( status == ERR_INTERRUPT_ALREADY_REGISTERED ){
+			reason->result = AWAIT_EVENT_ALREADY_REGISTERED;
+		} else if( status == ERR_INTERRUPT_INVALID_INTERRUPT ){
+			reason->result = AWAIT_EVENT_INVALID_EVENT;
+		} else {
+			ASSERT( status == ERR_NONE );
+			sched_block( ctx );
+			reason->result = SYSCALL_SUCCESS;
+		}
+		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
+	}
+}
+
+void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
+{
+	Context* ctx = (Context*)(*(uint*)kernelsp);
+	int status = 0;
+	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
+	DEBUG_PRINT( DBG_TRAP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n",
+		     ctx->current_task->tid, sp_caller, mode );
+
+	ctx->current_task->stack = sp_caller;
+	ctx->current_task->reason = reason;
+
+	// TODO: change err codes
+	// TODO: Split syscall handling out
+
+	if( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_IRQ ){
+		DEBUG_NOTICE( DBG_TEMP, "coming from IRQ\n" );
+		{
+			Task* event_handler;
+			
+			status = interrupt_handle( ctx, &event_handler );
+			ASSERT( status == ERR_NONE );
+			
+			// Add served event handler back to ready queue
+			status = sched_signal( ctx, event_handler );
+			ASSERT( status == ERR_NONE );
+		}
+	} else if ( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_USER ){
+		syscall_handler( ctx, reason );
 	}
 
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );
 	status = sched_schedule( ctx, &(ctx->current_task) );
 	ASSERT( status == ERR_NONE );
-	DEBUG_PRINT( DBG_TRAP, "new task addr = 0x%x, tid = 0x%x, priority: %d, state = %d\n",
+	DEBUG_PRINT( DBG_TRAP, "new task addr: 0x%x, tid: 0x%x, priority: %d, state: %d\n",
 		     ctx->current_task, ctx->current_task->tid, ctx->current_task->priority, ctx->current_task->state );
 
 	/* Shutdown kernel if no ready task can be scheduled */

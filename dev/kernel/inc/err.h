@@ -27,7 +27,9 @@ enum Debug_type {
 	DBG_COUNT,
 	DBG_SCHED,
 	DBG_NS,              /* Name server */
-	DBG_HASH
+	DBG_HASH,
+	DBG_INT,
+	DBG_CLK_DRV
 };
 
 #ifdef DEBUG
@@ -45,7 +47,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SENSORCTL:
 	case DBG_PROMPT:
 	case DBG_SENSORUI:
-	case DBG_TRAP:
+		// case DBG_TRAP:
 	case DBG_KER:
 	case DBG_TASK:
 	case DBG_USER:
@@ -53,6 +55,8 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SCHED:
 	case DBG_NS:
 	case DBG_HASH:
+		// case DBG_INT:
+		// case DBG_CLK_DRV:
 		return 0;
 	default:
 		return 1;
@@ -137,7 +141,9 @@ enum Error {
 	ERR_PARENT_EXIT                    = 12,
 	ERR_HASHTABLE_FULL                 = 13,
 	ERR_HASHTABLE_NOTFOUND             = 14,
-	ERR_HASHTABLE_OVERLENGTH           = 15
+	ERR_HASHTABLE_OVERLENGTH           = 15,
+	ERR_INTERRUPT_ALREADY_REGISTERED   = 16,
+	ERR_INTERRUPT_INVALID_INTERRUPT    = 17
 };
 
 #endif /* _ERR_H_ */

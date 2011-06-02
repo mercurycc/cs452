@@ -13,6 +13,7 @@
 #include <devices/console.h>
 #include <devices/clock.h>
 #include <user/apps_entry.h>
+#include <interrupt.h>
 
 int main()
 {
@@ -21,6 +22,10 @@ int main()
 
 	/* Scheduler */
 	Sched scheduler;
+
+	/* Interrupt manager */
+	Interrupt_mgr interrupt_mgr;
+	Task* interrupt_handlers[ INTERRUPT_COUNT ] = { 0 };
 
 	/* Console descriptor */
 	Console console_descriptors[ KERNEL_NUM_CONSOLES ] = {{0}};
@@ -56,6 +61,10 @@ int main()
 	}
 	
 	DEBUG_PRINT( DBG_KER, "Intial stack pointer: 0x%x, ctx: 0x%x\n", stack_space, ctx );
+
+	/* Initialize interrupt manager data */
+	interrupt_mgr.interrupt_handlers = interrupt_handlers;
+	ctx->interrupt_mgr = &interrupt_mgr;
 
 	/* Initialize all the tids */
 	status = task_init_all( task_descriptors, KERNEL_MAX_NUM_TASKS );

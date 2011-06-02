@@ -1,27 +1,53 @@
-			   ==========================
-			   Pinball Kernel for TS-7200
-				   Release K2
-			    Send/Receive Performance
-			   ==========================
-			   
-1. Measurements
+                           ==========================
+                           Pinball Kernel for TS-7200
+                                   Release K2
+                            Send/Receive Performance
+                           ==========================
+
+1. Setup
+========
+
+The set up is that the receiver is that the sender is launched before the
+receiver, and the receiver is at a higher priority than the sender.  The sender
+will query the nameserver for the receiver.
+
+Once receiver is found, the sender will Send.  At this point the receiver should
+executed Receive already because it is at a higher priority.  Therefore there
+will be the need to move the sender into the receiver's send queue.  This is to
+maximize the transaction time.
+
+We run the test 10 times and take the worst case measurement.
+
+
+2. Measurements
 ===============
+
+We are using CLK_3 with 2000Hz clock source.
 
 * 64 bytes Send
 ---------------
 
-The communication finished within 2 clock ticks, which means it took 0.5 ~ 1 ms.
+The communication finished within 2 clock ticks, which means it took 0.5 ~ 1.5
+ms.
 
 
 * 4 bytes Send
 --------------
 
-The communication finished within 1 clock tick, which means it took less than 0.5 ms.
+The communication finished within 2 clock tick, which means it took less than
+0.5 ~ 1.5 ms.
 
 
-2. Analysis
+3. Analysis
 ===========
 
-In our test, the messages are send one right after another. In the system, there are no other tasks are executing at that time. Therefore, the two communication are done in generally the same routine. The 64-byte send takes clearly more time than 4-byte send. This shows that the part the most time spend on when two tasks communicating with each other is message copying. 
+The 64-byte send takes about the same worst case time than 4-byte send. This
+shows that the part the most time spend on when two tasks communicating with
+each other is trap handling, which includes:
+- Trap entry/exit
+- Trap decoding
+- Queuing transactions
+- Scheduling decisions
 
-
+The part that does not affect the performance as much, in this case, is the
+message copying (i.e. the memcpy of message from sender to receiver).

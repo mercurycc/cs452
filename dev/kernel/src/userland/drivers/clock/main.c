@@ -1,0 +1,192 @@
+#include <types.h>
+#include <user/syscall.h>
+#include <user/name_server.h>
+#include <devices/clock.h>
+#include <user/devices/clock.h>
+#include <user/event.h>
+#include <user/assert.h>
+#include <user/protocals.h>
+#include <err.h>
+#include <bwio.h>
+
+#define CLOCK_CLK_SRC         CLK_SRC_2KHZ
+#define CLOCK_TICKS_PER_MS    ( CLK_SRC_2KHZ_SPEED / 1000 )
+
+enum Clock_request_internal {
+	CLOCK_COUNT_DOWN_COMPLETE = CLOCK_QUIT + 1
+};
+
+#define CLOCK_MAGIC           0xc10c411e
+#define CLOCK_EVENT_MAGIC     0xe11e1171
+
+typedef struct Clock_event_s Clock_event_request;
+typedef struct Clock_event_s Clock_event_reply;
+
+struct Clock_event_s {
+	uint magic;
+	uint type;
+};
+
+enum Clock_event_type {
+	CLOCK_EVENT_START_WAIT,
+	CLOCK_EVENT_QUIT
+};
+
+static int clock_event_start( int tid )
+{
+	Clock_event_request request;
+	Clock_event_reply reply;
+	int status;
+
+	request.magic = CLOCK_EVENT_MAGIC;
+
+	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+	assert( reply.magic == CLOCK_EVENT_MAGIC );
+	assert( reply.type == request.type );
+
+	return ERR_NONE;
+}
+
+static void clock_event_handler()
+{
+	Clock_event_request request;
+	Clock_event_reply reply;
+	int tid = 0; 
+	int status = 0;
+
+	reply.magic = CLOCK_EVENT_MAGIC;
+	
+	while( 1 ){
+		status = Receive( &tid, ( char* )&request, sizeof( request ) );
+		assert( status == sizeof( request ) );
+		assert( request.magic == CLOCK_EVENT_MAGIC );
+
+		reply.type = request.type;
+
+		status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+		assert( status == SYSCALL_SUCCESS );
+
+		if( request.type == CLOCK_EVENT_QUIT ){
+			DEBUG_NOTICE( DBG_CLK_DRV, "quitting\n" );
+			break;
+		}
+
+		DEBUG_NOTICE( DBG_CLK_DRV, "received request\n" );
+		
+		AwaitEvent( EVENT_SRC_TC1UI );
+
+		DEBUG_NOTICE( DBG_CLK_DRV, "received interrupt\n" );
+	}
+
+	Exit();
+}
+
+void clock_main()
+{
+	Clock clock_1 = {0};         /* For interrupt */
+	Clock clock_3 = {0};         /* For timer */
+	Clock_request request;
+	Clock_reply reply;
+	int event_handler_tid = 0;
+	int request_tid;
+	uint current_val;
+	uint event_handling = 0;
+	int execute = 1;
+	int status = 0;
+
+	// TODO: WhoIs the timer server to ensure we are always receiving the data from the correct source
+
+	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, ~0 );
+	clk_enable( &clock_3, CLK_3, CLK_MODE_FREE_RUN, CLOCK_CLK_SRC, ~0 );
+
+	event_handler_tid = Create( 0, clock_event_handler );
+	assert( event_handler_tid > 0 );
+
+	reply.magic = CLOCK_MAGIC;
+
+	while( execute ){
+		status = Receive( &request_tid, ( char* )&request, sizeof( request ) );
+		assert( status == sizeof( request ) );
+		assert( request.magic == CLOCK_MAGIC );
+
+		reply.type = request.type;
+
+		DEBUG_NOTICE( DBG_CLK_DRV, "received interrupt\n" );
+
+		switch( request.type ){
+		case CLOCK_CURRENT_TICK:
+			status = clk_value( &clock_3, &reply.data );
+			assert( status == ERR_NONE );
+			break;
+		case CLOCK_COUNT_DOWN:
+			status = clk_value( &clock_1, &current_val );
+			assert( status == ERR_NONE );
+
+			/* Reset clock interrupt */
+			if( ( ! event_handling ) || request.data < ( current_val + CLOCK_OPERATION_TICKS ) ){
+				status = clk_reset( &clock_1, request.data );
+				assert( status == ERR_NONE );
+			}
+
+			/* Send request to clock_event_start */
+			if( ! event_handling ){
+				status = clock_event_start( event_handler_tid );
+				assert( status == ERR_NONE );
+				event_handling = 1;
+			}
+			break;
+		case CLOCK_QUIT:
+			assert( request_tid == MyParentTid() );
+			execute = 0;
+			break;
+		case CLOCK_COUNT_DOWN_COMPLETE:
+			clk_clear( &clock_1 );
+			event_handling = 0;
+			// TODO: send notification to timer server
+			break;
+		}
+
+		status = Reply( request_tid, ( char* )&reply, sizeof( reply ) );
+		assert( status == SYSCALL_SUCCESS );
+	}
+
+	Exit();
+}
+
+static int clock_request( int tid, uint type, uint* data )
+{
+	Clock_request request;
+	Clock_reply reply;
+	int status = 0;
+
+	request.magic = CLOCK_MAGIC;
+	request.type = type;
+	request.data = *data;
+
+	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+	assert( reply.magic == CLOCK_MAGIC );
+	assert( reply.type == request.type );
+
+	*data = reply.data;
+
+	return ERR_NONE;
+}
+
+/* time will be returned with the current ticks */
+int clock_current_time( int tid, uint* time )
+{
+	return clock_request( tid, CLOCK_CURRENT_TICK, time );
+}
+
+int clock_count_down( int tid, uint ticks )
+{
+	return clock_request( tid, CLOCK_COUNT_DOWN, &ticks );
+}
+
+int clock_quit( int tid )
+{
+	uint buf;
+	return clock_request( tid, CLOCK_QUIT, &buf );
+}

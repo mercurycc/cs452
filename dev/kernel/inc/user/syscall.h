@@ -21,6 +21,9 @@ enum SyscallError {
 	REPLY_TASK_DOES_NOT_EXIST = -2,
 	REPLY_TASK_IN_WRONG_STATE = -3,
 	/* Exist will only return true ( !0 ) or false ( 0 ) */
+	/* AwaitEvent */
+	AWAIT_EVENT_INVALID_EVENT = -1,
+	AWAIT_EVENT_ALREADY_REGISTERED = -4
 };
 
 /* Task Creation */
