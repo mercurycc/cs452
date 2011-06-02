@@ -1,23 +1,15 @@
-enum TimeRequest {
-	TIME_ASK;
-	TIME_DELAY;
-	TIME_SIGNAL;
-};
-
-struct TimeMessage {
-	TimeRequest request;
-	int interval;
-}
-
+#include <user/protocals.h>
 #include <user/name_server>
+#include <user/time.h>
 
 
 void time_main(){
 
 	int tid;
-	struct TimeMessage msg;
+	Time_request msg;
+	Time_reply reply;
 	int status;
-	unsigned int result;
+	int result;
 	int clock_tid;
 	
 	int stop = 0;
@@ -28,13 +20,15 @@ void time_main(){
 	assert( status == 0 );
 
 	while ( !stop ) {
-		Receive(&tid, msg, SIZE_TIME_MESSAGE);
+		status = Receive(&tid, (char*)&msg, sizeof(msg));
+		assert( status == 0 );
 		switch ( msg.request ) {
 		case TIME_ASK:
 			status = clock_current_time( clock_tid, (char*)&result );
 			assert( status == 0 );
-			status = Reply( tid, (char*)&result, sizeof(result));
-			assert( status == sizeof(result) );
+			reply.result = result;
+			status = Reply( tid, (char*)&reply, sizeof(reply));
+			assert( status == sizeof(reply) );
 			break;
 		case TIME_DELAY:
 			status = clock_count_down( clock_tid, msg.interval );
@@ -42,9 +36,9 @@ void time_main(){
 			break;
 		case TIME_SIGNAL:
 			// TODO find corresponding tid for the blocked task;
-			result = 0;
-			status = Replay( clock_tid, (char*)result, sizeof(result) );
-			assert( status == 0 );
+			reply.result = 0;
+			status = Replay( clock_tid, (char*)reply, sizeof(reply) );
+			assert( status == sizeof(reply) );
 			break;
 		default:
 			bwprintf( COM2, "INVALID TIME MESSAGE" );
@@ -54,15 +48,15 @@ void time_main(){
 
 }
 
-int time_request( int tid, TimeRequest request, int interval ){
-	struct msg;
-	int result;
+int time_request( int tid, Time_request_type request, int interval ){
+	Time_request msg;
+	Time_reply reply;
 
 	msg.request = request;
 	msg.interval = interval;
 
-	Send( tid, (char*)msg, sizeof(msg), (char*)&result, sizeof(result) );
-	return result;
+	Send( tid, (char*)msg, sizeof(msg), (char*)&reply, sizeof(reply) );
+	return reply.result;
 }
 
 int time_ask( int tid ){

@@ -53,4 +53,24 @@ struct Name_server_response_s {
 	unsigned int status;
 };
 
+/* time server */
+
+typedef struct Time_request_s Time_request;
+typedef struct Time_reply_s Time_reply;
+
+enum Time_request_type {
+	TIME_ASK;
+	TIME_DELAY;
+	TIME_SIGNAL;
+};
+
+struct Time_request_s {
+	TimeRequest request;
+	int interval;
+};
+
+struct Time_reply_s {
+	int result;
+};
+
 #endif /* _USER_PROTOCALS_H_ */
