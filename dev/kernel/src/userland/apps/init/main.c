@@ -4,6 +4,7 @@
 #include <user/assert.h>
 #include <user/protocals.h>
 #include <user/drivers_entry.h>
+#include <user/devices/clock.h>
 #include <bwio.h>
 #include <err.h>
 
@@ -24,17 +25,33 @@ static inline void K2()
 	assert( status == SYSCALL_SUCCESS );
 }
 
+static inline void clock_test( int clock_tid )
+{
+	uint time;
+
+	clock_current_time( clock_tid, &time );
+	bwprintf( COM2, "Received time %u\n", time );
+
+	clock_count_down( clock_tid, 2000 );
+	clock_count_down( clock_tid, 1000 );
+
+	/* Expected: a interrupt should be generated after 2 seconds, rather than 10 seconds. */
+}
+
 void user_init()
 {
 	int tid;
+	int clock_tid;
 	int status;
 	
 	tid = Create( 0, name_server_start );
 	assert( tid > 0 );
 
 	/* Create device drivers */
-	tid = Create( 0, clock_main );
-	assert( tid > 0 );
+	clock_tid = Create( 0, clock_main );
+	assert( clock_tid > 0 );
+
+	clock_test( clock_tid );
 
 	K2();
 
