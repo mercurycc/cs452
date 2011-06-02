@@ -170,7 +170,7 @@ int clk_clear( Clock* clk )
 {
 	ptr base = clk_getbase( clk );
 
-	HW_WRITE( base, TIMER_CLR_OFFSET, 1 );
+	HW_WRITE( base, TIMER_CLR_OFFSET, 0 );
 
 	return ERR_NONE;
 }

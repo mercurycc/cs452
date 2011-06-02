@@ -19,6 +19,7 @@ struct Context_s {
 	uint next_tid;
 	Sched* scheduler;
 	Clock* timer_clk;
+	Interrupt_mgr* interrupt_mgr;
 };
 
 /* Ensure ctx is cleared */

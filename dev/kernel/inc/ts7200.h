@@ -137,8 +137,9 @@
 #define INTERRUPT_SRC_INT_DSP         58
 #define INTERRUPT_SRC_GPIOINTR        59
 #define INTERRUPT_SRC_I2SINTR         60
+#define INTERRUPT_COUNT               64
 
-/* VIC */
+/* VIC registers */
 #define VIC1_BASE                     0x800B0000
 #define VIC2_BASE                     0x800C0000
 
@@ -153,11 +154,17 @@
 #define VIC_PROTECTION_OFFSET         0x20
 #define VIC_VECT_ADDR_OFFSET          0x30
 #define VIC_DEF_VECT_ADDR_OFFSET      0x34
-#define VIC_VECT_ADDR_OFFSET_OF(n)    ( 0x100 + 4 * n )
-#define VIC_VECT_CNTL_OFFSET_OF(n)    ( 0x200 + 4 * n )
+#define VIC_VECT_ADDR_OFFSET_OF( n )  ( 0x100 + 4 * ( n ) )
+#define VIC_VECT_CNTL_OFFSET_OF( n )  ( 0x200 + 4 * ( n ) )
 #define VIC_PERIPH_ID0_OFFSET         0x0FE0
 #define VIC_PERIPH_ID1_OFFSET         0x0FE4
 #define VIC_PERIPH_ID2_OFFSET         0x0FE8
 #define VIC_PERIPH_ID3_OFFSET         0x0FEC
+
+/* VIC register values */
+#define VIC_VECT_CNTL_ENABLE          ( 1 << 5 )
+
+/* VIC properties */
+#define VIC_VECT_INT_MAX              16
 
 #endif /* _TS7200_H_ */

@@ -78,3 +78,8 @@ int KernelContext( void** target )
 {
 	return syscall_make( TRAP_KERNEL_CONTEXT, 0, 0, 0, (char*)target, 0 );
 }
+
+int AwaitEvent( int eventid )
+{
+	return syscall_make( TRAP_AWAIT_EVENT, eventid, 0, 0, 0, 0 );
+}

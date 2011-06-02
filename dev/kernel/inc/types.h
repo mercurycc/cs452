@@ -17,5 +17,8 @@ typedef struct Sched_s Sched;
 typedef struct List_s List;
 typedef struct Syscall_s Syscall;
 typedef struct Hashtable_s Hashtable;
+typedef struct Interrupt_mgr_s Interrupt_mgr;
+
+typedef int (*Interrupt_handler)( Context* ctx );
 
 #endif /* _TYPES_H_ */

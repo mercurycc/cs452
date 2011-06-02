@@ -54,6 +54,7 @@ trap_handler_begin:
 	@ Store the spsr, also pass spsr to trap_handler
 	mrs	a3, spsr
 	@ Store user pc and cpsr onto user stack
+	@ These 2 values must be on the top of the user stack
 	stmdb	a2!, {a3, lr}
 	@ Call trap_handler
 	b	trap_handler
@@ -68,6 +69,7 @@ trap_handler_end:
 	@ args = 0, pretend = 0, frame = 8
 	@ frame_needed = 1, uses_anonymous_args = 0
 	@ Restore user task pc and cpsr
+	@ These 2 values must be on the top of the user stack
 	ldmia	a2!, {ip, lr}
 	@ Restore cpsr
 	msr	spsr, ip

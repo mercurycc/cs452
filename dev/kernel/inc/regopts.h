@@ -8,7 +8,7 @@
 	(volatile uint*)( base + offset )
 
 #define HW_WRITE( base, offset, value )		\
-	*( HW_ADDR( base, offset ) ) = value
+	*( HW_ADDR( base, offset ) ) = (uint)value
 
 #define HW_READ( base, offset )			\
 	*( HW_ADDR( base, offset ) )

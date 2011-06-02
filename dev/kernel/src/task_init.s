@@ -26,6 +26,7 @@ task_init:
 	orr	v1, v1, #0x10
 	@ ==============================================================
 	@ Push task cpsr and pc onto task stack
+	@ Notice these must be on the top of the user stack, as done in trap.s
 	stmdb	a2!, {v1, v2}
 	@ Return the new stack pointer
 	mov	a1, a2

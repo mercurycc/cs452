@@ -11,8 +11,5 @@ interrupt_trap:
 	@ Return to user program
 	subs	pc, lr, #4
 	.size	interrupt_trap, .-interrupt_trap
-	.align	2
-	.global	interrupt_set_stack
-	.type	interrupt_set_stack, %function
 
 

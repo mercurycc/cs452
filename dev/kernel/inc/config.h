@@ -2,7 +2,7 @@
 #define _CONFIG_H_
 
 #define USE_BWIO
-#define DEBUG
+// #define DEBUG
 
 /* Kernel parameters */
 #define KERNEL_NUM_CONSOLES           2
@@ -17,6 +17,7 @@
 /* Userland parameters */
 #define USER_STACK_PAGE               8
 #define NAME_SERVER_HASH_ENTRIES      512
+#define CLOCK_OPERATION_TICKS         4          /* Extra time for clock driver to operate if it receives a count down request that is close to current count down */
 
 /* Trap */
 #define TRAP_BASE                     0x20
@@ -40,7 +41,7 @@ extern unsigned int TRAIN_COMMAND_GAP;    /* In milli-seconds */
 /* Time */
 #define TIME_USE_CLK                  CLK_3
 #define TIME_CLK_MODE                 CLK_MODE_FREE_RUN
-#define TIME_CLK_SRC                  CLK_SRC_2KHZ
+#define TIME_CLK_SRC                  CLK_SRC_508KHZ
 #define TIME_CLK_INITIAL              0xffffffff
 
 /* ui_prompt */

@@ -3,6 +3,7 @@
 #include <user/servers_entry.h>
 #include <user/assert.h>
 #include <user/protocals.h>
+#include <user/drivers_entry.h>
 #include <bwio.h>
 #include <err.h>
 
@@ -21,14 +22,6 @@ static inline void K2()
 	assert( status == sizeof( buf ) );
 	status = Reply( tid, ( char* )&buf, sizeof( buf ) );
 	assert( status == SYSCALL_SUCCESS );
-
-	/* Launch Send/Receive/Reply benchmark */
-	Create( 2, srr_bench );
-	/* Synchronize with srr_bench */
-	status = Receive( &tid, ( char* )&buf, sizeof( buf ) );
-	assert( status == sizeof( buf ) );
-	status = Reply( tid, ( char* )&buf, sizeof( buf ) );
-	assert( status == SYSCALL_SUCCESS );
 }
 
 void user_init()
@@ -37,7 +30,11 @@ void user_init()
 	int status;
 	
 	tid = Create( 0, name_server_start );
-	assert( tid == NAME_SERVER_TID );
+	assert( tid > 0 );
+
+	/* Create device drivers */
+	tid = Create( 0, clock_main );
+	assert( tid > 0 );
 
 	K2();
 
