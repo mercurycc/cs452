@@ -9,6 +9,7 @@
 #include <user/time.h>
 #include <err.h>
 #include <bwio.h>
+#include <user/time.h>
 
 #define CLOCK_CLK_SRC                CLK_SRC_2KHZ
 #define CLOCK_TICKS_PER_MS           ( CLK_SRC_2KHZ_SPEED / 1000 )
