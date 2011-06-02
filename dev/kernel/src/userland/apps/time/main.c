@@ -97,6 +97,17 @@ void time_main(){
 			status = clock_count_down( clock_tid, node.time );
 			assert( status == 0 );
 			break;
+		case TIME_SUICIDE:
+			if ( tid != MyParentTid() ) {
+				bwprintf( COM2, "SUICIDE message from a task that is not my parent, fake message?\n" );
+			}
+			status = int clock_quit( int tid );
+			assert( status == 0 );
+			reply.result = 0;
+			status = Reply( node.tid, (char*)&reply, sizeof(reply) );
+			assert( status == sizeof(reply) );
+			stop = 1;
+			break;
 		default:
 			bwprintf( COM2, "INVALID TIME MESSAGE" );
 			break;
@@ -116,11 +127,11 @@ int time_request( int tid, uint request, int interval ){
 	return reply.result;
 }
 
-int time_ask( int tid ){
+int time_ask( int tid ) {
 	return time_request( tid, TIME_ASK, 0 );
 }
 
-int time_delay( int tid, int interval ){
+int time_delay( int tid, int interval ) {
 	return time_request( tid, TIME_ASK, interval );
 }
 
@@ -128,5 +139,7 @@ int time_signal( int tid ) {
 	return time_request( tid, TIME_SIGNAL, 0 );
 }
 
-
+int time_suicide( int tid ) {
+	return time_request( tid, TIME_SUICIDE, 0 );
+}
 
