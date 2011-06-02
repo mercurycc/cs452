@@ -101,7 +101,7 @@ void time_main(){
 			if ( tid != MyParentTid() ) {
 				bwprintf( COM2, "SUICIDE message from a task that is not my parent, fake message?\n" );
 			}
-			status = int clock_quit( int tid );
+			status = clock_quit( clock_tid );
 			assert( status == 0 );
 			reply.result = 0;
 			status = Reply( node.tid, (char*)&reply, sizeof(reply) );
