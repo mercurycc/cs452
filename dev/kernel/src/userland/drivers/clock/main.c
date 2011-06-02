@@ -6,6 +6,7 @@
 #include <user/event.h>
 #include <user/assert.h>
 #include <user/protocals.h>
+#include <user/time.h>
 #include <err.h>
 #include <bwio.h>
 
@@ -35,6 +36,9 @@ enum Clock_event_type {
 	CLOCK_EVENT_QUIT
 };
 
+/* Internal only */
+static int clock_cd_complete( int tid );
+
 static int clock_event_start( int tid )
 {
 	Clock_event_request request;
@@ -55,7 +59,8 @@ static void clock_event_handler()
 {
 	Clock_event_request request;
 	Clock_event_reply reply;
-	int tid = 0; 
+	int tid = 0;
+	int clock_drv_tid = MyParentTid();
 	int status = 0;
 
 	reply.magic = CLOCK_EVENT_MAGIC;
@@ -82,6 +87,9 @@ static void clock_event_handler()
 		AwaitEvent( EVENT_SRC_TC1UI );
 
 		DEBUG_NOTICE( DBG_CLK_DRV, "received interrupt\n" );
+
+		status = clock_cd_complete( clock_drv_tid );
+		assert( status == ERR_NONE );
 	}
 
 	Exit();
@@ -103,10 +111,13 @@ void clock_main()
 	int execute = 1;
 	int status = 0;
 
-	// TODO: WhoIs the timer server to ensure we are always receiving the data from the correct source
-
+	/* clk_reset to ensure the clock is fully reset */
 	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, ~0 );
+	clk_reset( &clock_1, ~0 );
+	clk_clear( &clock_1 );
 	clk_enable( &clock_3, CLK_3, CLK_MODE_FREE_RUN, CLOCK_CLK_SRC, ~0 );
+	clk_reset( &clock_3, ~0 );
+	clk_clear( &clock_3 );
 
 	event_handler_tid = Create( 0, clock_event_handler );
 	assert( event_handler_tid > 0 );
@@ -155,10 +166,15 @@ void clock_main()
 			status = clk_value( &clock_1, &current_cd );
 			assert( status == ERR_NONE );
 
-			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data ) - current_time;
-
+			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data );
+			if( cd_ticks < current_time ){
+				cd_ticks = 1;
+			} else {
+				cd_ticks -= current_time;
+			}
+			
 			/* Reset clock interrupt */
-			if( ( ! event_handling ) || cd_ticks < ( current_cd + CLOCK_OPERATION_TICKS ) ){
+			if( ( ! event_handling ) || ( cd_ticks  + CLOCK_OPERATION_TICKS ) < current_cd ){
 				status = clk_reset( &clock_1, cd_ticks );
 				assert( status == ERR_NONE );
 			}
@@ -176,7 +192,7 @@ void clock_main()
 		case CLOCK_COUNT_DOWN_COMPLETE:
 			clk_clear( &clock_1 );
 			event_handling = 0;
-			// TODO: send notification to timer server
+			time_signal( time_tid );
 			break;
 		}
 
@@ -224,4 +240,10 @@ int clock_quit( int tid )
 {
 	uint buf;
 	return clock_request( tid, CLOCK_QUIT, &buf );
+}
+
+static int clock_cd_complete( int tid )
+{
+	uint buf;
+	return clock_request( tid, CLOCK_COUNT_DOWN_COMPLETE, &buf );
 }

@@ -56,7 +56,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_NS:
 	case DBG_HASH:
 		// case DBG_INT:
-		// case DBG_CLK_DRV:
+	case DBG_CLK_DRV:
 		return 0;
 	default:
 		return 1;
