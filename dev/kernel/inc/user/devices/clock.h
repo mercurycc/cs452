@@ -1,6 +1,8 @@
 #ifndef _USER_DEVICES_CLOCK_H_
 #define _USER_DEVICES_CLOCK_H_
 
+#include <types.h>
+
 #define CLOCK_COUNT_DOWN_MS_PER_TICK      10
 
 int clock_current_time( int tid, uint* time );

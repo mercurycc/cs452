@@ -9,8 +9,9 @@
 #include <err.h>
 #include <bwio.h>
 
-#define CLOCK_CLK_SRC         CLK_SRC_2KHZ
-#define CLOCK_TICKS_PER_MS    ( CLK_SRC_2KHZ_SPEED / 1000 )
+#define CLOCK_CLK_SRC                CLK_SRC_2KHZ
+#define CLOCK_TICKS_PER_MS           ( CLK_SRC_2KHZ_SPEED / 1000 )
+#define CLOCK_ACTUAL_TICK( ticks )   ( ( ticks ) * CLOCK_COUNT_DOWN_MS_PER_TICK *CLOCK_TICKS_PER_MS )
 
 enum Clock_request_internal {
 	CLOCK_COUNT_DOWN_COMPLETE = CLOCK_QUIT + 1
@@ -56,6 +57,8 @@ static void clock_event_handler()
 	int status = 0;
 
 	reply.magic = CLOCK_EVENT_MAGIC;
+
+	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
 	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -88,10 +91,12 @@ void clock_main()
 	Clock clock_3 = {0};         /* For timer */
 	Clock_request request;
 	Clock_reply reply;
+	uint current_time;
 	int event_handler_tid = 0;
 	int request_tid;
 	uint current_val;
 	uint event_handling = 0;
+	uint actual_ticks;
 	int execute = 1;
 	int status = 0;
 
@@ -105,6 +110,8 @@ void clock_main()
 
 	reply.magic = CLOCK_MAGIC;
 
+	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
+
 	while( execute ){
 		status = Receive( &request_tid, ( char* )&request, sizeof( request ) );
 		assert( status == sizeof( request ) );
@@ -112,7 +119,22 @@ void clock_main()
 
 		reply.type = request.type;
 
-		DEBUG_NOTICE( DBG_CLK_DRV, "received interrupt\n" );
+		DEBUG_PRINT( DBG_CLK_DRV, "received request, type %u\n", request.type );
+
+		/* Assert message source */
+#ifdef DEBUG
+		switch( request.type ){
+		case CLOCK_CURRENT_TICK:
+		case CLOCK_COUNT_DOWN:
+			break;
+		case CLOCK_QUIT:
+			assert( request_tid == MyParentTid() );
+			break;
+		case CLOCK_COUNT_DOWN_COMPLETE:
+			assert( request_tid == event_handler_tid );
+			break;
+		}
+#endif
 
 		switch( request.type ){
 		case CLOCK_CURRENT_TICK:
@@ -123,9 +145,11 @@ void clock_main()
 			status = clk_value( &clock_1, &current_val );
 			assert( status == ERR_NONE );
 
+			actual_ticks = CLOCK_ACTUAL_TICK( request.data );
+
 			/* Reset clock interrupt */
-			if( ( ! event_handling ) || request.data < ( current_val + CLOCK_OPERATION_TICKS ) ){
-				status = clk_reset( &clock_1, request.data );
+			if( ( ! event_handling ) || actual_ticks < ( current_val + CLOCK_OPERATION_TICKS ) ){
+				status = clk_reset( &clock_1, actual_ticks );
 				assert( status == ERR_NONE );
 			}
 
@@ -149,6 +173,8 @@ void clock_main()
 
 		status = Reply( request_tid, ( char* )&reply, sizeof( reply ) );
 		assert( status == SYSCALL_SUCCESS );
+
+		DEBUG_NOTICE( DBG_CLK_DRV, "request responded\n" );
 	}
 
 	Exit();
