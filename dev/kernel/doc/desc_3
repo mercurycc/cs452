@@ -1,0 +1,161 @@
+			   ==========================
+			   Pinball System for TS-7200
+			      Design Documentation
+			   ==========================
+				    cs452_08
+
+1. Overview
+===========
+
+* Kernel
+--------
+
+- Added IRQ handling and Interrupt Manager
+- Modified trap/context switch code to include IRQ states
+- Implemented AwaitEvent syscall
+
+
+* Userland
+----------
+
+- Added clock support
+- Added time server and associated APIs, i.e. Time, Delay, DelayUntil
+
+
+2. Kernel Component Changes Details
+===================================
+
+* AwaitEvent
+------------
+
+The prototype of AwaitEvent is:
+
+int AwaitEvent( int eventid );
+
+In Pinball kernel an event is defined as an interrupt.  An event id is simply
+the interrupt id.  Therefore by definition only device drivers can call
+AwaitEvent.
+
+The AwaitEvent call will call into the interrupt manager to enable the
+interrupt, register the current task as the interrupt handler for the interrupt,
+and then the task will be removed from the scheduler.  When the interrupt is
+triggered another call into the interrupt handler will disable the interrupt,
+and return the interrupt handler task to be added back to the scheduler.
+
+The caller is expected to ensure that the specific device in concern is
+setup/reset properly to generate the expected interrupt.
+
+
+* Data Structures
+-----------------
+
+- New data structure: Interrupt Manager Descriptor
+
+The Interrupt Manager Descriptor contains data needed by the interrupt manager
+to handle interrupts.  It contains the array of interrupt handlers, mapped to
+interrupt by array index.
+
+- Kernel context
+
+The kernel context now contains data needed by the Interrupt Manager.
+
+
+* Functional Units
+------------------
+
+- New functional unit: Interrupt Manager
+
+The interrupt manager manages the interrupt handlers and handles generic
+interrupt controler operations.
+
+It supports 2 methods: register and handle.  Both are supposed to be called by
+the trap handler.
+
+Register registers a task as the interrupt handler for the specified interrupt,
+and then enables the interrupt in the VIC.  The task is supposed to be removed
+from the scheduler then.  Register should be called when a device driver calls
+AwaitEvent.
+
+Handle will return the interrupt handler for the specified interrupt so that the
+handler can be rescheduled, and disables the interrupt.  Handle should be called
+when the trap handler receives an interrupt.
+
+
+* Processes
+-----------
+
+- New process: interrupt trap, and change to trap process
+
+Interrupt will cause the processor to enter IRO mode.  In Pinball we do not
+initialize IRQ mode sp, so IRQ does not have the power to save any information.
+Rather, we modified the swi trap code to not to clobber any register, saves both
+user mode registers and IRO mode registers (which are just lr and spsr), and
+pass the spsr into the trap handler for it to recognize the source of interrupt.
+In the interrupt trap code we simply executes swi to trap into kernel, through
+swi trap code.
+
+This implies that when the task is rescheduled, it will be restored into IRQ
+mode along with all the IRQ registers.  The instruction immediately following
+swi in the interrupt trap code is:
+
+subs pc, lr, #4
+
+which moves the processor back into the user program the IRQ interrupted.
+
+
+3. Userland Components Changes Details
+======================================
+
+* New service: time server
+--------------------------
+
+
+
+* New driver: clock driver
+--------------------------
+
+The clock driver is built based on requirements of the time server.  It consists
+of 2 components: one is the driver which configures the clock hardware, and the
+other which is a interrupt handler which awaits interrupt events from the clock.
+The clock driver support 2 operations: obtaining current time and count down.
+
+The clock driver starts with initializing clock 1 and 3, where clock 1 is used
+to generate count down interrupts and clock 3 is used to keep track with the
+current time.  Then the driver creates the interrupt handler task.
+
+Whenever the clock driver receives a current time request it reads clock 3 to
+find out how long clock 3 has been running, and calculate the current time from
+this data.  Clock 3 is a 32 bit clock which runs 24 days with the 2000Hz clock
+source.
+
+When the clock driver receives a count down request, it checks if there is a
+undergoing count down and how much time the current count down has left.  If
+there is no count down going on or the current count down has more time left
+than the requested count down, the driver will reset the clock to generate an
+interrupt after the requested count down, and if no count down is going on, the
+driver notifies the clock interrupt handler to wait for the interrupt.
+Otherwise the clock interrupt handler must have been waiting on a shorter count
+down, and the count down request is discarded.
+
+The reason that the longer count down request can be discarded (either by
+ignoring a longer request or replacing current count down with a shorter
+request) is due to the way time server is implemented.  The time server will
+always restore the task that has least amount of delay.  Therefore the clock
+server will only keep track the shortest count down.
+
+Each tick is defined as 10 ms, which is 20 clock ticks giving 2000Hz clock
+source.
+
+
+* New user application: lazy dogs
+---------------------------------
+
+
+
+3. Source Code
+==============
+
+
+
+4. Output
+=========
