@@ -17,8 +17,17 @@ static inline void interrupt_init_one( uint base, uint priority, uint interrupt_
 
 static int interrupt_handler_init()
 {
-	/* Clock */
+	/* Clock 1 */
 	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_TC1UI );
+
+	/* COM1 */
+	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_UART1RXINTR1 );
+	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_UART1TXINTR1 );
+	
+	/* COM2 */
+	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_UART2RXINTR2 );
+	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_UART2TXINTR2 );
+
 
 	return ERR_NONE;
 }
@@ -73,8 +82,14 @@ int interrupt_init( Context* ctx )
 int interrupt_register( Context* ctx, Task* event_waiter, uint interrupt_id )
 {
 	int status = 0;
-	
-	ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] = event_waiter;
+
+	if( interrupt_id >= INTERRUPT_COUNT ){
+		return ERR_INTERRUPT_INVALID_INTERRUPT;
+	} else if( ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] ){
+		return ERR_INTERRUPT_ALREADY_REGISTERED;
+	} else {
+		ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] = event_waiter;
+	}
 
 	status = interrupt_enable( interrupt_id );
 	ASSERT( status == ERR_NONE );

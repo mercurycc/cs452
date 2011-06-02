@@ -68,8 +68,17 @@ The kernel context now contains data needed by the Interrupt Manager.
 The interrupt manager manages the interrupt handlers and handles generic
 interrupt controler operations.
 
-It supports 2 methods: register and handle.  Both are supposed to be called by
-the trap handler.
+The interrupt manager starts up with initializing all the interrupts that are
+going to be used by the kernel.  Intialization take place by disabling all
+interrupts and filling out the vectored interrupt registers
+(vic_vect_addr[0-15]).  The vectored interrupt registers are filled with the
+interrupt id rather than an ISR, because the kernel handles the interrupt by
+pushing the interrupt back to the user space and the only information needed by
+the kernel is the interrupt id.  Using the vectored interrupt registers we can
+obtain the interrupt id with one ld operation.  Fast.
+
+The interrupt manager supports 2 methods provided to the kernel: register and
+handle.  Both are supposed to be called by the trap handler.
 
 Register registers a task as the interrupt handler for the specified interrupt,
 and then enables the interrupt in the VIC.  The task is supposed to be removed
@@ -79,6 +88,8 @@ AwaitEvent.
 Handle will return the interrupt handler for the specified interrupt so that the
 handler can be rescheduled, and disables the interrupt.  Handle should be called
 when the trap handler receives an interrupt.
+
+Handle identifies the interrupt by reading the vic_vect_addr register.
 
 
 * Processes
