@@ -1,0 +1,39 @@
+			   ==========================
+			   Pinball System for TS-7200
+			      Design Documentation
+			   ==========================
+				    cs452_08
+
+1. Overview
+===========
+
+The Pinball system is based on the Pinball kernel, targets to provide a
+real-time OS and associated services and API for userland programming.
+
+
+2. Component Synoposis
+======================
+
+* Services
+----------
+
+- Name server
+
+The name server provides these APIs:
+
+RegisterAs
+WhoIs
+
+- Time server
+
+The time server provides these APIs:
+
+Time
+Delay
+DelayUntil
+
+
+* Drivers
+---------
+
+- Clock driver
