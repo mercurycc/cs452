@@ -6,4 +6,7 @@
 void name_server_start();
 void name_server_stop();
 
+/* Time server */
+void time_main();
+
 #endif /* _USER_SERVER_ENTRY_H_ */
