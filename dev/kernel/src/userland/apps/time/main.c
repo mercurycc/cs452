@@ -1,7 +1,16 @@
+#include <bwio.h>
+#include <err.h>
+#include <types.h>
+#include <user/assert.h>
 #include <user/protocals.h>
-#include <user/name_server>
+#include <user/name_server.h>
 #include <user/time.h>
-
+#include <user/syscall.h>
+#include <devices/clock.h>
+#include <user/devices/clock.h>
+#include <user/assert.h>
+#include <user/drivers_entry.h>
+#include <user/servers_entry.h>
 
 void time_main(){
 
@@ -9,7 +18,7 @@ void time_main(){
 	Time_request msg;
 	Time_reply reply;
 	int status;
-	int result;
+	uint result = 0;
 	int clock_tid;
 	
 	int stop = 0;
@@ -22,9 +31,12 @@ void time_main(){
 	while ( !stop ) {
 		status = Receive(&tid, (char*)&msg, sizeof(msg));
 		assert( status == 0 );
+		
+		bwprintf ( COM2, "timer server received request 0x%x, interval %d\n", msg.request, msg.interval );
+		
 		switch ( msg.request ) {
 		case TIME_ASK:
-			status = clock_current_time( clock_tid, (char*)&result );
+			status = clock_current_time( clock_tid, &result );
 			assert( status == 0 );
 			reply.result = result;
 			status = Reply( tid, (char*)&reply, sizeof(reply));
