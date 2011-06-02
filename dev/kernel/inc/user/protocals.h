@@ -59,13 +59,13 @@ typedef struct Time_request_s Time_request;
 typedef struct Time_reply_s Time_reply;
 
 enum Time_request_type {
-	TIME_ASK;
-	TIME_DELAY;
-	TIME_SIGNAL;
+	TIME_ASK,
+	TIME_DELAY,
+	TIME_SIGNAL
 };
 
 struct Time_request_s {
-	TimeRequest request;
+	Time_request_type request;
 	int interval;
 };
 
