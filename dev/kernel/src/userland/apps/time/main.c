@@ -183,7 +183,7 @@ void time_main(){
 
 			heap_insert( &heap, (Heap_node*)&node );
 
-			status = clock_count_down( clock_tid, msg.interval );
+			status = clock_count_down( clock_tid, node.time );
 			assert( status == 0 );
 			break;
 		case TIME_SIGNAL:
@@ -202,6 +202,9 @@ void time_main(){
 				heap_read_top( &heap, (Heap_node*)&node );
 				assert( status == 0 );
 			}
+			
+			status = clock_count_down( clock_tid, node.time );
+			assert( status == 0 );
 			break;
 		default:
 			bwprintf( COM2, "INVALID TIME MESSAGE" );
