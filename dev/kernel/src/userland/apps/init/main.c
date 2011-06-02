@@ -35,6 +35,16 @@ static inline void clock_test( int clock_tid )
 	clock_count_down( clock_tid, 2000 );
 	clock_count_down( clock_tid, 1000 );
 
+	while( 1 ){
+		clock_current_time( clock_tid, &time );
+		if( time > 1500 && time < 2000 ){
+			clock_count_down( clock_tid, 2000 );
+		} else if( time > 2000 ){
+			bwprintf( COM2, "Reached time %u\n", time );
+			break;
+		}
+	}
+
 	/* Expected: a interrupt should be generated after 2 seconds, rather than 10 seconds. */
 }
 

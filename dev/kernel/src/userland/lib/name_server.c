@@ -10,14 +10,20 @@
 #define NAME_SERVER_MAGIC     0x11a111e0
 #define NAME_SERVER_TID       0x2
 
-/* The name_server_handler/listen is separate from the
-   name_server_main in order to keep unsatisfied request on the name
-   server's stack.  Each time a request cannot be satisfied the
-   listener will recursively respawn itself to take the next request,
-   and then come back to retry.  This process is executed until the
-   request can be satisfied.
+/* The name_server_handler/listen is separate from the name_server_main in order
+   to keep unsatisfied request on the name server's stack.  Each time a request
+   cannot be satisfied the listener will recursively respawn itself to take the
+   next request, and then come back to retry.  This process is executed until
+   the request can be satisfied.
    
    TODO: This could blow up the stack!
+   TODO: This won't work in such case:
+         WhoIs( "LateGuy" );
+	 WhoIs( "NEVER_COME" );
+	 RegisterAs( "LateGuy" );
+
+	 A possible solution to the problem is to chain up the requests in the
+         hash table.
 */
 
 static int name_server_listen( Hashtable* table );
@@ -54,6 +60,7 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 		default:
 			assert( 0 );
 		}
+
 		if( !success ){
 			DEBUG_NOTICE( DBG_NS, "did not satisfy request.\n" );
 			/* Respawn listen if current request cannot be satisfied */

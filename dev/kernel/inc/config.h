@@ -12,7 +12,7 @@
 #define KERNEL_PAGE_SIZE              4096
 #define KERNEL_HIGH_PRIORITY          0
 #define KERNEL_LOW_PRIORITY           31
-#define KERNEL_INIT_TASK_PRIORITY     10
+#define KERNEL_INIT_TASK_PRIORITY     15
 
 /* Userland parameters */
 #define USER_STACK_PAGE               8
