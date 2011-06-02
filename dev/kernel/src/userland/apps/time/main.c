@@ -68,7 +68,7 @@ int heap_insert( Heap* heap, Heap_node* elem ){
 			i = 0;
 		}
 	}
-
+	heap->size++;
 	return ERR_HEAP_NONE;
 }
 
@@ -89,9 +89,12 @@ int heap_remove_top ( Heap* heap, Heap_node* elem ){
 		return status;
 	}
 
+	heap->size -= 1;
+	if ( heap->size == 0 ) {
+		return ERR_HEAP_NONE;
+	}
 	swap_int( (int*)&(heap->data[0].value), (int*)&(heap->data[heap->size].value) );
 	swap_int( (int*)&(heap->data[0].key), (int*)&(heap->data[heap->size].key) );
-	heap->size -= 1;
 
 	int i = 0;
 	int l,r;
