@@ -57,9 +57,13 @@ void user_init()
 	tid = Create( 0, name_server_start );
 	assert( tid > 0 );
 
+	DEBUG_NOTICE( DBG_USER, "created name server\n" );
+	
 	/* Create device drivers */
 	clock_tid = Create( 0, clock_main );
 	assert( clock_tid > 0 );
+	
+	DEBUG_NOTICE( DBG_USER, "created clock server\n" );
 
 	clock_test( clock_tid );
 
