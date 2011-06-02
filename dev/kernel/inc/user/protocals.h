@@ -65,7 +65,7 @@ enum Time_request_type {
 };
 
 struct Time_request_s {
-	Time_request_type request;
+	unsigned int request;
 	int interval;
 };
 
