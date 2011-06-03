@@ -46,7 +46,7 @@ void time_main(){
 
 	while ( !stop ) {
 		status = Receive(&tid, (char*)&msg, sizeof(msg));
-		assert( status == 0 );
+		assert( status == sizeof(msg) );
 		
 		bwprintf ( COM2, "timer server received request 0x%x, interval %d\n", msg.request, msg.interval );
 		
@@ -56,7 +56,7 @@ void time_main(){
 			assert( status == 0 );
 			reply.result = result;
 			status = Reply( tid, (char*)&reply, sizeof(reply));
-			assert( status == sizeof(reply) );
+			assert( status == 0 );
 			break;
 		case TIME_DELAY:
 			status = clock_current_time( clock_tid, &result );
@@ -80,14 +80,14 @@ void time_main(){
 		case TIME_SIGNAL:
 			reply.result = 0;
 			status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
-			assert( status == sizeof(reply) );
+			assert( status == 0 );
 
 			// TODO find corresponding tid for the blocked task;
 			heap_read_top( &heap, (Heap_node*)&node );
 			cur_time = node.time;
 			while ( node.time == cur_time ){
 				status = Reply( node.tid, (char*)&reply, sizeof(reply) );
-				assert( status == sizeof(reply) );
+				assert( status == 0 );
 				status = heap_remove_top( &heap, (Heap_node*)&node );
 				assert( status == 0 );
 				heap_read_top( &heap, (Heap_node*)&node );
@@ -101,11 +101,13 @@ void time_main(){
 			if ( tid != MyParentTid() ) {
 				bwprintf( COM2, "SUICIDE message from a task that is not my parent, fake message?\n" );
 			}
+			DEBUG_NOTICE( DBG_TIME, "quiting clock driver\n" );
 			status = clock_quit( clock_tid );
 			assert( status == 0 );
+			DEBUG_NOTICE( DBG_TIME, "clock driver quit\n" );
 			reply.result = 0;
-			status = Reply( node.tid, (char*)&reply, sizeof(reply) );
-			assert( status == sizeof(reply) );
+			status = Reply( tid, (char*)&reply, sizeof(reply) );
+			assert( status == 0 );
 			stop = 1;
 			break;
 		default:
@@ -113,7 +115,7 @@ void time_main(){
 			break;
 		}
 	}
-
+	DEBUG_NOTICE( DBG_TIME, "time server suicided\n" );
 }
 
 int time_request( int tid, uint request, int interval ){
@@ -123,7 +125,8 @@ int time_request( int tid, uint request, int interval ){
 	msg.request = request;
 	msg.interval = interval;
 
-	Send( tid, (char*)&msg, sizeof(msg), (char*)&reply, sizeof(reply) );
+	int status = Send( tid, (char*)&msg, sizeof(msg), (char*)&reply, sizeof(reply) );
+	assert( status == sizeof(reply) );
 	return reply.result;
 }
 
@@ -132,7 +135,7 @@ int time_ask( int tid ) {
 }
 
 int time_delay( int tid, int interval ) {
-	return time_request( tid, TIME_ASK, interval );
+	return time_request( tid, TIME_DELAY, interval );
 }
 
 int time_signal( int tid ) {

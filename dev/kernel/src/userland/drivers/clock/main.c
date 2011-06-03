@@ -9,7 +9,6 @@
 #include <user/time.h>
 #include <err.h>
 #include <bwio.h>
-#include <user/time.h>
 
 #define CLOCK_CLK_SRC                CLK_SRC_2KHZ
 #define CLOCK_TICKS_PER_MS           ( CLK_SRC_2KHZ_SPEED / 1000 )
@@ -56,6 +55,22 @@ static int clock_event_start( int tid )
 	return ERR_NONE;
 }
 
+static int clock_evnet_stop( int tid ){
+	Clock_event_request request;
+	Clock_event_reply reply;
+	int status;
+
+	request.magic = CLOCK_EVENT_MAGIC;
+	request.type = CLOCK_EVENT_QUIT;
+
+	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+	assert( reply.magic == CLOCK_EVENT_MAGIC );
+	assert( reply.type == request.type );
+
+	return ERR_NONE;
+}
+
 static void clock_event_handler()
 {
 	Clock_event_request request;
@@ -93,6 +108,7 @@ static void clock_event_handler()
 		assert( status == ERR_NONE );
 	}
 
+	DEBUG_NOTICE( DBG_CLK_DRV, "quit!\n" );
 	Exit();
 }
 
@@ -188,6 +204,7 @@ void clock_main()
 			}
 			break;
 		case CLOCK_QUIT:
+			status = clock_evnet_stop( event_handler_tid );
 			execute = 0;
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:

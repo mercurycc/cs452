@@ -11,6 +11,7 @@ struct Sched_s {
 	uint highest_priority;
 	List* task_queue[32];
 	List* zombie;
+	int blocked_task;
 };
 
 int sched_init( Context* ctx, Sched* scheduler );

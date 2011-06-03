@@ -41,6 +41,7 @@ int sched_init( Context* ctx, Sched* scheduler ){
 	scheduler->selector = 0;
 	scheduler->highest_priority = 32;
 	scheduler->zombie = 0;
+	scheduler->blocked_task = 0;
 	int i;
 	for (i=0;i<32;i++){
 		scheduler->task_queue[i] = 0;
@@ -168,9 +169,16 @@ int sched_block( Context* ctx ) {
 
 	DEBUG_PRINT( DBG_SCHED, "task blocked: 0x%x\n", task->tid );
 	task->state = TASK_BLOCK;
+	//update number of blocked tasks
+	//blocked_task++;
+	//assert( blocked_task > 0 );
 	return ERR_NONE;
 }
 
 int sched_signal( Context* ctx, Task* task ){
-	return sched_add( ctx, task );
+	int status = sched_add( ctx, task );
+	//if ( status == ERR_NONE )
+		//blocked_task--;
+	//assert( blocked_task >= 0 );
+	return status;
 }
