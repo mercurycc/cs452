@@ -78,19 +78,26 @@ void time_main(){
 			assert( status == 0 );
 			break;
 		case TIME_SIGNAL:
+			// TODO rewrite structure
 			reply.result = 0;
 			status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
 			assert( status == 0 );
 
 			// TODO find corresponding tid for the blocked task;
-			heap_read_top( &heap, (Heap_node*)&node );
+			status = heap_read_top( &heap, (Heap_node*)&node );
+			assert( status == 0 );
 			cur_time = node.time;
 			while ( node.time == cur_time ){
 				status = Reply( node.tid, (char*)&reply, sizeof(reply) );
+				DEBUG_PRINT( DBG_TIME, "status = 0x%x\n", status );
 				assert( status == 0 );
 				status = heap_remove_top( &heap, (Heap_node*)&node );
 				assert( status == 0 );
-				heap_read_top( &heap, (Heap_node*)&node );
+				
+				status = heap_read_top( &heap, (Heap_node*)&node );
+				if ( status == ERR_HEAP_EMPTY ) {
+					break;
+				}
 				assert( status == 0 );
 			}
 			

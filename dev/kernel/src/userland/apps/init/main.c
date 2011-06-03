@@ -38,6 +38,7 @@ static inline void clock_test( int clock_tid )
 
 	while( 1 ){
 		clock_current_time( clock_tid, &time );
+
 		if( time > 1500 && time < 2000 ){
 			clock_count_down( clock_tid, 2000 );
 		} else if( time > 2000 ){
@@ -104,7 +105,7 @@ void user_init()
 	DEBUG_NOTICE( DBG_USER, "clock server created\n" );
 
 	clock_test( clock_tid );
-//*/
+*/
 //	DEBUG_NOTICE( DBG_USER, "clock_test finished\n" );
 
 //	K2();

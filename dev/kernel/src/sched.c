@@ -68,7 +68,7 @@ int sched_schedule( Context* ctx, Task** next ){
 			DEBUG_PRINT( DBG_SCHED,"Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
 			uint reg_val = HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
 			DEBUG_PRINT( DBG_SCHED,"reg val read 0x%x\n", reg_val );
-			// TODO: how to handle this new interrupt?
+			// Wake up by an interrupt
 			interrupt_handle( ctx, next );
 			sched_signal( ctx, *next );
 			return 0;
