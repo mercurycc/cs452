@@ -97,7 +97,7 @@ void user_init()
 
 	DEBUG_NOTICE( DBG_USER, "name server created\n" );
 	
-	/* Create device drivers */
+	/* Create device drivers 
 	clock_tid = Create( 0, clock_main );
 	assert( clock_tid > 0 );
 	
@@ -109,7 +109,7 @@ void user_init()
 
 //	K2();
 
-//	time_test();
+	time_test();
 
 
 	DEBUG_NOTICE( DBG_USER, "killing name server\n" );

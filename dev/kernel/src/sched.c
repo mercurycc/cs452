@@ -7,6 +7,7 @@
 #include <lib/list.h>
 #include <ts7200.h>
 #include <regopts.h>
+#include <interrupt.h>
 
 
 #define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
@@ -68,7 +69,8 @@ int sched_schedule( Context* ctx, Task** next ){
 			uint reg_val = HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
 			DEBUG_PRINT( DBG_SCHED,"reg val read 0x%x\n", reg_val );
 			// TODO: how to handle this new interrupt?
-			ASSERT( 0 );
+			interrupt_handle( ctx, next );
+			sched_signal( ctx, *next );
 			return 0;
 		}
 		// no task in scheduler

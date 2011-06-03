@@ -89,6 +89,7 @@ int interrupt_register( Context* ctx, Task* event_waiter, uint interrupt_id )
 		return ERR_INTERRUPT_ALREADY_REGISTERED;
 	} else {
 		ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] = event_waiter;
+		DEBUG_PRINT( DBG_INT, "task 0x%x registerd as handler 0x%x\n", event_waiter->tid, interrupt_id );
 	}
 
 	status = interrupt_enable( interrupt_id );

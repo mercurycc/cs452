@@ -51,14 +51,14 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_TRAP:
 	case DBG_KER:
 	case DBG_TASK:
-		// case DBG_USER:
+	case DBG_USER:
 	case DBG_CMD:
 		// case DBG_SCHED:
 	case DBG_NS:
 	case DBG_HASH:
 		// case DBG_INT:
 	case DBG_CLK_DRV:
-		// case DBG_TIME:
+	case DBG_TIME:
 		// case DBG_TEMP:
 		return 0;
 	default:
