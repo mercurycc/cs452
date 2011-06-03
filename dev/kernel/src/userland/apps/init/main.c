@@ -55,21 +55,30 @@ static inline void time_test(){
 	DEBUG_NOTICE( DBG_USER, "time server created\n" );
 
 	int status;
-/*
-	status = time_ask( tid );
-	bwprintf( COM2, "current time is 0x%x\n", status );
 
-	int i;
-	for ( i=0; i<10000; i++);
-	status = time_ask( tid );
-	bwprintf( COM2, "current time is 0x%x\n", status );
-
-	status = time_delay( tid, 10 );
+	status = time_delay( tid, 500 );
 	assert( status == 0 );
-*/
+
 	status = time_ask( tid );
 	bwprintf( COM2, "current time is 0x%x\n", status );
-
+/*
+	int i;
+	for (i=0;i<20000;i++);
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
+	for (i=0;i<20000;i++);
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
+	for (i=0;i<20000;i++);
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
+	for (i=0;i<20000;i++);
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
+	for (i=0;i<20000;i++);
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
+*/
 	status = time_suicide( tid );
 	assert( status == 0 );
 	DEBUG_NOTICE( DBG_USER, "time server killed\n" );
@@ -88,19 +97,20 @@ void user_init()
 
 	DEBUG_NOTICE( DBG_USER, "name server created\n" );
 	
-	/* Create device drivers 
+	/* Create device drivers */
 	clock_tid = Create( 0, clock_main );
 	assert( clock_tid > 0 );
 	
 	DEBUG_NOTICE( DBG_USER, "clock server created\n" );
-	*/
-//	clock_test( clock_tid );
 
+	clock_test( clock_tid );
+//*/
 //	DEBUG_NOTICE( DBG_USER, "clock_test finished\n" );
 
 //	K2();
 
-	time_test();
+//	time_test();
+
 
 	DEBUG_NOTICE( DBG_USER, "killing name server\n" );
 	name_server_stop();

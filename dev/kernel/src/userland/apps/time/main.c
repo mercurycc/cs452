@@ -116,6 +116,7 @@ void time_main(){
 		}
 	}
 	DEBUG_NOTICE( DBG_TIME, "time server suicided\n" );
+	Exit();
 }
 
 int time_request( int tid, uint request, int interval ){

@@ -5,6 +5,8 @@
 #include <task.h>
 #include <sched.h>
 #include <lib/list.h>
+#include <ts7200.h>
+#include <regopts.h>
 
 
 #define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
@@ -48,19 +50,33 @@ int sched_init( Context* ctx, Sched* scheduler ){
 	}
 	ctx->scheduler = scheduler;
 
+	// enable halt on cpu, need to turn off swlock
+	uint reg_val = HW_READ( CPU_POWER_ADDR, CPU_DEVICECFG_OFFSET );
+	HW_WRITE( CPU_POWER_ADDR, CPU_SYSSWLOCK_OFFSET, CPU_SWLOCK_MASK );
+	HW_WRITE( CPU_POWER_ADDR, CPU_DEVICECFG_OFFSET, CPU_SHENA_MASK|reg_val );
+	HW_WRITE( CPU_POWER_ADDR, CPU_SYSSWLOCK_OFFSET, 0 );
+	reg_val = HW_READ( CPU_POWER_ADDR, CPU_DEVICECFG_OFFSET );
+	DEBUG_PRINT( DBG_SCHED,"device config val 0x%x is now set to 0x%x\n", reg_val, CPU_SHENA_MASK|reg_val );
 	return 0;
 }
 
 int sched_schedule( Context* ctx, Task** next ){
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
+		if ( ctx->scheduler->blocked_task ) {
+			DEBUG_PRINT( DBG_SCHED,"Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
+			uint reg_val = HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
+			DEBUG_PRINT( DBG_SCHED,"reg val read 0x%x\n", reg_val );
+			// TODO: how to handle this new interrupt?
+			ASSERT( 0 );
+			return 0;
+		}
 		// no task in scheduler
 		*next = 0;
 		return 0;
 	}
 
 	uint priority = ctx->scheduler->highest_priority;
-	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current priority is %d\n", priority );
 
 	// get the corresponding element
 	List* elem = ctx->scheduler->task_queue[priority];
@@ -68,15 +84,15 @@ int sched_schedule( Context* ctx, Task** next ){
 	*next = list_entry( Task, elem, queue);
 	(*next)->state = TASK_ACTIVE;
 
-	DEBUG_PRINT( DBG_SCHED,"SCHED_schedule: current ptr is %x\n", ctx->scheduler->task_queue[priority] );
+	DEBUG_PRINT( DBG_SCHED,"selected task 0x%x at priority %d\n", (*next)->tid, priority );
 
 	return 0;
 }
 
 int sched_add( Context* ctx, Task* task ){
 	uint priority = task->priority;
-	ASSERT( (0 <= priority) && (priority < 32) );
 	DEBUG_PRINT( DBG_SCHED, "task tid 0x%x priority %d\n", task->tid, priority );
+	ASSERT( (0 <= priority) && (priority < 32) );
 
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	uint err = list_add_tail( target_queue_ptr, &(task->queue) );
@@ -92,7 +108,7 @@ int sched_add( Context* ctx, Task* task ){
 	if ( priority < ctx->scheduler->highest_priority ) {
 		ctx->scheduler->highest_priority = priority;
 	}
-	DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
+	//DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
 	return 0;
 }
 
@@ -126,7 +142,7 @@ int sched_kill( Context* ctx, Task* task){
 		return err;
 	}
 	task->state = TASK_ZOMBIE;
-	DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
+	//DEBUG_PRINT( DBG_SCHED,"current task is %d\n", task->tid );
 
 	return 0;
 }
@@ -170,15 +186,15 @@ int sched_block( Context* ctx ) {
 	DEBUG_PRINT( DBG_SCHED, "task blocked: 0x%x\n", task->tid );
 	task->state = TASK_BLOCK;
 	//update number of blocked tasks
-	//blocked_task++;
-	//assert( blocked_task > 0 );
+	ctx->scheduler->blocked_task++;
+	ASSERT( ctx->scheduler->blocked_task > 0 );
 	return ERR_NONE;
 }
 
 int sched_signal( Context* ctx, Task* task ){
 	int status = sched_add( ctx, task );
-	//if ( status == ERR_NONE )
-		//blocked_task--;
-	//assert( blocked_task >= 0 );
+	if ( status == ERR_NONE )
+		ctx->scheduler->blocked_task--;
+	ASSERT( ctx->scheduler->blocked_task >= 0 );
 	return status;
 }

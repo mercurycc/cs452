@@ -203,7 +203,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	Context* ctx = (Context*)(*(uint*)kernelsp);
 	int status = 0;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
-	DEBUG_PRINT( DBG_TRAP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n",
+	DEBUG_PRINT( DBG_TEMP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n",
 		     ctx->current_task->tid, sp_caller, mode );
 
 	ctx->current_task->stack = sp_caller;

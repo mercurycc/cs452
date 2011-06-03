@@ -167,4 +167,13 @@
 /* VIC properties */
 #define VIC_VECT_INT_MAX              16
 
+/* CPU POWER CONTROL */
+#define CPU_POWER_ADDR                0x80930000
+#define CPU_HALT_OFFSET               0x08
+#define CPU_STANDBY_OFFSET               0x0C
+#define CPU_DEVICECFG_OFFSET          0x80
+	#define CPU_SHENA_MASK        0x1
+#define CPU_SYSSWLOCK_OFFSET          0xC0
+	#define CPU_SWLOCK_MASK       0xAA
+
 #endif /* _TS7200_H_ */
