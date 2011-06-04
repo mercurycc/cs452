@@ -1,7 +1,7 @@
 #include <types.h>
 #include <user/syscall.h>
 #include <user/clock_server.h>
-#include <user/sync.h>
+#include <user/lib/sync.h>
 #include <user/assert.h>
 
 #define LAZY_MAGIC         0x11a27a61
@@ -28,6 +28,7 @@ void lazy_lazy_dog()
 	}
 
 	sync_responde( MyParentTid() );
+	Exit();
 }
 
 void lazy_dog()
@@ -35,6 +36,7 @@ void lazy_dog()
 	int i;
 	int request;
 	int tid;
+	int status;
 	Lazy_dog_param param;
 
 	param.magic = LAZY_MAGIC;
@@ -68,7 +70,7 @@ void lazy_dog()
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		assert( status == sizeof( request ) );
 		assert( request == LAZY_MAGIC );
-		statis = Reply( tid, ( char* )&lazy_lazy_dog, sizeof( lazy_lazy_dog ) );
+		status = Reply( tid, ( char* )&param, sizeof( param ) );
 		assert( status == SYSCALL_SUCCESS );
 	}
 

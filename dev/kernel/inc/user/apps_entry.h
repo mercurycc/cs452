@@ -12,4 +12,7 @@ void rps_game();
 /* Send/Receive/Reply benchmark */
 void srr_bench();
 
+/* clock server clients */
+void lazy_dog();
+
 #endif /* _USER_APPS_ENTRY_H_ */

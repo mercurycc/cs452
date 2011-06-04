@@ -37,15 +37,17 @@ KERNELSRC += userland/apps/noise/main.c
 KERNELSRC += userland/apps/rps_client/main.c
 KERNELSRC += userland/apps/RPSServer/main.c
 KERNELSRC += userland/apps/rps_game/main.c
+KERNELSRC += userland/apps/lazy_dog/main.c
 
 # Libraries
 KERNELSRC += userland/lib/syscall.c
 KERNELSRC += userland/lib/name_server.c
 KERNELSRC += userland/lib/prng.c
 KERNELSRC += userland/lib/heap.c
+KERNELSRC += userland/lib/sync.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock/main.c
 
 # Services
-KERNELSRC += userland/apps/time/main.c
+KERNELSRC += userland/server/time/main.c

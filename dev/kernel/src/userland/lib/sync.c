@@ -12,6 +12,7 @@ int sync_wait()
 
 	status = Receive( &tid, ( char* )&buf, sizeof( buf ) );
 	assert( status == sizeof( buf ) );
+	DEBUG_PRINT( DBG_SYNC, "received: 0x%x\n", buf );
 	assert( buf == SYNC_MAGIC );
 	status = Reply( tid, ( char* )&buf, sizeof( buf ) );
 	assert( status == SYSCALL_SUCCESS );

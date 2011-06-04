@@ -49,7 +49,7 @@ void time_main(){
 		status = Receive(&tid, (char*)&msg, sizeof(msg));
 		assert( status == sizeof(msg) );
 		
-		bwprintf ( COM2, "timer server received request 0x%x, interval %d\n", msg.request, msg.interval );
+		DEBUG_PRINT( DBG_TIME, "timer server received request 0x%x, interval %d\n", msg.request, msg.interval );
 		
 		switch ( msg.request ) {
 		case TIME_ASK:

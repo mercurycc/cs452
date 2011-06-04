@@ -30,7 +30,8 @@ enum Debug_type {
 	DBG_HASH,
 	DBG_INT,
 	DBG_CLK_DRV,
-	DBG_TIME
+	DBG_TIME,
+	DBG_SYNC
 };
 
 #ifdef DEBUG
@@ -56,9 +57,10 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_SCHED:
 	case DBG_NS:
 	case DBG_HASH:
-		// case DBG_INT:
-		// case DBG_CLK_DRV:
-		// case DBG_TIME:
+	case DBG_INT:
+	case DBG_CLK_DRV:
+	case DBG_TIME:
+	case DBG_SYNC:
 	case DBG_TEMP:
 		return 0;
 	default:
