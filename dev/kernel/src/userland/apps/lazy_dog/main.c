@@ -1,6 +1,6 @@
 #include <types.h>
 #include <user/syscall.h>
-#include <user/time.h>
+#include <user/clock_server.h>
 #include <user/sync.h>
 #include <user/assert.h>
 

@@ -12,6 +12,7 @@
 #include <user/drivers_entry.h>
 #include <user/servers_entry.h>
 #include <user/lib/heap.h>
+#include <user/clock_server.h>
 
 
 struct Time_tid_node {
@@ -62,14 +63,17 @@ void time_main(){
 			status = clock_current_time( clock_tid, &result );
 			assert( status == 0 );
 
-			if ( msg.interval <= 0 ) {
+			msg.interval += result;
+		case TIME_DELAY_UNTIL:
+		
+			if ( msg.interval <= result ) {
 				reply.result = 0;
 				status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
 				assert ( status == 0 );
 				break;
 			}
 
-			node.time = result + msg.interval;
+			node.time = msg.interval;
 			node.tid = tid;
 
 			heap_insert( &heap, (Heap_node*)&node );
@@ -131,7 +135,7 @@ void time_main(){
 	Exit();
 }
 
-int time_request( int tid, uint request, int interval ){
+static int time_request( int tid, uint request, int interval ){
 	Time_request msg;
 	Time_reply reply;
 
@@ -151,6 +155,10 @@ int time_delay( int tid, int interval ) {
 	return time_request( tid, TIME_DELAY, interval );
 }
 
+int time_delay_until( int tid, int time ) {
+	return time_request( tid, TIME_DELAY_UNTIL, time );
+}
+
 int time_signal( int tid ) {
 	return time_request( tid, TIME_SIGNAL, 0 );
 }
@@ -159,3 +167,14 @@ int time_suicide( int tid ) {
 	return time_request( tid, TIME_SUICIDE, 0 );
 }
 
+int Time() {
+	return time_ask( CLOCK_SERVER_TID );
+}
+
+int Delay( int ticks ) {
+	return time_delay( CLOCK_SERVER_TID, ticks );
+}
+
+int DelayUntil( int ticks ) {
+	return time_delay_until( CLOCK_SERVER_TID, ticks );
+}

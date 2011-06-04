@@ -61,6 +61,7 @@ typedef struct Time_reply_s Time_reply;
 enum Time_request_type {
 	TIME_ASK,
 	TIME_DELAY,
+	TIME_DELAY_UNTIL,
 	TIME_SIGNAL,
 	TIME_SUICIDE
 };
