@@ -66,16 +66,30 @@ int heap_remove_top ( Heap* heap, Heap_node* elem ){
 	while ( i < heap->size ) {
 		l = i*2 + 1;
 		r = i*2 + 2;
-		if ( l <= heap->size ) {
+		
+		if ( r < heap->size ){
+			if (heap->data[l].key < heap->data[r].key) {
+				swap_int( (int*)&(heap->data[i].value), (int*)&(heap->data[l].value) );
+				swap_int( (int*)&(heap->data[i].key), (int*)&(heap->data[l].key) );
+				i = l;
+			}
+            else if (heap->data[l].key > heap->data[r].key) {
+				swap_int( (int*)&(heap->data[i].value), (int*)&(heap->data[r].value) );
+				swap_int( (int*)&(heap->data[i].key), (int*)&(heap->data[r].key) );
+				i = r;
+			}
+			else {
+			     i = heap->size;
+			}
+		}
+		else if ( l < heap->size ) {
 			if (heap->data[i].key > heap->data[l].key) {
 				swap_int( (int*)&(heap->data[i].value), (int*)&(heap->data[l].value) );
 				swap_int( (int*)&(heap->data[i].key), (int*)&(heap->data[l].key) );
+				i = l;
 			}
-		}
-		else if ( r <= heap->size ){
-			if (heap->data[i].key > heap->data[r].key) {
-				swap_int( (int*)&(heap->data[r].value), (int*)&(heap->data[r].value) );
-				swap_int( (int*)&(heap->data[r].key), (int*)&(heap->data[r].key) );
+			else {
+			     i = heap->size;
 			}
 		}
 		else {
@@ -84,4 +98,3 @@ int heap_remove_top ( Heap* heap, Heap_node* elem ){
 	}
 	return ERR_HEAP_NONE;
 }
-
