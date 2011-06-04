@@ -17,14 +17,17 @@ void lazy_lazy_dog()
 	int i;
 	uint request = LAZY_MAGIC;
 	int status = 0;
+	int my_tid = MyTid();
 	Lazy_dog_param param;
 
 	status = Send( MyParentTid(), ( char* )&request, sizeof( request ), ( char* )&param, sizeof( param ) );
 	assert( status == sizeof( param ) );
 
+	bwprintf( COM2, "task %d starts to delay\n", my_tid );
 	for( i = 0; i < param.delay_count; i += 1 ){
 		status = Delay( param.delay_time );
 		assert( status == 0 );
+		bwprintf( COM2, "task %d has finished %d delay\n", my_tid, i+1 );
 	}
 
 	sync_responde( MyParentTid() );
