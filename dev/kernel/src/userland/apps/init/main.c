@@ -57,7 +57,9 @@ static inline void time_test(){
 
 	int status;
 
-	status = time_delay( tid, 500 );
+	Create(0, noise);
+
+	status = time_delay( tid, 1000 );
 	assert( status == 0 );
 
 	status = time_ask( tid );

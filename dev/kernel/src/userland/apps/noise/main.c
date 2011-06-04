@@ -2,26 +2,28 @@
 #include <user/apps_entry.h>
 #include <user/name_server.h>
 #include <bwio.h>
+#include <user/apps_entry.h>
+#include <user/servers_entry.h>
+#include <user/assert.h>
+#include <user/protocals.h>
+#include <user/drivers_entry.h>
+#include <user/devices/clock.h>
+#include <user/time.h>
+#include <bwio.h>
+#include <err.h>
 
 void noise()
 {
+	int status;
 
-	bwprintf( COM2, "New task entered, tid = 0x%x, parent id = 0x%x\n", MyTid(), MyParentTid() );
+	int tid = WhoIs("time");
 
-	char msg[256];
-	char* reply = "WELCOME!";
-	int tid = 55555;
+	status = time_delay( tid, 500 );
+	assert( status == 0 );
 
-	// receive
-	Receive( &tid, msg, 256 );
+	status = time_ask( tid );
+	bwprintf( COM2, "current time is 0x%x\n", status );
 
-	bwprintf( COM2, "task 0x%x: message received from 0x%x: %s\n", MyTid(), tid, msg );
 
-	Reply( tid, reply, 9 );
-
-	RegisterAs( "Goodman" );
-
-	bwprintf( COM2, "task 0x%x:exiting...\n", MyTid());
 	Exit();
-
 }

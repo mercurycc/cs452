@@ -93,16 +93,21 @@ void time_main(){
 				assert( status == 0 );
 				status = heap_remove_top( &heap, (Heap_node*)&node );
 				assert( status == 0 );
-				
 				status = heap_read_top( &heap, (Heap_node*)&node );
 				if ( status == ERR_HEAP_EMPTY ) {
 					break;
 				}
 				assert( status == 0 );
 			}
+
 			
-			status = clock_count_down( clock_tid, node.time );
-			assert( status == 0 );
+			DEBUG_PRINT( DBG_TIME, "status = 0x%x\n", status );
+
+			if ( status == 0 ) {
+				DEBUG_PRINT( DBG_TIME, "sending new interrupt of interval %d\n", node.time );
+				status = clock_count_down( clock_tid, node.time );
+				assert( status == 0 );
+			}
 			break;
 		case TIME_SUICIDE:
 			if ( tid != MyParentTid() ) {
