@@ -4,7 +4,7 @@
 typedef struct Heap_node_s Heap_node;
 typedef struct Heap_s Heap;
 
-#define MAX_HEAP_SIZE 64
+#define MAX_HEAP_SIZE 256
 
 enum HEAP_ERR {
 	ERR_HEAP_NONE,

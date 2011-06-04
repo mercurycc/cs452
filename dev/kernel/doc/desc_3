@@ -117,9 +117,14 @@ which moves the processor back into the user program the IRQ interrupted.
 3. Userland Components Changes Details
 ======================================
 
-* New service: time server
+* New service: time server / clock server
 --------------------------
 
+The time server is an optimized clock server in the requirement of this assignment. The timer server is designed to have much small number of sends and/or replys. For this purpose, we removed the notifier, because the notifier would send message to clock server every clock tick.
+
+In our time server, we will create a clock driver. When ever a request coming in, the time server will communicate with the clock driver to resolve the request. When a Time() request comes in, the clock driver will send a message to clock driver to ask for current time. When a Delay() or DelayUntil(), the timer server will calculate the wake-up time of the delaying task, and send this information to clock driver. The clock driver will send a signal to time server when a delay is done. Then time server will reply to the delaying task to wake it up.
+
+One thing needs to mention is that the clock driver only reply once, for the task that needs to be wake up earliest. If there are multiple tasks delaying, the time server will calculate the new delaying time after receiving the signal from clock driver. Thus, the clock driver will notice the time server again when the delay time has come. To do this, the time server needs to keep a record of all tasks that has sent delay quest and has not been responsed to yet. These are stored with a minimum heap. We choose to use heap data structure because we can easily find the earliest task that the time server needs to reply to. 
 
 
 * New driver: clock driver
@@ -161,6 +166,14 @@ source.
 * New user application: lazy dogs
 ---------------------------------
 
+The lazy dog is a task that used to test the time server. All it does is the test procedure as described in the assignment specification. It creates 4 tasks, give different delay parameters, and wait until all 4 sub-tasks to finish. The sub tasks will delay for the given duration, and print message as they progress.
+
+* Data Structures
+-----------------
+
+- Heap Structure
+
+A new heap structure is added to user library. Each element in the heap is consist of two fields: a key and a value. The heap is a minimun heap sorting on the key of its elements. The heap has insert and remove methods of O(log n) running time, and the it has a peak method to read the first element in the heap for O(1) run time. The key value is an unsigned integer, and it will be sorted unsignedly. The value field is an integer value, so it can be used directly, or used as a pointer pointing to some data structure if needed. The maximum number of elements in the heap is set to 256 elements.
 
 
 3. Source Code
