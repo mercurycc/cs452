@@ -183,11 +183,8 @@ request) is due to the way time server is implemented.  The time server will
 always restore the task that has least amount of delay.  Therefore the clock
 server will only keep track the shortest count down.
 
-Each tick is defined as 10 ms, which is 20 clock ticks giving 2000Hz clock
-source.  This is different from what was defined on the kernel description, but
-we think this is a better choice as this gives finer control to the user
-program, where given the clock driver implementation this choice does not cause
-any extra overhead.
+Each tick is defined to be 50 ms, which is equivalent to 100 ticks on the clock,
+as required by the kernel specification.
 
 
 * New user application: lazy dogs
@@ -198,9 +195,6 @@ does is the test procedure as described in the assignment specification. It
 creates 4 tasks, give different delay parameters, and wait until all 4 sub-tasks
 to finish. The sub tasks will delay for the given duration, and print message as
 they progress.
-
-The duration the task wait will be the same as required on the assignment while
-the number of ticks will be different because we are using 10ms as a tick.
 
 
 * Data Structures
@@ -226,6 +220,11 @@ of elements in the heap is set to 256 elements.
 4. Output
 =========
 
+As specified by the assignment no 2 timeouts should occur at the same time.
+Therefore all output should get enough gap to print out its statues in sequence.
+
+The output is augemented by the time caluculated from the out.
+
 Time (ms) | Output
 0         | task 7 starts
 -         | task 8 starts
@@ -237,7 +236,7 @@ Time (ms) | Output
 1500      | task 7 has finished delay 3 of 500 ms
 1650      | task 9 has finished delay 1 of 1650 ms
 2000      | task 7 has finished delay 4 of 500 ms
-2300      | task 8 has finished delay 2 of 1150 ms
+2250      | task 8 has finished delay 2 of 1150 ms
 2500      | task 7 has finished delay 5 of 500 ms
 3000      | task 7 has finished delay 6 of 500 ms
 3300      | task 9 has finished delay 2 of 1650 ms
@@ -245,28 +244,30 @@ Time (ms) | Output
 3500      | task 7 has finished delay 7 of 500 ms
 3550      | task 10 has finished delay 1 of 3550 ms
 4000      | task 7 has finished delay 8 of 500 ms
-3500      | task 7 has finished delay 9 of 500 ms
+4500      | task 7 has finished delay 9 of 500 ms
 4600      | task 8 has finished delay 4 of 1150 ms
-| task 9 has finished delay 3 of 1650 ms
-| task 7 has finished delay 10 of 500 ms
-| task 7 has finished delay 11 of 500 ms
-| task 8 has finished delay 5 of 1150 ms
-| task 7 has finished delay 12 of 500 ms
-| task 7 has finished delay 13 of 500 ms
-| task 9 has finished delay 4 of 1650 ms
-| task 8 has finished delay 6 of 1150 ms
-| task 7 has finished delay 14 of 500 ms
-| task 10 has finished delay 2 of 3550 ms
-| task 7 has finished delay 15 of 500 ms
-| task 7 has finished delay 16 of 500 ms
-| task 8 has finished delay 7 of 1150 ms
-| task 9 has finished delay 5 of 1650 ms
-| task 7 has finished delay 17 of 500 ms
-| task 7 has finished delay 18 of 500 ms
-| task 8 has finished delay 8 of 1150 ms
-| task 7 has finished delay 19 of 500 ms
-| task 9 has finished delay 6 of 1650 ms
-| task 7 has finished delay 20 of 500 ms
-| task 8 has finished delay 9 of 1150 ms
-| task 10 has finished delay 3 of 3550 ms
+4950      | task 9 has finished delay 3 of 1650 ms
+5000      | task 7 has finished delay 10 of 500 ms
+5500      | task 7 has finished delay 11 of 500 ms
+5750      | task 8 has finished delay 5 of 1150 ms
+6000      | task 7 has finished delay 12 of 500 ms
+6500      | task 7 has finished delay 13 of 500 ms
+6600      | task 9 has finished delay 4 of 1650 ms
+6900      | task 8 has finished delay 6 of 1150 ms
+7000      | task 7 has finished delay 14 of 500 ms
+7100      | task 10 has finished delay 2 of 3550 ms
+7500      | task 7 has finished delay 15 of 500 ms
+8000      | task 7 has finished delay 16 of 500 ms
+8050      | task 8 has finished delay 7 of 1150 ms
+8250      | task 9 has finished delay 5 of 1650 ms
+8500      | task 7 has finished delay 17 of 500 ms
+9000      | task 7 has finished delay 18 of 500 ms
+9200      | task 8 has finished delay 8 of 1150 ms
+9500      | task 7 has finished delay 19 of 500 ms
+9900      | task 9 has finished delay 6 of 1650 ms
+10000     | task 7 has finished delay 20 of 500 ms
+10350     | task 8 has finished delay 9 of 1150 ms
+10650     | task 10 has finished delay 3 of 3550 ms
  
+Output explained:
+It works.

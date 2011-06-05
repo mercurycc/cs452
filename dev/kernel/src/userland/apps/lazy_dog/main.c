@@ -46,23 +46,20 @@ void lazy_dog()
 
 	for( i = 0; i < 4; i += 1 ){
 		switch( i ){
-			/* Pinball uses 10 ms as a tick, so the delay
-			   specified on the assignment need to be
-			   modified */
 		case 0:
-			param.delay_time = 10; // * 5;
+			param.delay_time = 10;
 			param.delay_count = 20;
 			break;
 		case 1:
-			param.delay_time = 23; // * 5;
+			param.delay_time = 23;
 			param.delay_count = 9;
 			break;
 		case 2:
-			param.delay_time = 33; // * 5;
+			param.delay_time = 33;
 			param.delay_count = 6;
 			break;
 		case 3:
-			param.delay_time = 71; // * 5;
+			param.delay_time = 71;
 			param.delay_count = 3;
 			break;
 		}
