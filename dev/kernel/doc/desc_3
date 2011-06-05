@@ -143,7 +143,7 @@ delaying time for the next earliest task and send the request to the clock
 driver. The tasks that needed to be waken up is kept in a min-heap to achieve
 this in O(log n) time.
 
-The data that tasks got from time server should be accurate. When a task asks for a time, there will be 2 send-receive-reply. One of them sends a 8-byte data, and the other send a 12-byte data. By our measurement, these two sends should be completed within 500us each, which allows the task to get current time with in 1ms. Since each tick is defined as 50ms in our system, this small delay is actually negligible.
+The data that tasks got from time server should be accurate. When a task asks for a time, there will be 3 send-receive-reply. One of them sends a 8-byte data, one sends a 12-byte data, and one for error checking(to name server). By our measurement, these two sends should be completed within 500us each, which allows the task to get current time with in 1ms. Since each tick is defined as 50ms in our system, this small delay is actually negligible.
 
 This is done as the given implementation of clock driver.
 
