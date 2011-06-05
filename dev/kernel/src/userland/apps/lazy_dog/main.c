@@ -27,7 +27,7 @@ void lazy_lazy_dog()
 	for( i = 0; i < param.delay_count; i += 1 ){
 		status = Delay( param.delay_time );
 		assert( status == 0 );
-		bwprintf( COM2, "task %d has finished delay %d of %d ms\n", my_tid, i+1, param.delay_time * 10 );
+		bwprintf( COM2, "task %d has finished delay %d of %d ms\n", my_tid, i+1, param.delay_time * 50 );
 	}
 
 	sync_responde( MyParentTid() );
@@ -50,19 +50,19 @@ void lazy_dog()
 			   specified on the assignment need to be
 			   modified */
 		case 0:
-			param.delay_time = 50;
+			param.delay_time = 10; // * 5;
 			param.delay_count = 20;
 			break;
 		case 1:
-			param.delay_time = 23 * 5;
+			param.delay_time = 23; // * 5;
 			param.delay_count = 9;
 			break;
 		case 2:
-			param.delay_time = 33 * 5;
+			param.delay_time = 33; // * 5;
 			param.delay_count = 6;
 			break;
 		case 3:
-			param.delay_time = 71 * 5;
+			param.delay_time = 71; // * 5;
 			param.delay_count = 3;
 			break;
 		}

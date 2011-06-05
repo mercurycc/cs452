@@ -225,3 +225,48 @@ of elements in the heap is set to 256 elements.
 
 4. Output
 =========
+
+Time (ms) | Output
+0         | task 7 starts
+-         | task 8 starts
+-         | task 9 starts
+-         | task 10 starts
+500       | task 7 has finished delay 1 of 500 ms
+1000      | task 7 has finished delay 2 of 500 ms
+1150      | task 8 has finished delay 1 of 1150 ms
+1500      | task 7 has finished delay 3 of 500 ms
+1650      | task 9 has finished delay 1 of 1650 ms
+2000      | task 7 has finished delay 4 of 500 ms
+2300      | task 8 has finished delay 2 of 1150 ms
+2500      | task 7 has finished delay 5 of 500 ms
+3000      | task 7 has finished delay 6 of 500 ms
+3300      | task 9 has finished delay 2 of 1650 ms
+3450      | task 8 has finished delay 3 of 1150 ms
+3500      | task 7 has finished delay 7 of 500 ms
+3550      | task 10 has finished delay 1 of 3550 ms
+4000      | task 7 has finished delay 8 of 500 ms
+3500      | task 7 has finished delay 9 of 500 ms
+4600      | task 8 has finished delay 4 of 1150 ms
+| task 9 has finished delay 3 of 1650 ms
+| task 7 has finished delay 10 of 500 ms
+| task 7 has finished delay 11 of 500 ms
+| task 8 has finished delay 5 of 1150 ms
+| task 7 has finished delay 12 of 500 ms
+| task 7 has finished delay 13 of 500 ms
+| task 9 has finished delay 4 of 1650 ms
+| task 8 has finished delay 6 of 1150 ms
+| task 7 has finished delay 14 of 500 ms
+| task 10 has finished delay 2 of 3550 ms
+| task 7 has finished delay 15 of 500 ms
+| task 7 has finished delay 16 of 500 ms
+| task 8 has finished delay 7 of 1150 ms
+| task 9 has finished delay 5 of 1650 ms
+| task 7 has finished delay 17 of 500 ms
+| task 7 has finished delay 18 of 500 ms
+| task 8 has finished delay 8 of 1150 ms
+| task 7 has finished delay 19 of 500 ms
+| task 9 has finished delay 6 of 1650 ms
+| task 7 has finished delay 20 of 500 ms
+| task 8 has finished delay 9 of 1150 ms
+| task 10 has finished delay 3 of 3550 ms
+ 
