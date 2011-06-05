@@ -141,9 +141,11 @@ static int time_request( int tid, uint request, int interval ){
 
 	msg.request = request;
 	msg.interval = interval;
+	
+	if ( tid != WhoIs("time") ) return TIME_TID_NOT_CLOCK;
 
 	int status = Send( tid, (char*)&msg, sizeof(msg), (char*)&reply, sizeof(reply) );
-	assert( status == sizeof(reply) );
+	if ( status == SEND_INVALID_TASK_ID ) return TIME_TID_INVALID;
 	return reply.result;
 }
 
