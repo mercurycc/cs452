@@ -1,6 +1,7 @@
 			   ==========================
 			   Pinball System for TS-7200
-			      Design Documentation
+			           Release K3
+				   What's New
 			   ==========================
 				    cs452_08
 
@@ -34,7 +35,8 @@ int AwaitEvent( int eventid );
 
 In Pinball kernel an event is defined as an interrupt.  An event id is simply
 the interrupt id.  Therefore by definition only device drivers can call
-AwaitEvent.
+AwaitEvent.  The intention is that all more complex events should be handled by
+servers rather than the kernel.
 
 The AwaitEvent call will call into the interrupt manager to enable the
 interrupt, register the current task as the interrupt handler for the interrupt,
@@ -117,14 +119,31 @@ which moves the processor back into the user program the IRQ interrupted.
 3. Userland Components Changes Details
 ======================================
 
-* New service: time server / clock server
---------------------------
+* New service: time server a.k.a clock server
+---------------------------------------------
 
-The time server is an optimized clock server in the requirement of this assignment. The timer server is designed to have much small number of sends and/or replys. For this purpose, we removed the notifier, because the notifier would send message to clock server every clock tick.
+The time server is an optimized clock server in the requirement of this
+assignment. The timer server is designed to have much small number of sends
+and/or replys. For this purpose, we removed the notifier, because the notifier
+would send message to clock server every clock tick.
 
-In our time server, we will create a clock driver. When ever a request coming in, the time server will communicate with the clock driver to resolve the request. When a Time() request comes in, the clock driver will send a message to clock driver to ask for current time. When a Delay() or DelayUntil(), the timer server will calculate the wake-up time of the delaying task, and send this information to clock driver. The clock driver will send a signal to time server when a delay is done. Then time server will reply to the delaying task to wake it up.
+In our time server, we will create a clock driver to avoid the extra name server
+query. When ever a request coming in, the time server will communicate with the
+clock driver to resolve the request. When a Time() request comes in, the clock
+driver will send a message to clock driver to ask for current time. When a
+Delay() or DelayUntil(), the timer server will calculate the wake-up time of the
+delaying task, and send this information to clock driver. The clock driver will
+send a signal to time server when the earliest delay is done. Then time server
+will reply to the delaying task to wake it up.
 
-One thing needs to mention is that the clock driver only reply once, for the task that needs to be wake up earliest. If there are multiple tasks delaying, the time server will calculate the new delaying time after receiving the signal from clock driver. Thus, the clock driver will notice the time server again when the delay time has come. To do this, the time server needs to keep a record of all tasks that has sent delay quest and has not been responsed to yet. These are stored with a minimum heap. We choose to use heap data structure because we can easily find the earliest task that the time server needs to reply to. 
+Notice with multiple tasks asking for delaying the clock driver only reply once
+for the task that needs to be wake up earliest. Once the earliest task is waken
+up, if there are multiple tasks delaying, the time server will calculate the new
+delaying time for the next earliest task and send the request to the clock
+driver. The tasks that needed to be waken up is kept in a min-heap to achieve
+this in O(log n) time.
+
+This is done as the given implementation of clock driver.
 
 
 * New driver: clock driver
@@ -137,12 +156,17 @@ The clock driver support 2 operations: obtaining current time and count down.
 
 The clock driver starts with initializing clock 1 and 3, where clock 1 is used
 to generate count down interrupts and clock 3 is used to keep track with the
-current time.  Then the driver creates the interrupt handler task.
+current time.  Then the driver creates the clock interrupt handler task.
 
 Whenever the clock driver receives a current time request it reads clock 3 to
 find out how long clock 3 has been running, and calculate the current time from
 this data.  Clock 3 is a 32 bit clock which runs 24 days with the 2000Hz clock
 source.
+
+We are not using constant clock interrupt to implement clock server as we think
+it is too expensive to trigger a kernel access and context switches every 50 ms
+than to simply read time from clk_3.  Interrupt is only used to implement count
+down requests as requested by the time server.
 
 When the clock driver receives a count down request, it checks if there is a
 undergoing count down and how much time the current count down has left.  If
@@ -160,20 +184,38 @@ always restore the task that has least amount of delay.  Therefore the clock
 server will only keep track the shortest count down.
 
 Each tick is defined as 10 ms, which is 20 clock ticks giving 2000Hz clock
-source.
+source.  This is different from what was defined on the kernel description, but
+we think this is a better choice as this gives finer control to the user
+program, where given the clock driver implementation this choice does not cause
+any extra overhead.
 
 
 * New user application: lazy dogs
 ---------------------------------
 
-The lazy dog is a task that used to test the time server. All it does is the test procedure as described in the assignment specification. It creates 4 tasks, give different delay parameters, and wait until all 4 sub-tasks to finish. The sub tasks will delay for the given duration, and print message as they progress.
+The lazy dog is a task that used to test the time server as required. All it
+does is the test procedure as described in the assignment specification. It
+creates 4 tasks, give different delay parameters, and wait until all 4 sub-tasks
+to finish. The sub tasks will delay for the given duration, and print message as
+they progress.
+
+The duration the task wait will be the same as required on the assignment while
+the number of ticks will be different because we are using 10ms as a tick.
+
 
 * Data Structures
 -----------------
 
 - Heap Structure
 
-A new heap structure is added to user library. Each element in the heap is consist of two fields: a key and a value. The heap is a minimun heap sorting on the key of its elements. The heap has insert and remove methods of O(log n) running time, and the it has a peak method to read the first element in the heap for O(1) run time. The key value is an unsigned integer, and it will be sorted unsignedly. The value field is an integer value, so it can be used directly, or used as a pointer pointing to some data structure if needed. The maximum number of elements in the heap is set to 256 elements.
+A new heap structure is added to user library. Each element in the heap is
+consist of two fields: a key and a value. The heap is a minimun heap sorting on
+the key of its elements. The heap has insert and remove methods of O(log n)
+running time, and the it has a peak method to read the first element in the heap
+for O(1) run time. The key value is an unsigned integer, and it will be sorted
+unsignedly. The value field is an integer value, so it can be used directly, or
+used as a pointer pointing to some data structure if needed. The maximum number
+of elements in the heap is set to 256 elements.
 
 
 3. Source Code

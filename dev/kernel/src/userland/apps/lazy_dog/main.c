@@ -23,11 +23,11 @@ void lazy_lazy_dog()
 	status = Send( MyParentTid(), ( char* )&request, sizeof( request ), ( char* )&param, sizeof( param ) );
 	assert( status == sizeof( param ) );
 
-	bwprintf( COM2, "task %d starts to delay\n", my_tid );
+	bwprintf( COM2, "task %d starts\n", my_tid );
 	for( i = 0; i < param.delay_count; i += 1 ){
 		status = Delay( param.delay_time );
 		assert( status == 0 );
-		bwprintf( COM2, "task %d has finished %d delay\n", my_tid, i+1 );
+		bwprintf( COM2, "task %d has finished delay %d of %d ms\n", my_tid, i+1, param.delay_time * 10 );
 	}
 
 	sync_responde( MyParentTid() );
