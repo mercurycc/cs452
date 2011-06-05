@@ -272,5 +272,5 @@ Time (ms) | Output
 10650     | task 10 has finished delay 3 of 3550 ms
  
 Output explained:
-It works.
+It works. We measured the execution time by hand (stop watch from cellphone), and the execution time is the same duration as expected.
 
