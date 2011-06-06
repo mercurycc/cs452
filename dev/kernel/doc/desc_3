@@ -141,11 +141,19 @@ for the task that needs to be wake up earliest. Once the earliest task is waken
 up, if there are multiple tasks delaying, the time server will calculate the new
 delaying time for the next earliest task and send the request to the clock
 driver. The tasks that needed to be waken up is kept in a min-heap to achieve
-this in O(log n) time.
+this in O(log n) time.  This is done as per given implementation of clock
+driver.
 
-The data that tasks got from time server should be accurate. When a task asks for a time, there will be 3 send-receive-reply. One of them sends a 8-byte data, one sends a 12-byte data, and one for error checking(to name server). By our measurement, these two sends should be completed within 500us each, which allows the task to get current time with in 1.5ms. Since each tick is defined as 50ms in our system, this small delay is actually negligible. For delay, it 3 send-receive-reply when starting delay and 2 when clock driver signals. So the error is also very small.
+The data that tasks got from time server should be accurate. When a task asks
+for a time, there will be 2 send-receive-reply. One of them sends a 8-byte data,
+one sends a 12-byte data. By our measurement, these three sends should be
+completed within 500us each, which allows the task to get current time with in
+1.5ms. Since each tick is defined as 50ms in our system, this small delay is
+actually negligible. For delay, its 2 send-receive-reply when starting delay and
+2 when clock driver signals. So the error is also very small.
 
-This is done as the given implementation of clock driver.
+This error is guaranteed by letting the driver and the server both running at
+priority 0 which is the highest priority.
 
 
 * New driver: clock driver
@@ -217,6 +225,101 @@ of elements in the heap is set to 256 elements.
 3. Source Code
 ==============
 
+`pwd` should map to /u9/z2long/rt/rel/k3
+
+$ cd /u9/z2long/rt/rel/k3
+$ find . -type f | xargs md5sum
+29933296247039d58b28860f01fe1f32  ./doc/desc
+d41d8cd98f00b204e9800998ecf8427e  ./doc/Design
+8ad46862e05c04948412e229783dbe1d  ./doc/README
+df0b51e5b673fbbb35ec427b63ad0422  ./doc/desc_2
+c4aee076bd493800ee6139e47da9074d  ./doc/SendReceiveMesurement
+625a0b59362213fa14d9f5184511417b  ./doc/desc_3
+a41435999a3f388b1098f5f49fae391b  ./doc/user
+38f1b9fb378b844d5da73ba1b41067e4  ./src/trap_handler.c
+7ba10f10efdaa2f15d8ffd28ff6c66b4  ./src/lib/str.c
+bc90c13edcc639b184647bf08ae7a897  ./src/lib/rbuf.c
+a924398025387644df35ba74cd123d1d  ./src/lib/list.c
+b5257919645efcbad316803de92bf3d7  ./src/lib/hashtable.c
+092c25aead2469df95fa67ff3d51ac57  ./src/trap.s
+1ced0ed2a4fb3f2fa251643f01e17881  ./src/kernel.mk
+a5ca56e63fdf228056df912b1228c3d0  ./src/init.c
+e181ff871350799725debbb786890a3a  ./src/entry.c
+e4da8cae9acb838a0527fc585f2d7055  ./src/session_start.s
+d73b46de71ffbe57390c148513c36524  ./src/devices/clock.c
+485f1a99e81baa5d5f27199a30ff3d38  ./src/devices/console.c
+aaa04e5118877c358b696135c58e3cbe  ./src/devices/bwio.c
+40c73b20cfec47bb4e8f4cb964a473d7  ./src/userland/apps/init_user/main.c
+217f3ae063db63ae24e5c5296d42dbb3  ./src/userland/apps/noise/main.c
+496cd4cc93452c5c118c14b7d98ecbbf  ./src/userland/apps/init/main.c
+dc5b88c7489b689354727f56091b63cf  ./src/userland/apps/rps_client/main.c
+5e1ca4caf7a173f7ee2fd5ce0003ebf5  ./src/userland/apps/RPSServer/main.c
+b0beb2a32a5cab61b50b614f3ed3f9b3  ./src/userland/apps/srr_timing/main.c
+78d2ebd6f39ef3cc204434eefd0612c8  ./src/userland/apps/rps_game/main.c
+1e0dc76b2916aca301c986cb6bc4fc22  ./src/userland/apps/lazy_dog/main.c
+e047e035a758ce9222a76ecdbce4b165  ./src/userland/lib/name_server.c
+5bf105f08a4e6ceeaf039d9546d32a42  ./src/userland/lib/syscall.c
+671f3ce76731e3dcdaa66a8558007c27  ./src/userland/lib/heap.c
+8062b65488e82042a43e0ff9dabefef2  ./src/userland/lib/prng.c
+ebbf5bdaf7c0d940e410aa776f3ee9c0  ./src/userland/lib/sync.c
+81621c50758990dc5aa2db211a662b40  ./src/userland/drivers/clock/main.c
+7bc2ebe6cc800fc2f2bcd5858a4e9bca  ./src/userland/server/time/main.c
+f68cbeeebd220f9b49d0d914c42c12de  ./src/sched.c
+85f9d9d62f0fa6f6548910be0d689bb4  ./src/task_init.s
+e17acbf745b60d4cec968552dd8eb566  ./src/task.c
+68ef8d87574d965db28e0a9525f62e05  ./src/kernel_shutdown.s
+5f4a8b6d75a267c2f275912e15ff40bc  ./src/interrupt.s
+8d9e36dd37dd5b8dae804259fc999712  ./src/interrupt_handler.c
+b08067b13bb0b468d7f01951b4179a34  ./src/mem.c
+e05902d8eb928f7b7f4a68be4675a768  ./src/context.c
+d41d8cd98f00b204e9800998ecf8427e  ./bin/.gitignore
+6011952cded936a28da278126083a5ee  ./bin/pinball_k3.elf
+66f2dc6d60b18570e87e54b74071bf09  ./inc/user/apps_entry.h
+97ad775b16c780001f00127e3365e793  ./inc/user/syscall.h
+b464efd6454e0bb66db5e16dda52d34a  ./inc/user/name_server.h
+33c4e1c849f6261744b44225f6593d28  ./inc/user/RPS_game.h
+0c84deec0ad775d3ffcfac712da9ad37  ./inc/user/lib/heap.h
+6eb5716df43a5efd08372510d62954d8  ./inc/user/lib/prng.h
+2330a928b4de65252440fccd51c3a455  ./inc/user/lib/sync.h
+940d0a9c147a9239d51179e94b139b08  ./inc/user/servers_entry.h
+6107225c0de22bbb1b6410b2d6a39986  ./inc/user/devices/clock.h
+56356bf1ee75764d141e79f8733a05ee  ./inc/user/protocals.h
+7d5a900b0ae92b1cfd0a07c2733abfe5  ./inc/user/time.h
+5eb4d84e25105311513f7c1c4f1cc95a  ./inc/user/clock_server.h
+603fd157f217e9f4448269f9758c460b  ./inc/user/assert.h
+f8f58af4ea608ad42fda5e03b6678d11  ./inc/user/event.h
+6e68047bc906c85c11c0ae4da8acf378  ./inc/user/drivers_entry.h
+464d1f5f4faea73bac99c248933d100c  ./inc/task.h
+02c4361f40a7e2505bef66aa7cd4dc27  ./inc/kernel.h
+aac9f8966cd3e3aa3eedb8c3ae57734f  ./inc/types.h
+16eb2e0956e0d51380e4497dd9f1616a  ./inc/lib/str.h
+85b44137dfef528703bd80f122428306  ./inc/lib/rbuf.h
+5a6b35c23ce5b4384b94cb49f1047a34  ./inc/lib/list.h
+aa840cf18b553492af00337740c0a589  ./inc/lib/hashtable.h
+ff2cfda94638ea8b32f098d3cb002881  ./inc/panic.h
+5df2ce6ab9db1780b3c75193fedfcd4c  ./inc/err.h
+fe3eb10fbc57e62d7c4b61c5cae7042d  ./inc/regopts.h
+d117423d6a1b0af67f41bcdfc6d85ac9  ./inc/trap.h
+44618caf2bfd8b7c5b7930e9fa7fa0bd  ./inc/bwio.h
+20a654f30dfa8c779413f9a346e457fa  ./inc/config.h
+12f19cea5812da71cd5b45a77c9b6fcd  ./inc/ts7200.h
+5295c901e1cdf8be78a7acc9370451e9  ./inc/devices/clock.h
+748a423fc63602fbc0bf0f19f3ba6fe6  ./inc/devices/console.h
+f195ac63f3c4f038a5a0c59c958012b6  ./inc/sched.h
+b557805aeaa1dace38404995dab28b5c  ./inc/context.h
+c5c38d8ed1cd98feb911c74dcdc3f976  ./inc/valist.h
+6510b0b1a62b9cc82077cfd3432e1cfa  ./inc/trap_reason.h
+347faa08b6609deaee88a6fc9e31f483  ./inc/interrupt.h
+3fd4e32a82edc39a2703e4035a9ae2e2  ./inc/syscall.h
+4b74f2a49fcf513fca3352e168c9d384  ./inc/mem.h
+fe42a1e47a2a09050edbe4b69495688d  ./inc/session.h
+59f5d206fff94700c1288d57c6ff6f5a  ./inc/ep9302.h
+ffc66a07749222d4b182afe97d3a07fb  ./Makefile
+1dc118c000601dc8accbed9bf54a2076  ./build/orex.ld
+d41d8cd98f00b204e9800998ecf8427e  ./built/.gitignore
+e4fdcce89a48fd3c5636deaecbc7c8dd  ./built/userland/apps/srr_timing/main.s
+14131aac9a9aea88ba0166740ec81953  ./built/userland/apps/srr_timing/main.o
+7d04f65d13c591b2ba906944ed3c0361  ./upload
 
 
 4. Output
@@ -273,5 +376,6 @@ Time (ms) | Output
  
 Output explained:
 
-It works. We measured the execution time by hand (stop watch from cellphone), and the execution time is the same duration as expected.
+It works. We measured the execution time by hand (stop watch from cellphone),
+and the execution time is the same duration as expected.
 
