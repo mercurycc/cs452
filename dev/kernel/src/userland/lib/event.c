@@ -4,6 +4,7 @@
 #include <user/assert.h>
 #include <user/protocals.h>
 #include <err.h>
+#include <config.h>
 
 #define EVENT_MAGIC     0xe11e1171
 
@@ -11,7 +12,9 @@ typedef struct Event_s Event_request;
 typedef struct Event_s Event_reply;
 
 struct Event_s {
+#ifdef IPC_MAGIC
 	uint magic;
+#endif
 	uint type;
 };
 
@@ -28,26 +31,47 @@ void event_handler()
 	int parent_tid = MyParentTid();
 	int status = 0;
 	Event_callback callback;
+	uint event;
 
+#ifdef IPC_MAGIC
 	reply.magic = EVENT_MAGIC;
+#endif
 
-	/* Init */
+	/* Init callback */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
 	assert( status == sizeof( request ) );
+#ifdef IPC_MAGIC
 	assert( request.magic == EVENT_MAGIC );
+#endif
 
 	callback = (Event_callback)(request.type);
 	reply.type = request.type;
 
 	status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 	assert( status == SYSCALL_SUCCESS );
+
+	/* Init event id */
+	status = Receive( &tid, ( char* )&request, sizeof( request ) );
+	assert( status == sizeof( request ) );
+#ifdef IPC_MAGIC
+	assert( request.magic == EVENT_MAGIC );
+#endif
+
+	event = request.type;
+	reply.type = request.type;
+
+	status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+	assert( status == SYSCALL_SUCCESS );
+
 	
 	DEBUG_PRINT( DBG_EVENT, "Init done, c/b = 0x%x\n", callback );
 	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		assert( status == sizeof( request ) );
+#ifdef IPC_MAGIC
 		assert( request.magic == EVENT_MAGIC );
+#endif
 
 		reply.type = request.type;
 
@@ -60,7 +84,7 @@ void event_handler()
 
 		DEBUG_NOTICE( DBG_EVENT, "received request\n" );
 		
-		AwaitEvent( EVENT_SRC_TC1UI );
+		AwaitEvent( event );
 
 		DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );
 		
@@ -78,20 +102,28 @@ static int event_request( int tid, uint type )
 	Event_reply reply;
 	int status;
 
+#ifdef IPC_MAGIC
 	request.magic = EVENT_MAGIC;
+#endif
 	request.type = type;
 
 	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
+#ifdef IPC_MAGIC
 	assert( reply.magic == EVENT_MAGIC );
+#endif
 	assert( reply.type == request.type );
 
 	return ERR_NONE;
 }
 
-int event_init( int tid, Event_callback callback )
+int event_init( int tid, uint event, Event_callback callback )
 {
-	return event_request( tid, ( uint )callback );
+	int status = 0;
+	status = event_request( tid, ( uint )callback );
+	assert( status == ERR_NONE );
+
+	return event_request( tid, event );
 }
 
 int event_start( int tid )

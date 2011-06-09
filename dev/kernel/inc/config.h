@@ -18,6 +18,10 @@
 #define USER_STACK_PAGE               8
 #define NAME_SERVER_HASH_ENTRIES      512
 #define CLOCK_OPERATION_TICKS         4          /* Extra time for clock driver to operate if it receives a count down request that is close to current count down */
+#define SLOW_DRIVER_PRIORITY          0
+#define FAST_DRIVER_PRIORITY          1
+#define SERVICE_PRIORITY              2
+// #define IPC_MAGIC                     1          /* Turn on magic check */
 
 /* Trap */
 #define TRAP_BASE                     0x20

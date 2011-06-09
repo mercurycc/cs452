@@ -55,7 +55,7 @@
         #define BRDH_MASK       0xff    // MSB of baud rate divisor
 #define UART_LCRL_OFFSET        0x10    // low 8 bits
         #define BRDL_MASK       0xff    // LSB of baud rate divisor
-#define UART_CTLR_OFFSET        0x14    // low 8 bits
+#define UART_CTRL_OFFSET        0x14    // low 8 bits
         #define UARTEN_MASK     0x1
         #define MSIEN_MASK      0x8     // modem status int
         #define RIEN_MASK       0x10    // receive int
@@ -72,6 +72,10 @@
         #define RXFF_MASK       0x40    // Receive buffer full
         #define TXFE_MASK       0x80    // Transmit buffer empty
 #define UART_INTR_OFFSET        0x1c
+        #define MIS_MASK        0x1     // Modem interrupt status
+        #define RIS_MASK        0x2     // Receive interrupt status
+        #define TIS_MASK        0x4     // Transmit interrupt status
+        #define RTIS_MASK       0x8     // Receive timeout interrupt status
 #define UART_DMAR_OFFSET        0x28
 
 // Specific to UART1

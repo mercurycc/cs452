@@ -9,6 +9,7 @@
 #include <user/time.h>
 #include <err.h>
 #include <bwio.h>
+#include <config.h>
 
 #define CLOCK_CLK_SRC                CLK_SRC_2KHZ
 #define CLOCK_TICKS_PER_MS           ( CLK_SRC_2KHZ_SPEED / 1000 )
@@ -16,15 +17,37 @@
 #define CLOCK_USER_TICK_TO_SYSTEM_TICK( user_ticks )   ( ( user_ticks ) * CLOCK_ACTUAL_TICKS_FACTOR )
 #define CLOCK_SYSTEM_TICK_TO_USER_TICK( system_ticks )   ( ( system_ticks ) / CLOCK_ACTUAL_TICKS_FACTOR )
 
-enum Clock_request_internal {
-	CLOCK_COUNT_DOWN_COMPLETE = CLOCK_QUIT + 1
+enum Clock_request_type {
+	CLOCK_CURRENT_TICK,
+	CLOCK_COUNT_DOWN,
+	CLOCK_QUIT,             /* Only parent can send */
+	CLOCK_COUNT_DOWN_COMPLETE
 };
 
 #define CLOCK_MAGIC           0xc10c411e
 
+typedef struct Clock_request_s Clock_request;
+typedef struct Clock_reply_s Clock_reply;
+
+
+struct Clock_request_s {
+#ifdef IPC_MAGIC
+	unsigned int magic;
+#endif
+	unsigned int type;
+	unsigned int data;
+};
+
+struct Clock_reply_s {
+#ifdef IPC_MAGIC
+	unsigned int magic;
+	unsigned int type;
+#endif
+	unsigned int data;
+};
+
 /* Internal only */
 static int clock_cd_complete( int tid );
-
 
 void clock_main()
 {
@@ -53,19 +76,22 @@ void clock_main()
 	event_handler_tid = Create( 0, event_handler );
 	assert( event_handler_tid > 0 );
 
-	status = event_init( event_handler_tid, clock_cd_complete );
+	status = event_init( event_handler_tid, EVENT_SRC_TC1UI, clock_cd_complete );
 	assert( status == ERR_NONE );
 
+#ifdef IPC_MAGIC
 	reply.magic = CLOCK_MAGIC;
+#endif
 
 	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
 
 	while( execute ){
 		status = Receive( &request_tid, ( char* )&request, sizeof( request ) );
 		assert( status == sizeof( request ) );
+#ifdef IPC_MAGIC
 		assert( request.magic == CLOCK_MAGIC );
-
 		reply.type = request.type;
+#endif
 
 		DEBUG_PRINT( DBG_CLK_DRV, "received request, type %u\n", request.type );
 
@@ -146,14 +172,18 @@ static int clock_request( int tid, uint type, uint* data )
 	Clock_reply reply;
 	int status = 0;
 
+#ifdef IPC_MAGIC
 	request.magic = CLOCK_MAGIC;
+#endif
 	request.type = type;
 	request.data = *data;
 
 	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
+#ifdef IPC_MAGIC
 	assert( reply.magic == CLOCK_MAGIC );
 	assert( reply.type == request.type );
+#endif
 
 	*data = reply.data;
 

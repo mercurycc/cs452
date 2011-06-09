@@ -10,6 +10,31 @@
 #define NAME_SERVER_MAGIC     0x11a111e0
 #define NAME_SERVER_TID       0x2
 
+typedef struct Name_server_request_s Name_server_request;
+typedef struct Name_server_response_s Name_server_response;
+
+enum Name_server_request_type {
+	NAME_SERVER_REQUEST_REGISTER_AS,
+	NAME_SERVER_REQUEST_WHO_IS,
+	NAME_SERVER_DEINIT               /* Only parent can send */
+};
+
+struct Name_server_request_s {
+#ifdef IPC_MAGIC
+	unsigned int magic;
+#endif
+	unsigned int type;
+	char name[ NAME_SERVER_NAME_MAX_LENGTH ];
+};
+
+struct Name_server_response_s {
+#ifdef IPC_MAGIC
+	unsigned int magic;
+	unsigned int type;
+#endif
+	unsigned int status;
+};
+
 /* The name_server_handler/listen is separate from the name_server_main in order
    to keep unsatisfied request on the name server's stack.  Each time a request
    cannot be satisfied the listener will recursively respawn itself to take the
@@ -34,7 +59,9 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 	int success = 0;             /* Flag for if the request is satisfied */
 	int status = 0;
 
+#ifdef IPC_MAGIC
 	response.magic = NAME_SERVER_MAGIC;
+#endif
 
 	do {
 		success = 0;
@@ -70,9 +97,11 @@ static void name_server_handler( Hashtable* table, Name_server_request* request,
 		}
 	} while( ! success );
 
+#ifdef IPC_MAGIC
 	response.type = request->type;
+#endif
 
-	DEBUG_PRINT( DBG_NS, "composed response, type: 0x%x, target: 0x%x, status: 0x%x\n", response.type, source_tid, response.status );
+	DEBUG_PRINT( DBG_NS, "composed response, target: 0x%x, status: 0x%x\n", source_tid, response.status );
 
 	status = Reply( source_tid, ( char* )&response, sizeof( response ) );
 	DEBUG_PRINT( DBG_NS, "reply status = %d\n", status );
@@ -92,7 +121,9 @@ static int name_server_listen( Hashtable* table )
 
 	status = Receive( &source_tid, ( char* )&request, sizeof( request ) );
 	assert( status == sizeof( request ) );
+#ifdef IPC_MAGIC
 	assert( request.magic == NAME_SERVER_MAGIC );
+#endif
 
 	DEBUG_PRINT( DBG_NS, "received request, source: 0x%x, type: 0x%x, name: %s\n", source_tid, request.type, request.name );
 
@@ -143,7 +174,9 @@ static int name_server_request( unsigned int type, char* name )
 	unsigned int size = 0;
 	int status = 0;
 
+#ifdef IPC_MAGIC
 	request.magic = NAME_SERVER_MAGIC;
+#endif
 	request.type = type;
 
 	if( name ){
@@ -159,8 +192,10 @@ static int name_server_request( unsigned int type, char* name )
 	status = Send( NAME_SERVER_TID, ( char* )&request, sizeof( request ), ( char* )&response, sizeof( response ) );
 	DEBUG_PRINT( DBG_NS, "tid: %d, Status retained: %d\n", MyTid(), status );
 	assert( status == sizeof( response ) );
+#ifdef IPC_MAGIC
 	assert( response.magic == NAME_SERVER_MAGIC );
 	assert( response.type == type );
+#endif
 
 	return response.status;
 }

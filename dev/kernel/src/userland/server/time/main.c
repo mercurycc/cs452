@@ -13,7 +13,27 @@
 #include <user/servers_entry.h>
 #include <user/lib/heap.h>
 #include <user/clock_server.h>
+#include <config.h>
 
+typedef struct Time_request_s Time_request;
+typedef struct Time_reply_s Time_reply;
+
+enum Time_request_type {
+	TIME_ASK,
+	TIME_DELAY,
+	TIME_DELAY_UNTIL,
+	TIME_SIGNAL,
+	TIME_SUICIDE
+};
+
+struct Time_request_s {
+	unsigned int request;
+	int interval;
+};
+
+struct Time_reply_s {
+	int result;
+};
 
 struct Time_tid_node {
 	uint time;
@@ -39,7 +59,7 @@ void time_main(){
 
 	assert( MyTid() == CLOCK_SERVER_TID );
 	
-	clock_tid = Create( 0, clock_main );
+	clock_tid = Create( FAST_DRIVER_PRIORITY, clock_main );
 	
 	status = RegisterAs( "time" );
 	assert( status == 0 );

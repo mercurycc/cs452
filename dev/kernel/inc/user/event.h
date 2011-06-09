@@ -59,7 +59,7 @@ enum Events {
 typedef int (*Event_callback)( int tid );
 
 void event_handler();
-int event_init( int tid, Event_callback callback );
+int event_init( int tid, uint event, Event_callback callback );
 int event_start( int tid );
 int event_quit( int tid );
 

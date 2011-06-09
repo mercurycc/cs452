@@ -3,6 +3,10 @@
 #include <user/protocals.h>
 #include <user/assert.h>
 #include <err.h>
+#include <config.h>
+
+/* Sync */
+#define SYNC_MAGIC            0x5117c11e
 
 int sync_wait()
 {
