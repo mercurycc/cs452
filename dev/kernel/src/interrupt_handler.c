@@ -21,13 +21,14 @@ static int interrupt_handler_init()
 	interrupt_init_one( VIC1_BASE, 0, INTERRUPT_SRC_TC1UI );
 
 	/* COM1 */
-//	interrupt_init_one( VIC1_BASE, 1, INTERRUPT_SRC_UART1RXINTR1 );
-//	interrupt_init_one( VIC1_BASE, 2, INTERRUPT_SRC_UART1TXINTR1 );
+	interrupt_init_one( VIC1_BASE, 1, INTERRUPT_SRC_UART1RXINTR1 );
+	interrupt_init_one( VIC1_BASE, 2, INTERRUPT_SRC_UART1TXINTR1 );
+	interrupt_init_one( VIC1_BASE, 3, INTERRUPT_SRC_INT_UART1 );
 	
 	/* COM2 */
-//	interrupt_init_one( VIC1_BASE, 3, INTERRUPT_SRC_UART2RXINTR2 );
-//	interrupt_init_one( VIC1_BASE, 4, INTERRUPT_SRC_UART2TXINTR2 );
-
+	interrupt_init_one( VIC1_BASE, 4, INTERRUPT_SRC_UART2RXINTR2 );
+	interrupt_init_one( VIC1_BASE, 5, INTERRUPT_SRC_UART2TXINTR2 );
+	interrupt_init_one( VIC1_BASE, 6, INTERRUPT_SRC_INT_UART2 );
 
 	return ERR_NONE;
 }

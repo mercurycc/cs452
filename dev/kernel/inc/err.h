@@ -31,7 +31,8 @@ enum Debug_type {
 	DBG_INT,
 	DBG_CLK_DRV,
 	DBG_TIME,
-	DBG_SYNC
+	DBG_SYNC,
+	DBG_EVENT
 };
 
 #ifdef DEBUG
@@ -61,6 +62,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_CLK_DRV:
 	case DBG_TIME:
 	case DBG_SYNC:
+		// case DBG_EVENT:
 	case DBG_TEMP:
 		return 0;
 	default:

@@ -1,6 +1,8 @@
 #ifndef _USER_EVENT_H_
 #define _USER_EVENT_H_
 
+#include <types.h>
+
 enum Events {
 	EVENT_SRC_COMMRX           = 2,
 	EVENT_SRC_COMMTX           = 3,
@@ -52,5 +54,14 @@ enum Events {
 	EVENT_SRC_GPIOINTR        = 59,
 	EVENT_SRC_I2SINTR         = 60
 };
+
+/* tid should always be MyParentTid.  The callback should be designed that way. */
+typedef int (*Event_callback)( int tid );
+
+void event_handler();
+int event_init( int tid, Event_callback callback );
+int event_start( int tid );
+int event_quit( int tid );
+
 
 #endif /* _USER_EVENT_H_ */

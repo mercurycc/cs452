@@ -21,96 +21,10 @@ enum Clock_request_internal {
 };
 
 #define CLOCK_MAGIC           0xc10c411e
-#define CLOCK_EVENT_MAGIC     0xe11e1171
-
-typedef struct Clock_event_s Clock_event_request;
-typedef struct Clock_event_s Clock_event_reply;
-
-struct Clock_event_s {
-	uint magic;
-	uint type;
-};
-
-enum Clock_event_type {
-	CLOCK_EVENT_START_WAIT,
-	CLOCK_EVENT_QUIT
-};
 
 /* Internal only */
 static int clock_cd_complete( int tid );
 
-static int clock_event_start( int tid )
-{
-	Clock_event_request request;
-	Clock_event_reply reply;
-	int status;
-
-	request.magic = CLOCK_EVENT_MAGIC;
-
-	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
-	assert( status == sizeof( reply ) );
-	assert( reply.magic == CLOCK_EVENT_MAGIC );
-	assert( reply.type == request.type );
-
-	return ERR_NONE;
-}
-
-static int clock_evnet_stop( int tid ){
-	Clock_event_request request;
-	Clock_event_reply reply;
-	int status;
-
-	request.magic = CLOCK_EVENT_MAGIC;
-	request.type = CLOCK_EVENT_QUIT;
-
-	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
-	assert( status == sizeof( reply ) );
-	assert( reply.magic == CLOCK_EVENT_MAGIC );
-	assert( reply.type == request.type );
-
-	return ERR_NONE;
-}
-
-static void clock_event_handler()
-{
-	Clock_event_request request;
-	Clock_event_reply reply;
-	int tid = 0;
-	int clock_drv_tid = MyParentTid();
-	int status = 0;
-
-	reply.magic = CLOCK_EVENT_MAGIC;
-
-	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
-	
-	while( 1 ){
-		status = Receive( &tid, ( char* )&request, sizeof( request ) );
-		assert( status == sizeof( request ) );
-		assert( request.magic == CLOCK_EVENT_MAGIC );
-
-		reply.type = request.type;
-
-		status = Reply( tid, ( char* )&reply, sizeof( reply ) );
-		assert( status == SYSCALL_SUCCESS );
-
-		if( request.type == CLOCK_EVENT_QUIT ){
-			DEBUG_NOTICE( DBG_CLK_DRV, "quitting\n" );
-			break;
-		}
-
-		DEBUG_NOTICE( DBG_CLK_DRV, "received request\n" );
-		
-		AwaitEvent( EVENT_SRC_TC1UI );
-
-		DEBUG_NOTICE( DBG_CLK_DRV, "received interrupt\n" );
-
-		status = clock_cd_complete( clock_drv_tid );
-		assert( status == ERR_NONE );
-	}
-
-	DEBUG_NOTICE( DBG_CLK_DRV, "quit!\n" );
-	Exit();
-}
 
 void clock_main()
 {
@@ -136,8 +50,11 @@ void clock_main()
 	clk_reset( &clock_3, ~0 );
 	clk_clear( &clock_3 );
 
-	event_handler_tid = Create( 0, clock_event_handler );
+	event_handler_tid = Create( 0, event_handler );
 	assert( event_handler_tid > 0 );
+
+	status = event_init( event_handler_tid, clock_cd_complete );
+	assert( status == ERR_NONE );
 
 	reply.magic = CLOCK_MAGIC;
 
@@ -196,15 +113,15 @@ void clock_main()
 				assert( status == ERR_NONE );
 			}
 
-			/* Send request to clock_event_start */
+			/* Send request to event_start */
 			if( ! event_handling ){
-				status = clock_event_start( event_handler_tid );
+				status = event_start( event_handler_tid );
 				assert( status == ERR_NONE );
 				event_handling = 1;
 			}
 			break;
 		case CLOCK_QUIT:
-			status = clock_evnet_stop( event_handler_tid );
+			status = event_quit( event_handler_tid );
 			execute = 0;
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:

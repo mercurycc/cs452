@@ -45,6 +45,7 @@ KERNELSRC += userland/lib/name_server.c
 KERNELSRC += userland/lib/prng.c
 KERNELSRC += userland/lib/heap.c
 KERNELSRC += userland/lib/sync.c
+KERNELSRC += userland/lib/event.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock/main.c

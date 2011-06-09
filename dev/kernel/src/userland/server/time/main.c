@@ -31,14 +31,13 @@ void time_main(){
 	int clock_tid;
 	uint cur_time;
 	int stop = 0;
-
-
 	Heap heap;
+	struct Time_tid_node node;
+	
 	status = heap_init( &heap );
 	assert( status == 0 );
 
-	struct Time_tid_node node;
-
+	assert( MyTid() == CLOCK_SERVER_TID );
 	
 	clock_tid = Create( 0, clock_main );
 	
@@ -56,7 +55,7 @@ void time_main(){
 			status = clock_current_time( clock_tid, &result );
 			assert( status == 0 );
 			reply.result = result;
-			status = Reply( tid, (char*)&reply, sizeof(reply));
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
 			break;
 		case TIME_DELAY:
