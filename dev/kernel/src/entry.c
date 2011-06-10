@@ -14,6 +14,7 @@
 #include <devices/clock.h>
 #include <user/apps_entry.h>
 #include <interrupt.h>
+#include <watchdog.h>
 
 int main()
 {
@@ -115,6 +116,6 @@ int main()
 	ctx->current_task = user_init_td;
 
 	session_start( ctx, (uchar*)user_init_td->stack );
-	
+
 	return 0;
 }

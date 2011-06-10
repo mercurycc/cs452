@@ -32,19 +32,19 @@ void user_init()
 	DEBUG_NOTICE( DBG_USER, "time server created\n" );
 
 	/* We actually rely on the fact that the uart driver is at the highest priority */
-	tid = Create( SLOW_DRIVER_PRIORITY, uart_driver );
-	assert( tid > 0 );
-	DEBUG_NOTICE( DBG_USER, "console server created\n" );
+	/* tid = Create( SLOW_DRIVER_PRIORITY, uart_driver ); */
+	/* assert( tid > 0 ); */
+	/* DEBUG_NOTICE( DBG_USER, "console server created\n" ); */
 	
-	tid = Create( SLOW_DRIVER_PRIORITY, uart_driver );
-	assert( tid > 0 );
-	DEBUG_NOTICE( DBG_USER, "console server created\n" );
+	/* tid = Create( SLOW_DRIVER_PRIORITY, uart_driver ); */
+	/* assert( tid > 0 ); */
+	/* DEBUG_NOTICE( DBG_USER, "console server created\n" ); */
 
-	status = uart_init( UART_1, 
+	/* status = uart_init( UART_1,  */
 
 
-	while( data != 'q' ){
-		status = uart_getc( 
+	/* while( data != 'q' ){ */
+	/* 	status = uart_getc(  */
 
 	tid = Create( 1, lazy_dog );
 	assert( tid > 0 );

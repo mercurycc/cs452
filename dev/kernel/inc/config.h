@@ -13,6 +13,7 @@
 #define KERNEL_HIGH_PRIORITY          0
 #define KERNEL_LOW_PRIORITY           31
 #define KERNEL_INIT_TASK_PRIORITY     0          /* Take the first user task as a service */
+#define KERNEL_ENABLE_WATCHDOG
 
 /* Userland parameters */
 #define USER_STACK_PAGE               8

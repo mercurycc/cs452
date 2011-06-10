@@ -14,6 +14,7 @@
 #include <sched.h>
 #include <regopts.h>
 #include <devices/clock.h>
+#include <watchdog.h>
 
 static inline int msg_copy( Task* sender, Task* receiver ){
 	// TODO: implement with assemble?
@@ -208,6 +209,11 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 
 	ctx->current_task->stack = sp_caller;
 	ctx->current_task->reason = reason;
+
+#ifdef KERNEL_ENABLE_WATCHDOG
+	/* Fed watchdog */
+	// watchdog_refresh();
+#endif
 
 	// TODO: change err codes
 	// TODO: Split syscall handling out

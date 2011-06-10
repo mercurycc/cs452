@@ -15,6 +15,11 @@
 /* Context */
 #include <context.h>
 
+/* Watchdog */
+#include <watchdog.h>
+
+#include <config.h>
+
 int kernel_init( Context* ctx )
 {
 	int status = 0;
@@ -36,6 +41,11 @@ int kernel_init( Context* ctx )
 
 	/* Initialize interrupt */
 	interrupt_init( ctx );
+
+#ifdef KERNEL_ENABLE_WATCHDOG
+	/* Initialize watchdog */
+	watchdog_init();
+#endif
 
 	return ERR_NONE;
 }

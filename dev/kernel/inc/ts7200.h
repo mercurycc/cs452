@@ -180,4 +180,8 @@
 #define CPU_SYSSWLOCK_OFFSET          0xC0
 	#define CPU_SWLOCK_MASK       0xAA
 
+/* TS7200 watchdog */
+#define WATCHDOG_CTRL                 0x23800000
+#define WATCHDOG_FED                  0x23C00000
+
 #endif /* _TS7200_H_ */
