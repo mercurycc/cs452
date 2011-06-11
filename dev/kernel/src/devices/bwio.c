@@ -198,6 +198,10 @@ void bwformat ( int channel, char *fmt, va_list va ) {
 
 	
 	while ( ( ch = *(fmt++) ) ) {
+		if ( ch == '\n' ){
+			bwputc( channel, '\r' );
+			bwputc( channel, '\n' );
+		} else
 		if ( ch != '%' )
 			bwputc( channel, ch );
 		else {
