@@ -23,6 +23,8 @@ int list_add_tail( List** lst, List* elem );
 int list_remove_head( List** lst, List** elem );
 /* Rotate a list so the list head is the next element in the list */
 int list_rotate_head( List** lst );
+/* Add to the head of the list */
+int list_add_head( List** lst, List* elem );
 
 /* type: The type of struct including the list
    lst:  A pointer to the list contained in the struct

@@ -194,9 +194,25 @@ int sched_block( Context* ctx ) {
 }
 
 int sched_signal( Context* ctx, Task* task ){
-	int status = sched_add( ctx, task );
-	if ( status == ERR_NONE )
-		ctx->scheduler->blocked_task--;
+	uint priority = task->priority;
+	ASSERT_M( (0 <= priority) && (priority < 32), "wrong priority: %d\n", priority );
+
+	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
+	uint err = list_add_head( target_queue_ptr, &(task->queue) );
+	if (err) {
+		return err;
+	}
+	task->state = TASK_READY;
+
+	// change the bit in selector
+	uint selector_modifier = 0x80000000 >> priority;
+	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
+
+	if ( priority < ctx->scheduler->highest_priority ) {
+		ctx->scheduler->highest_priority = priority;
+	}
+
+	ctx->scheduler->blocked_task--;
 	ASSERT( ctx->scheduler->blocked_task >= 0 );
 	return status;
 }
