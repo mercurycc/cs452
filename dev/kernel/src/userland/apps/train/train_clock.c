@@ -1,49 +1,22 @@
 
-// train task priority, subject to change in future
-#define TRAIN_MODULE_PRIORITY 5
-#define TRAIN_VIEW_PRIORITY 5
-
-
-typedef struct Train_paint_event_s Train_paint_event
-
-enum Paint_event_type {
-	PAINT_ECHO,
-	PAINT_ACK,
-	PAINT_CLOCK,
-	PAINT_SWITCH_LIST,
-	PAINT_SENSOR_LIST,
-	PAINT_SUICIDE
-};
-
-
-struct Train_paint_event_s {
-	uint paint_type;
-	int args[10];
-};
-
-void train_view() {
+void train_clock() {
 	int tid;
 	int quit = 0;
-	int state;
-	Train_paint_event event;
-	
+	int status;
+	uint ticks = 0;
+
 	while ( !quit ) {
-		state = Receive( &tid, (char*)&event, sizeof(event) );
-		assert( state == sizeof( event ) );
-		
-		switch ( event.paint_type ) {
-		case PAINT_ECHO:
-		case PAINT_ACK:
-		case PAINT_CLOCK:
-		case PAINT_SWITCH_LIST:
-		case PAINT_SENSOR_LIST:
-		case PAINT_SUICIDE:
-			// paint stuff
-			break;
-		default:
-			assert(0);
+		ticks += 100 / CLOCK_COUNT_DOWN_MS_PER_TICK;
+		status = DelayUntil(ticks);
+		assert( status == 0 );
+
+		status = train_update_time( ticks );
+		if ( status == -1 ) {
+			quit = 1;
 		}
-		
+		else {
+			assert( status == 0 );
+		}
 	}
 	
 	Exit();

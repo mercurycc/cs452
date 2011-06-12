@@ -25,7 +25,7 @@ void train_control() {
 	int tid;
 	int module_id;
 	int quit = 0;
-	int state;
+	int status;
 	
 	Train_event event;
 	Train_reply reply;
@@ -52,16 +52,15 @@ void train_control() {
 			echo( "Goodbye!" );
 			break;
 		default:
-			echo( "Invalid command, please check your " );
+			echo( "Invalid command" );
 			break;
 		}
 	}
 
 	//tell children to suicide
-	event.event_type = TRAIN_MODULE_SUICIDE;
-	status = Send( module_id, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
-	assert( status == sizeof( reply ) );
-	assert( reply.result == 0 );
+	status = train_module_suicide();
+	assert( status == 0 );
+
 	Exit();
 }
 
