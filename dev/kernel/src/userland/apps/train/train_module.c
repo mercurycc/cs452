@@ -1,6 +1,7 @@
 
 
 typedef struct Train_event_s Train_event;
+typedef struct Train_reply_s Train_reply;
 
 enum Train_event_type {
 	TRAIN_UPDATE_TIME,
@@ -9,6 +10,7 @@ enum Train_event_type {
 	TRAIN_SWITCH,
 	TRAIN_DISPLAY_LAST_SWITCH,
 	TRAIN_DISPLAY_LAST_SENSOR,
+	TRAIN_GET_ALL_SENSOR,
 	TRAIN_MODULE_SUICIDE
 };
 
@@ -18,6 +20,9 @@ struct Train_event_s {
 	uint args[2];
 };
 
+struct Train_reply_s {
+	int result;
+}
 
 
 void train_module() {
@@ -26,6 +31,7 @@ void train_module() {
 	int quit = 0;
 	int state;
 	Train_event event;
+	Train_event reply;
 
 	while ( !quit ) {
 		state = Receive( &tid, (char*)&event, sizeof(event) );
@@ -49,9 +55,15 @@ void train_module() {
 		case TRAIN_DISPLAY_LAST_SENSOR:
 			// send to SENSOR uart
 			break;
+		case TRAIN_GET_ALL_SENSOR:
+			// send and receive all sensor data
+			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == MyParentTid() ) {
 				quit = 1;
+				reply.result = 0;
+				status = Reply( tid, (char*)reply, sizeof( reply ) );
+				assert( status == 0 );
 				break;
 			}
 			// warning message
