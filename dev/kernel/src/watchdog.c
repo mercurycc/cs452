@@ -10,7 +10,9 @@ int watchdog_init()
 {
 	uchar* ctrl_addr = ( uchar* )HW_ADDR( WATCHDOG_CTRL, 0 );
 	watchdog_refresh();
-	*ctrl_addr = 0x05;
+
+	/* Timeout 8 seconds */
+	*ctrl_addr = 0x07;
 	DEBUG_PRINT( DBG_WATCHDOG, "watchdog initialized to %c\n", ( uchar* )HW_READ( WATCHDOG_CTRL, 0 ) );
 
 	return ERR_NONE;

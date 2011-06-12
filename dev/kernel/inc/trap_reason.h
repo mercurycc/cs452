@@ -20,7 +20,8 @@ enum TrapReason {
 	TRAP_PUTC,
 	/* Non-standard syscalls */
 	TRAP_KERNEL_CONTEXT,
-	TRAP_EXIST
+	TRAP_EXIST,
+	TRAP_KILL
 };
 
 #endif /* _TRAP_REASON_H_ */

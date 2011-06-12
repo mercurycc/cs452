@@ -69,8 +69,8 @@ static inline ptr uart_getbase( uint port )
 	return base;
 }
 
-#define uart_ready_read( flags )	( ! ( *flags & RXFE_MASK ) )
-#define uart_ready_write( flags )	( ! ( *flags & TXFF_MASK ) )
+#define uart_ready_read( flags )	( ! ( ( *flags ) & RXFE_MASK ) )
+#define uart_ready_write( flags )	( ! ( ( *flags ) & TXFF_MASK ) )
 
 static inline void uart_receive_config( Uart_init* config )
 {
@@ -91,9 +91,16 @@ static inline void uart_receive_config( Uart_init* config )
 	assert( status == SYSCALL_SUCCESS );
 }
 
-static inline void uart_send_config( Uart_init* config )
+static inline void uart_send_config( int tid, Uart_init* config )
 {
 	Uart_reply reply;
+	int status;
+
+	status = Send( tid, ( char* )config, sizeof( Uart_init ), ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+#ifdef IPC_MAGIC
+	assert( reply.magic == UART_MAGIC );
+#endif
 }
 
 static inline void uart_receive_request( int* tid, Uart_request* request )
@@ -152,18 +159,18 @@ void uart_driver()
 	/* Initialized interrupt handler */
 	txrdy_handler_tid = Create( 0, event_handler );
 	assert( txrdy_handler_tid > 0 );
-	status == event_init( txrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1TXINTR1 : EVENT_SRC_UART2TXINTR2, uart_txrdy );
-	assert( status ==  ERR_NONE );
+	status = event_init( txrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1TXINTR1 : EVENT_SRC_UART2TXINTR2, uart_txrdy );
+	assert( status == ERR_NONE );
 	
 	rxrdy_handler_tid = Create( 0, event_handler );
 	assert( rxrdy_handler_tid > 0 );
-	status == event_init( rxrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1RXINTR1 : EVENT_SRC_UART2RXINTR2, uart_rxrdy );
-	assert( status ==  ERR_NONE );
+	status = event_init( rxrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1RXINTR1 : EVENT_SRC_UART2RXINTR2, uart_rxrdy );
+	assert( status == ERR_NONE );
 	
 	general_handler_tid = Create( 0, event_handler );
 	assert( general_handler_tid > 0 );
-	status == event_init( general_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_INT_UART1 : EVENT_SRC_INT_UART2, uart_general );
-	assert( status ==  ERR_NONE );
+	status = event_init( general_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_INT_UART1 : EVENT_SRC_INT_UART2, uart_general );
+	assert( status == ERR_NONE );
 
 #ifdef IPC_MAGIC
 	reply.magic = UART_MAGIC;
@@ -172,6 +179,8 @@ void uart_driver()
 	while( 1 ){
 		/* By definition there should only be one task asking for input from any serial port */
 		uart_receive_request( &tid, &request );
+
+		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 
 		can_reply = 0;
 
@@ -236,6 +245,7 @@ void uart_driver()
 			   eventually only need to turn fifo on */
 			/* Disable interrupt */
 			if( uart_ready_read( flags ) ){
+				DEBUG_NOTICE( DBG_UART, "read ready\n" );
 				/* Disable interrupt */
 				uart_config_interrupt( ctrl, RIEN_MASK | RTIEN_MASK, 0 );
 				reply.data = *data;
@@ -243,9 +253,11 @@ void uart_driver()
 				read_tid = 0;
 				can_reply = 1;
 			} else {
+				DEBUG_NOTICE( DBG_UART, "read NOT ready\n" );
 				/* Enable interrupt */
 				uart_config_interrupt( ctrl, RIEN_MASK | RTIEN_MASK, 1 );
 				if( ! rxrdy_waiting ){
+					DEBUG_NOTICE( DBG_UART, "waiting for rx interrupt\n" );
 					uart_config_interrupt( ctrl, RIEN_MASK, 1 );
 					event_start( rxrdy_handler_tid );
 					rxrdy_waiting = 1;
@@ -283,11 +295,19 @@ void uart_driver()
 int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
 {
 	ptr base = uart_getbase( port );
-	
+	Uart_init init;
 	volatile uint* line_ctrl_high = ( uint* )HW_ADDR( base, UART_LCRH_OFFSET );
 	volatile uint* line_ctrl_medium = ( uint* )HW_ADDR( base, UART_LCRM_OFFSET );
 	volatile uint* line_ctrl_low = ( uint* )HW_ADDR( base, UART_LCRL_OFFSET );
 	volatile uint* uart_ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
+
+#ifdef IPC_MAGIC
+	init.magic = UART_MAGIC;
+#endif
+	init.port = port;
+	init.speed = speed;
+	init.fifo = fifo;
+	init.flow_ctrl = flow_ctrl;
 
 	if( fifo ){
 		*line_ctrl_high |= FEN_MASK;
@@ -307,6 +327,7 @@ int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
 	case 2400:
 		*line_ctrl_medium = 0x0;
 		*line_ctrl_low = 191;
+		break;
 	default:
 		assert( 0 );
 		break;
@@ -314,6 +335,8 @@ int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
 
 	/* Turn off interrupt */
 	uart_config_interrupt( uart_ctrl, MSIEN_MASK | RIEN_MASK | TIEN_MASK | RTIEN_MASK, 0 );
+
+	uart_send_config( ( ( port == UART_1 ) ? UART1_DRV_TID : UART2_DRV_TID ), &init );
 	
 	return ERR_NONE;
 }

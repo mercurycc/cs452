@@ -94,7 +94,7 @@ int sched_schedule( Context* ctx, Task** next ){
 int sched_add( Context* ctx, Task* task ){
 	uint priority = task->priority;
 	DEBUG_PRINT( DBG_SCHED, "task tid 0x%x priority %d\n", task->tid, priority );
-	ASSERT( (0 <= priority) && (priority < 32) );
+	ASSERT_M( (0 <= priority) && (priority < 32), "wrong priority: %d\n", priority );
 
 	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	uint err = list_add_tail( target_queue_ptr, &(task->queue) );

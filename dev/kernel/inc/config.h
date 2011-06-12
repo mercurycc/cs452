@@ -22,7 +22,7 @@
 #define SLOW_DRIVER_PRIORITY          0
 #define FAST_DRIVER_PRIORITY          1
 #define SERVICE_PRIORITY              2
-// #define IPC_MAGIC                     1          /* Turn on magic check */
+#define IPC_MAGIC                     1          /* Turn on magic check */
 
 /* Trap */
 #define TRAP_BASE                     0x20
