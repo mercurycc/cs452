@@ -4,6 +4,7 @@
 #include <types.h>
 
 /* FIXME: Can I assume all registers are 32 bits? */
+/* Answer: no.  WDT uses 8 bit register */
 #define HW_ADDR( base, offset )			\
 	(volatile uint*)( base + offset )
 

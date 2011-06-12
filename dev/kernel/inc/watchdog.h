@@ -5,5 +5,6 @@
 
 int watchdog_init();
 int watchdog_refresh();
+int watchdog_deinit();
 
 #endif /* _WATCHDOG_H_ */

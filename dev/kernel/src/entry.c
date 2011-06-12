@@ -117,5 +117,8 @@ int main()
 
 	session_start( ctx, (uchar*)user_init_td->stack );
 
+	/* Disable watchdog */
+	watchdog_deinit();
+
 	return 0;
 }

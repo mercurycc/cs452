@@ -212,7 +212,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 
 #ifdef KERNEL_ENABLE_WATCHDOG
 	/* Fed watchdog */
-	// watchdog_refresh();
+	watchdog_refresh();
 #endif
 
 	// TODO: change err codes

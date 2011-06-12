@@ -4,20 +4,31 @@
 #include <err.h>
 #include <watchdog.h>
 
+#define WDT_FED_VAL    0x05
+
 int watchdog_init()
 {
-	HW_WRITE( WATCHDOG_FED, 0, 0x05 );
-	HW_WRITE( WATCHDOG_CTRL, 0, 0x02 );
-	DEBUG_PRINT( DBG_WATCHDOG, "watchdog initialized to %u\n", HW_READ( WATCHDOG_CTRL, 0 ) );
+	uchar* ctrl_addr = ( uchar* )HW_ADDR( WATCHDOG_CTRL, 0 );
+	watchdog_refresh();
+	*ctrl_addr = 0x05;
+	DEBUG_PRINT( DBG_WATCHDOG, "watchdog initialized to %c\n", ( uchar* )HW_READ( WATCHDOG_CTRL, 0 ) );
 
 	return ERR_NONE;
 }
 
 int watchdog_refresh()
 {
-	HW_WRITE( WATCHDOG_FED, 0, 0x05 );
-	DEBUG_NOTICE( DBG_WATCHDOG, "watchdog fed\n" );
-
+	uchar* fed_addr = ( uchar* )HW_ADDR( WATCHDOG_FED, 0 );
+	*fed_addr = WDT_FED_VAL;
+	
 	return ERR_NONE;
 }
 
+int watchdog_deinit()
+{
+	uchar* ctrl_addr = ( uchar* )HW_ADDR( WATCHDOG_CTRL, 0 );
+	watchdog_refresh();
+	*ctrl_addr = 0x00;
+
+	return ERR_NONE;
+}
