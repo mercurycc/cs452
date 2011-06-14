@@ -49,6 +49,9 @@ void user_init()
 	while( data != 'q' ){
 		status = uart_getc( UART2_DRV_TID, &data );
 		assert( status == ERR_NONE );
+
+		status = uart_putc( UART2_DRV_TID, data );
+		assert( status == ERR_NONE );
 	}
 
 	tid = Create( 1, lazy_dog );

@@ -71,6 +71,7 @@ static inline ptr uart_getbase( uint port )
 
 #define uart_ready_read( flags )	( ! ( ( *flags ) & RXFE_MASK ) )
 #define uart_ready_write( flags )	( ! ( ( *flags ) & TXFF_MASK ) )
+#define uart_ready_cts( flags )         ( ( *flags ) & CTS_MASK )
 
 static inline void uart_receive_config( Uart_init* config )
 {
@@ -114,13 +115,36 @@ static inline void uart_receive_request( int* tid, Uart_request* request )
 #endif
 }
 
-static inline void uart_config_interrupt( volatile uint* uart_ctrl, uint intr, uint on )
+static inline void uart_set_interrupt( volatile uint* uart_ctrl, uint intr, uint on )
 {
 	if( on ){
 		*uart_ctrl |= intr;
 	} else {
 		*uart_ctrl &= ( ~intr );
 	}
+}
+
+static inline void uart_config_interrupt( Uart_init* config, volatile uint* uart_ctrl, uint type, uint state )
+{
+	uint control = 0;
+	
+	switch( type ){
+	case UART_RXRDY:
+		if( config->fifo ){
+			control |= RTIEN_MASK;
+		}
+		control |= RIEN_MASK;
+		break;
+	case UART_TXRDY:
+		/* Not used.  Finer control is needed so this is done inside the main thread */
+		assert( 0 );
+		if( config->flow_ctrl ){
+			control |= MSIEN_MASK;
+		}
+		control |= TIEN_MASK;
+	}
+
+	uart_set_interrupt( uart_ctrl, control, state );
 }
 
 void uart_driver()
@@ -143,6 +167,9 @@ void uart_driver()
 	volatile uint* flags;
 	volatile uint* intr;
 	volatile uint* ctrl;
+	Rbuf txbufbody = {0};
+	Rbuf* txbuf = &txbufbody;
+	uint txbuf_buffer[ UART_TXBUF_SIZE ];
 
 	/* Receive config */
 	uart_receive_config( &config );
@@ -176,6 +203,10 @@ void uart_driver()
 	reply.magic = UART_MAGIC;
 #endif
 
+	/* Initialize txbuf */
+	status = rbuf_init( txbuf, ( uchar* )txbuf_buffer, sizeof( uint ), UART_TXBUF_SIZE );
+	assert( status == ERR_NONE );
+
 	while( 1 ){
 		/* By definition there should only be one task asking for input from any serial port */
 		uart_receive_request( &tid, &request );
@@ -184,7 +215,8 @@ void uart_driver()
 
 		can_reply = 0;
 
-		/* Immediately reply if received interrupt notification to release event handler */
+		/* Immediately reply if received interrupt notification to release event handler,
+		   or if received put request */
 		switch( request.type ){
 		case UART_RXRDY:
 			rxrdy_waiting = 0;
@@ -203,13 +235,14 @@ void uart_driver()
 		case UART_RXRDY:
 		case UART_TXRDY:
 		case UART_GENERAL_INT:
+		case UART_PUT:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			tid = 0;
 		default:
 			break;
 		}
 
-		/* Accept request */
+		/* Process request, or translate request to proper interrupt */
 		switch( request.type ){
 		case UART_GET:
 			if( read_tid ){
@@ -219,18 +252,18 @@ void uart_driver()
 			request.type = UART_RXRDY;
 			break;
 		case UART_PUT:
-			// Not implemented yet
-			assert( 0 );
+			status = rbuf_put( txbuf, ( uchar* )&request.data );
+			assert( status == ERR_NONE );
 			request.type = UART_TXRDY;
 			break;
 		case UART_GENERAL_INT:
 			if( ( *intr & MIS_MASK ) || ( *intr & TIS_MASK ) ){
 				request.type = UART_TXRDY;
+				
+				/* Clear MIS */
+				*intr = 0;
 			} else if( ( *intr & RTIS_MASK ) || ( *intr & RIS_MASK ) ){
 				request.type = UART_RXRDY;
-
-				/* Clear RTIS */
-				*intr = 0;
 			} else {
 				assert( 0 );
 			}
@@ -247,7 +280,7 @@ void uart_driver()
 			if( uart_ready_read( flags ) ){
 				DEBUG_NOTICE( DBG_UART, "read ready\n" );
 				/* Disable interrupt */
-				uart_config_interrupt( ctrl, RIEN_MASK | RTIEN_MASK, 0 );
+				uart_config_interrupt( &config, ctrl, UART_RXRDY, 0 );
 				reply.data = *data;
 				tid = read_tid;
 				read_tid = 0;
@@ -255,18 +288,42 @@ void uart_driver()
 			} else {
 				DEBUG_NOTICE( DBG_UART, "read NOT ready\n" );
 				/* Enable interrupt */
-				uart_config_interrupt( ctrl, RIEN_MASK | RTIEN_MASK, 1 );
+				uart_config_interrupt( &config, ctrl, UART_RXRDY, 1 );
 				if( ! rxrdy_waiting ){
 					DEBUG_NOTICE( DBG_UART, "waiting for rx interrupt\n" );
-					uart_config_interrupt( ctrl, RIEN_MASK, 1 );
+					uart_set_interrupt( ctrl, RIEN_MASK, 1 );
 					event_start( rxrdy_handler_tid );
 					rxrdy_waiting = 1;
 				}
 			}
 			break;
 		case UART_TXRDY:
-			// Not Implemented yet
-			assert( 0 );
+			if( ! uart_ready_write( flags ) ){
+				/* Enable txrdy interrupt */
+				if( ! txrdy_waiting ){
+					uart_set_interrupt( ctrl, TIEN_MASK, 1 );
+					event_start( txrdy_handler_tid );
+					txrdy_waiting = 1;
+				}
+			} else {
+				/* txrdy has to be disabled otherwise it could be triggered many times
+				   while we are actually waiting on CTS */
+				uart_set_interrupt( ctrl, TIEN_MASK, 0 );
+				
+				if( config.flow_ctrl && ( ! uart_ready_cts( flags ) ) ){
+					/* Enable MSI */
+					uart_set_interrupt( ctrl, MSIEN_MASK, 1 );
+				} else {
+					/* Disable interrupt */
+					uart_set_interrupt( ctrl, MSIEN_MASK, 0 );
+					if( ! rbuf_empty( txbuf ) ){
+						/* Transfer */
+						status = rbuf_get( txbuf, ( uchar* )data );
+						assert( status == ERR_NONE );
+					}
+				}
+			}
+			
 			break;
 		default:
 			break;
@@ -334,7 +391,7 @@ int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
 	}
 
 	/* Turn off interrupt */
-	uart_config_interrupt( uart_ctrl, MSIEN_MASK | RIEN_MASK | TIEN_MASK | RTIEN_MASK, 0 );
+	uart_set_interrupt( uart_ctrl, MSIEN_MASK | RIEN_MASK | TIEN_MASK | RTIEN_MASK, 0 );
 
 	uart_send_config( ( ( port == UART_1 ) ? UART1_DRV_TID : UART2_DRV_TID ), &init );
 	

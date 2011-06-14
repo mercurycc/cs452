@@ -214,5 +214,5 @@ int sched_signal( Context* ctx, Task* task ){
 
 	ctx->scheduler->blocked_task--;
 	ASSERT( ctx->scheduler->blocked_task >= 0 );
-	return status;
+	return ERR_NONE;
 }

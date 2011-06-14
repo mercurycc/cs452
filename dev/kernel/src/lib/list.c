@@ -72,7 +72,7 @@ int list_rotate_head( List** lst )
 
 int list_add_head( List** lst, List* elem ){
 	int state = list_add_tail( lst, elem );
-	assert( state == ERR_NONE );
+	ASSERT( state == ERR_NONE );
 
 	(*lst) = elem;
 	
