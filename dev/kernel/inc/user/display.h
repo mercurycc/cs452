@@ -4,6 +4,7 @@
 #include <types.h>
 #include <config.h>
 #include <err.h>
+#include <lib/valish.h>
 
 typedef struct Region_s {
 	uint col;
