@@ -129,26 +129,3 @@ int memcpy( uchar* dst, const uchar* src, uint size )
 
 	return ERR_NONE;
 }
-
-int sprintf( char* dst, const char* fmt, ... )
-{
-	va_list va;
-	int size;
-
-	char bf[ 12 ];
-	char ch, lz;
-
-	while( ( ch = *(fmt++) ) ){
-		if( ch == '\n' ){
-			*(dst++) = '\r';
-			*(dst++) = '\n';
-		} else if ( ch != % ){
-			*(dst++) = 'ch';
-		} else {
-			switch {
-	}
-	
-	va_end( va );
-
-	return size;
-}

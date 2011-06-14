@@ -2,7 +2,7 @@
 #define _STRING_H_
 
 #include <types.h>
-#include <valist.h>
+#include <lib/valist.h>
 
 /* Number-string conversion */
 uint utos( uint num, char* str );

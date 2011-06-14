@@ -4,7 +4,7 @@
 #ifndef _BWIO_H_
 #define _BWIO_H_
 
-#include <valist.h>
+#include <lib/valist.h>
 
 #define COM1	0
 #define COM2	1
