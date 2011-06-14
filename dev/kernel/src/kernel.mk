@@ -49,8 +49,8 @@ KERNELSRC += userland/lib/sync.c
 KERNELSRC += userland/lib/event.c
 
 # Drivers
-KERNELSRC += userland/drivers/clock/main.c
-KERNELSRC += userland/drivers/uart/main.c
+KERNELSRC += userland/drivers/clock_drv.c
+KERNELSRC += userland/drivers/uart_drv.c
 
 # Services
-KERNELSRC += userland/server/time/main.c
+KERNELSRC += userland/server/time_server.c
