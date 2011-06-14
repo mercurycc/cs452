@@ -19,9 +19,10 @@ void user_init()
 
 	/* Fixed launch order in order to obtain fixed tid for servers */
 	/*
-	  1      name server
-	  2      time server
-	  3 - 7  console servers  (servers for each UART are created by the main console server)
+	  2      name server
+	  3      time server
+	  4, 5   console servers  (servers for each UART are created by the main console server)
+	  6      display server
 	*/
 	tid = Create( 2, name_server_start );
 	assert( tid > 0 );
