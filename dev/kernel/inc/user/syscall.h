@@ -48,5 +48,6 @@ int Exist( int tid );
 int KernelContext( void** target );       /* Obtain the kernel context.  This is really hacky, only used for performance measurements */
 int Kill( int tid );                      /* Kill the task whose tid is tid */
 int Create_drv( int priority, void(*code)() );   /* Create a driver task, which has interrupt disabled */
+int PreShutdown();                        /* Prepare for shutdown */
 
 #endif /* _USER_SYSCALL_H_ */

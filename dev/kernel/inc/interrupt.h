@@ -9,6 +9,7 @@ struct Interrupt_mgr_s {
 };
 
 void interrupt_trap();
+int interrupt_deinit( Context* ctx );
 int interrupt_init( Context* ctx );
 int interrupt_register( Context* ctx, Task* event_waiter, uint interrupt_id );
 int interrupt_handle( Context* ctx, Task** event_delivered );

@@ -9,6 +9,7 @@ KERNELSRC += trap.s
 KERNELSRC += trap_handler.c
 KERNELSRC += task.c
 KERNELSRC += task_init.s
+KERNELSRC += kill.s
 KERNELSRC += mem.c
 KERNELSRC += context.c
 KERNELSRC += sched.c

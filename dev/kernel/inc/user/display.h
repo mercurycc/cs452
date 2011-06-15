@@ -23,5 +23,6 @@ int display_init();
 int region_init( Region* region );
 int region_printf( Region* region, char* fmt, ... );
 int region_clear( Region* region );
+int display_quit();
 
 #endif /* _USER_DISPLAY_H_ */

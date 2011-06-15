@@ -54,6 +54,8 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 	int status = 0;
 	int interrupt = 1;
 
+	reason->result = SYSCALL_SUCCESS;
+
 	switch( reason->code ){
 		/* Task management */
 	case TRAP_CREATE_DRV:
@@ -82,6 +84,15 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		status = sched_pass( ctx, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 
+		break;
+	case TRAP_KILL:
+		receiver_task = task_get_by_tid( ctx, reason->target_tid );
+		if( receiver_task ){
+			if( receiver_task->state != TASK_READY ){
+				sched_signal( ctx, receiver_task );
+			}
+			task_kill( receiver_task->stack );
+		}
 		break;
 	case TRAP_EXIT:
 		status = sched_kill( ctx, ctx->current_task );
@@ -198,6 +209,10 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 			reason->result = SYSCALL_SUCCESS;
 		}
 		break;
+	case TRAP_PRESHUTDOWN:
+		status = interrupt_deinit( ctx );
+		ASSERT( status == ERR_NONE );
+		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 	}
@@ -228,7 +243,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			
 			status = interrupt_handle( ctx, &event_handler );
 			ASSERT( status == ERR_NONE );
-			
+
 			// Add served event handler back to ready queue
 			status = sched_signal( ctx, event_handler );
 			ASSERT( status == ERR_NONE );

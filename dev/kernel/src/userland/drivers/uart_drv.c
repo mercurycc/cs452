@@ -298,25 +298,31 @@ void uart_driver()
 			}
 			break;
 		case UART_TXRDY:
-			if( ! uart_ready_write( flags ) ){
-				/* Enable txrdy interrupt */
-				if( ! txrdy_waiting ){
-					uart_set_interrupt( ctrl, TIEN_MASK, 1 );
-					event_start( txrdy_handler_tid );
-					txrdy_waiting = 1;
-				}
-			} else {
-				/* txrdy has to be disabled otherwise it could be triggered many times
-				   while we are actually waiting on CTS */
-				uart_set_interrupt( ctrl, TIEN_MASK, 0 );
-				
-				if( config.flow_ctrl && ( ! uart_ready_cts( flags ) ) ){
-					/* Enable MSI */
-					uart_set_interrupt( ctrl, MSIEN_MASK, 1 );
+			while( ! rbuf_empty( txbuf ) ){
+				if( ! uart_ready_write( flags ) ){
+					/* Enable txrdy interrupt */
+					if( ! txrdy_waiting ){
+						uart_set_interrupt( ctrl, TIEN_MASK, 1 );
+						event_start( txrdy_handler_tid );
+						txrdy_waiting = 1;
+					}
+					break;
 				} else {
-					/* Disable interrupt */
-					uart_set_interrupt( ctrl, MSIEN_MASK, 0 );
-					if( ! rbuf_empty( txbuf ) ){
+					/* txrdy has to be disabled otherwise it could be triggered many times
+					   while we are actually waiting on CTS */
+					uart_set_interrupt( ctrl, TIEN_MASK, 0 );
+				
+					if( config.flow_ctrl && ( ! uart_ready_cts( flags ) ) ){
+						/* Enable MSI */
+						uart_set_interrupt( ctrl, MSIEN_MASK, 1 );
+						DEBUG_NOTICE( DBG_TEMP, "hit CTS low\n" );
+						break;
+					} else {
+						if( config.flow_ctrl ){
+							/* Disable interrupt */
+							uart_set_interrupt( ctrl, MSIEN_MASK, 0 );
+						}
+					
 						/* Transfer */
 						status = rbuf_get( txbuf, ( uchar* )data );
 						assert( status == ERR_NONE );
@@ -335,8 +341,7 @@ void uart_driver()
 		}
 
 		if( request.type == UART_QUIT ){
-			/* Not implemented yet, given general event handler implementation, we need to generate an interrupt to wake up general_handler */
-			assert( 0 );
+			DEBUG_NOTICE( DBG_USER, "quiting...\n" );
 			break;
 		}
 
@@ -347,6 +352,29 @@ void uart_driver()
 
 		
 	}
+
+	if( general_waiting ){
+		Kill( general_handler_tid );
+	} else {
+		event_quit( general_handler_tid );
+	}
+	DEBUG_NOTICE( DBG_USER, "general killed\n" );
+	
+	if( rxrdy_waiting ){
+		Kill( rxrdy_handler_tid );
+	} else {
+		event_quit( rxrdy_handler_tid );
+	}
+	DEBUG_NOTICE( DBG_USER, "rxrdy killed\n" );
+
+	if( txrdy_waiting ){
+		Kill( txrdy_handler_tid );
+	} else {
+		event_quit( txrdy_handler_tid );
+	}
+	DEBUG_NOTICE( DBG_USER, "txrdy killed\n" );
+
+	DEBUG_NOTICE( DBG_USER, "quit!\n" );
 
 	Exit();
 }

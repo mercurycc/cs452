@@ -15,16 +15,19 @@
 /*
 void region_demo()
 {
-	Region regspec = {2, 2, 10, 20, 1, 1};
+	Region regspec = {2, 1, 10, 20, 1, 1};
+	Region subreg = {5, 8, 1, 1, 0, 0};
 	int i = 0;
 
 	region_init( &regspec );
+	region_init( &subreg );
 
 	region_printf( &regspec, "This is what you get %d, %x.  Newlines\n can be used.", 42, 16 );
 
 	for( i = 0; i < 100; i += 1 ){
 		Delay( 20 );
 		region_printf( &regspec, "This is what you get %d, %d.  Newlines\n can be used.", 42, i );
+		region_printf( &subreg, "%d", i );
 	}
 }
 */
@@ -78,6 +81,8 @@ void user_init()
 
 	status = Putc( COM_2, '8' );
 	assert( status == ERR_NONE );
+
+	PreShutdown();
 	
 	DEBUG_NOTICE( DBG_USER, "Finishing...\n" );
 	time_suicide( WhoIs("time") );
@@ -85,6 +90,13 @@ void user_init()
 	
 	name_server_stop();
 	DEBUG_NOTICE( DBG_USER, "name server killed\n" );
+
+	display_quit();
+	DEBUG_NOTICE( DBG_USER, "display killed\n" );
+
+	uart_quit( UART1_DRV_TID );
+	uart_quit( UART2_DRV_TID );
+	DEBUG_NOTICE( DBG_USER, "uart killed\n" );
 
 	Exit();
 }

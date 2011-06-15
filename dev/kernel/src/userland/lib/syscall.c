@@ -88,3 +88,13 @@ int AwaitEvent( int eventid )
 {
 	return syscall_make( TRAP_AWAIT_EVENT, eventid, 0, 0, 0, 0 );
 }
+
+int Kill( int tid )
+{
+	return syscall_make( TRAP_KILL, tid, 0, 0, 0, 0 );
+}
+
+int PreShutdown()
+{
+	return syscall_make( TRAP_PRESHUTDOWN, 0, 0, 0, 0, 0 );
+}

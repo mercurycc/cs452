@@ -66,8 +66,11 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
 		if( ctx->scheduler->blocked_task ) {
-			DEBUG_PRINT( DBG_TEMP,"Currently blocked %d tasks, total %d\n", ctx->scheduler->blocked_task, ctx->scheduler->task_count );
-			uint reg_val = HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
+			DEBUG_PRINT( DBG_SCHED,"Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
+#ifdef DEBUG
+			uint reg_val =
+#endif
+			HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
 			DEBUG_PRINT( DBG_SCHED,"reg val read 0x%x\n", reg_val );
 			// Wake up by an interrupt
 			interrupt_handle( ctx, next );
@@ -103,8 +106,6 @@ int sched_add( Context* ctx, Task* task ){
 		return err;
 	}
 	task->state = TASK_READY;
-
-	ctx->scheduler->task_count += 1;
 
 	// change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
