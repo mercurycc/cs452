@@ -11,8 +11,8 @@
 
 /* train event api */
 int train_update_time( int ticks );
-int train_set_speed( int speed );
-int train_reverse();
+int train_set_speed( int train, int speed );
+int train_reverse( int train );
 int train_switch( int switch_id, int direction );
 int train_last_switch();
 int train_last_sensor();

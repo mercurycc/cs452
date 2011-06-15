@@ -118,12 +118,12 @@ int train_update_time( int ticks ){
 	return train_event( TRAIN_UPDATE_TIME, ticks, 0 );
 }
 
-int train_set_speed( int speed ){
-	return train_event( TRAIN_SET_SPEED, speed, 0 );
+int train_set_speed( int train, int speed ){
+	return train_event( TRAIN_SET_SPEED, train, speed );
 }
 
-int train_reverse(){
-	return train_event( TRAIN_REVERSE, 0, 0 );
+int train_reverse( int train ){
+	return train_event( TRAIN_REVERSE, train, 0 );
 }
 
 int train_switch( int switch_id, int direction ){

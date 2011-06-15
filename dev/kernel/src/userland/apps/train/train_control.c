@@ -8,6 +8,7 @@
 
 
 #define MAX_BUFFER_SIZE 256
+#define PARSE_INT_FAIL -1
 
 enum Command_type {
 	TR,
@@ -41,6 +42,35 @@ int echo( char* str ) {
 	return 0;
 }
 
+int parse_int( char* str, int start, int end, int* stop ){
+	// parse the first int from str[start] to str[end-1]
+	if ( start >= end )
+		return PARSE_INT_FAIL;
+	
+	if ( str[start] == '0' ){
+		if (( start+1 == end )||( str[start+1] > '9' )||( str[start+1] < '0' )) {
+			*stop = start+1;
+			return 0;
+		}
+		else {
+			return PARSE_INT_FAIL;
+		}
+	}
+	
+	int ret = 0;
+	
+	while ( start < end ) {
+		if (( str[start] > '9' )||( str[start] < '0' )) {
+			break;
+		}
+		
+		ret = ret*10+str[start]-'0';
+		start++;
+	}
+	
+	*stop = start;
+	return ret;
+}
 
 void train_control() {
 	
@@ -63,15 +93,29 @@ void train_control() {
 		case '\r':
 			// trigger
 			if ( buf_i == 0 ) {
+				/* empty line */
 				cmd.command = N;
 			}
 			else if (( buf_i == 1 ) && ( buf[0] == 'q' )) {
+				/* quit */
 				cmd.command = Q;
+			}
+			else if ( buf_i == 2 ) {
+				if (( buf[0] == 'S' )&&( buf[1] == 'T' )) {
+					cmd.command = ST;
+				}
+				else if (( buf[0] == 'W' )&&( buf[1] == 'H' )) {
+					cmd.command = WH;
+				}
+				else {
+					cmd.command = X;
+				}
 			}
 			else {
 				cmd.command = X;
-				buf[buf_i] = '\n';
 			}
+			status = Putc( COM_2, '\n' );
+			assert( status == ERR_NONE );
 			buf_i = 0;
 			break;
 		case '\b':
@@ -101,11 +145,15 @@ void train_control() {
 			quit = 1;
 			echo( "Goodbye!" );
 			break;
-		case TR:
-		case RV:
-		case SW:
-		case WH:
 		case ST:
+			echo("LAST SWITCH");
+			break;
+		case WH:
+			echo("LAST SENSOR");
+			break;
+		case TR:
+		case SW:
+		case RV:
 		default:
 			echo( "Invalid command" );
 			break;
