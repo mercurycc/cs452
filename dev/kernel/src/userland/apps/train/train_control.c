@@ -5,7 +5,7 @@
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
-
+#include <user/lib/sync.h>
 
 #define MAX_BUFFER_SIZE 256
 #define PARSE_INT_FAIL -1
@@ -82,6 +82,10 @@ void train_control() {
 	char buf[MAX_BUFFER_SIZE];
 	int buf_i = 0;
 	int i;
+	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
+		buf[i] = 0;
+	}
+
 		
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
@@ -127,9 +131,9 @@ void train_control() {
 			else if (( buf[0] == 't' )&&( buf[1] == 'r' )) {
 				/* TR: set train speed */
 				arg0 = parse_int( buf, 3, buf_i, &start );
-				arg1 = parse_int( buf, start+1, buf_i, start );
+				arg1 = parse_int( buf, start+1, buf_i, &start );
 
-				if (( arg0 == PARSE_INT_ERR )||( arg1 == PARSE_INT_ERR )||( start != buf_i )) {
+				if (( arg0 == PARSE_INT_FAIL )||( arg1 == PARSE_INT_FAIL )||( start != buf_i )) {
 					cmd.command = X;
 				}
 				else {
@@ -139,42 +143,14 @@ void train_control() {
 				}
 			}
 			else if (( buf[0] == 'r' )&&( buf[1] == 'v' )){
-				/* RV: reverse train movement */
+				/* RV: rv train movement */
 				arg0 = parse_int( buf, 3, buf_i, &start );
 
-				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
+				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i )) {
 					cmd.command = X;
 				}
 				else {
 					cmd.command = RV;
-					cmd.arg[0] = arg0;
-				}
-			}
-			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i] == 'S' )||( buf[buf_i] == 'C' ))){
-				/* SW: shift switch */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_ERR )||( start != buf_i-2 )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = SW;
-					cmd.args[0] = arg0;
-					if ( buf[buf_i-1] == 'S' )
-						cmd.args[1] = 33;
-					else
-						cmd.args[1] = 34;
-				}
-			}
-			else if (( buf[0] == 's' )&&( buf[1] == 't' )){
-				/* SW: shift switch */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = ST;
 					cmd.args[0] = arg0;
 				}
 			}
@@ -183,6 +159,9 @@ void train_control() {
 			}
 			status = Putc( COM_2, '\n' );
 			assert( status == ERR_NONE );
+			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
+				buf[i] = 0;
+			}
 			buf_i = 0;
 			break;
 		case '\b':
@@ -215,32 +194,26 @@ void train_control() {
 		case TR:
 			echo( "Train speed changes" );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
-			assert( status == ERR_NONE );
+			assert( status == 0 );
 			break;
 		case RV:
 			echo( "Train reverses" );
 			status = train_reverse( cmd.args[0] );
-			assert( status == ERR_NONE );
+			assert( status == 0 );
 			break;
 		case SW:
-			echo( "switch shifts" );
+			echo( "Switch shifts" );
 			status = train_switch( cmd.args[0], cmd.args[1] );
-			assert( status == ERR_NONE );
+			assert( status == 0 );
 			break;
 		case ST:
-			echo( "check switch" );
+			echo( "Switch state" );
 			status = train_check_switch( cmd.args[0] );
-			assert( status == ERR_NONE );
 			break;
 		case WH:
-			echo("last sensor");
-			status = train_last_sensor();
-			assert( status == ERR_NONE );
+			echo("LAST SENSOR");
 			break;
 		case PT:
-			echo("pressure test");
-			status = train_pressure_test();
-			assert( status == ERR_NONE );
 			break;
 		default:
 			echo( "Invalid command" );
@@ -252,5 +225,6 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
+	sync_responde( MyParentTid() );
 	Exit();
 }
