@@ -1,4 +1,6 @@
 
+#define MAX_BUFFER_SIZE 256
+
 enum Command_type {
 	TR,
 	RV,
@@ -6,7 +8,8 @@ enum Command_type {
 	WH,
 	ST,
 	Q,
-	X
+	N,		// empty line
+	X		// unrecognized input
 };
 
 struct Command {
@@ -16,6 +19,14 @@ struct Command {
 
 int echo( char* str ) {
 	// give the str to the print server
+	// test version
+	int status = uart_putc( UART2_DRV_TID, '\n' );
+	assert( status == 0 );
+	char* c = str;
+	while ( *c ) {
+		status = uart_putc( UART2_DRV_TID, *c );
+		assert( status == 0 );
+	}
 	return 0;
 }
 
@@ -26,6 +37,9 @@ void train_control() {
 	int module_id;
 	int quit = 0;
 	int status;
+	char data;
+	char buf[MAX_BUFFER_SIZE];
+	int buf_i = 0;
 	
 	Train_event event;
 	Train_reply reply;
@@ -35,22 +49,56 @@ void train_control() {
 	
 	while ( !quit ) {
 		// await input
-		
+		status = uart_getc( UART2_DRV_TID, &data );
+		assert( status == ERR_NONE );
+
 		// parse input
-		
-		// check number of arguments
+		switch (data) {
+		case '\n':
+			// trigger
+			if ( buf_i == 0 ) {
+				cmd.command = N;
+			}
+			else if (( buf_i == 1 ) && ( buf[0] == q )) {
+			}
+			else {
+				cmd.command = X;
+				buf[buf_i] = '\n';
+			}
+			buf_i = 0;
+			break;
+		case '\b':
+			// undo
+			if ( buf_i > 0 ){
+				buf_i--;
+				status = uart_putc( UART2_DRV_TID, data );
+				assert( status == ERR_NONE );
+			}
+			continue;
+		default: 
+			// echo
+			buf[buf_i] = data;
+			buf_i++;
+			assert( buf_i < MAX_BUFFER_SIZE );
+			status = uart_putc( UART2_DRV_TID, data );
+			assert( status == ERR_NONE );
+			continue;
+		}
 		
 		// do action
 		switch ( cmd.command ) {
+		case N:
+			echo( "" );
+			break;
+		case Q:
+			quit = 1;
+			echo( "Goodbye!" );
+			break;
 		case TR:
 		case RV:
 		case SW:
 		case WH:
 		case ST:
-		case Q:
-			quit = 1;
-			echo( "Goodbye!" );
-			break;
 		default:
 			echo( "Invalid command" );
 			break;
