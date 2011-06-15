@@ -74,9 +74,6 @@ void train_module() {
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == MyParentTid() ) {
 				quit = 1;
-				reply.result = 0;
-				status = Reply( tid, (char*)&reply, sizeof( reply ) );
-				assert( status == 0 );
 				break;
 			}
 			// warning message
@@ -86,8 +83,12 @@ void train_module() {
 			// TODO: change to uart
 			assert(0);
 		}
+		reply.result = 0;
+		status = Reply( tid, (char*)&reply, sizeof( reply ) );
+		assert( status == 0 );
 	}
 	
+/*
 	// wait to sell sensor and clock task to exit
 	int i = 0;
 	for ( i = 0; i < 2; i++ ) {
@@ -97,6 +98,7 @@ void train_module() {
 		status = Reply( tid, (char*)&reply, sizeof( reply ) );
 		assert( status == 0 );
 	}
+*/
 	
 	// tell anything produced by this to exit
 	Exit();

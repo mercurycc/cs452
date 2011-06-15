@@ -185,19 +185,19 @@ void train_control() {
 			echo( "Goodbye!" );
 			break;
 		case TR:
-			status = train_set_speed( cmd.arg0, cmd.arg1 );
+			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == 0 );
 			break;
 		case RV:
-			status = train_reverse( cmd.arg0 );
+			status = train_reverse( cmd.args[0] );
 			assert( status == 0 );
 			break;
 		case SW:
-			status = train_switch( cmd.arg0, cmd.arg1 );
+			status = train_switch( cmd.args[0], cmd.args[1] );
 			assert( status == 0 );
 			break;
 		case ST:
-			status = train_switch( cmd.arg0 );
+			status = train_switch( cmd.args[0] );
 			break;
 		case WH:
 			echo("LAST SENSOR");
