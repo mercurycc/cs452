@@ -87,7 +87,7 @@ void event_handler()
 		}
 		
 		DEBUG_NOTICE( DBG_EVENT, "received request\n" );
-	
+
 		do {
 			AwaitEvent( event );
 			DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );

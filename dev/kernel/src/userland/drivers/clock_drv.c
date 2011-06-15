@@ -151,7 +151,7 @@ void clock_main()
 			}
 			
 			/* Reset clock interrupt */
-			if( ( ! event_handling ) || ( cd_ticks  + CLOCK_OPERATION_TICKS ) < current_cd ){
+			if( ( ! event_handling ) || ( cd_ticks + CLOCK_OPERATION_TICKS ) < current_cd ){
 				status = clk_reset( &clock_1, cd_ticks );
 				assert( status == ERR_NONE );
 			}

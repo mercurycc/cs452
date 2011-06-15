@@ -14,6 +14,10 @@
 #define DISPLAY_SERVER_TID      6
 #define DISPLAY_SIZE            ( DISPLAY_WIDTH * DISPLAY_HEIGHT )
 #define DISPLAY_PORT            COM_2
+#define DISPLAY_BACKGROUND      '*'
+#define DISPLAY_BOUNDRY_HORIZ   '-'
+#define DISPLAY_BOUNDRY_CORN    'o'
+#define DISPLAY_BOUNDRY_VERT    '|'
 
 enum Display_request_type {
 	DISPLAY_INIT,
@@ -152,13 +156,13 @@ static inline void display_region_clear( Region* reg, const char* current, char*
 			if( reg->boundary ){
 				if( row == 0 || row == reg->height - 1 ){
 					if( col == 0 || col == reg->width - 1 ){
-						display_modify( col + reg->col, row + reg->row, 'o', current, target );
+						display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_CORN, current, target );
 					} else {
-						display_modify( col + reg->col, row + reg->row, '-', current, target );
+						display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_HORIZ, current, target );
 					}
 				} else {
 					if( col == 0 || col == reg->width - 1 ){
-						display_modify( col + reg->col, row + reg->row, '|', current, target );
+						display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_VERT, current, target );
 					} else {
 						display_modify( col + reg->col, row + reg->row, ' ', current, target );
 					}
@@ -224,7 +228,7 @@ void display_server()
 	for( chc = 0; chc < DISPLAY_SIZE; chc += 1 ){
 		commited[ chc ] = 0;
 		staging[ chc ] = 0;
-		editing[ chc ] = '~';
+		editing[ chc ] = DISPLAY_BACKGROUND;
 	}
 
 	while( 1 ){
