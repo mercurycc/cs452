@@ -50,9 +50,11 @@ struct Clock_reply_s {
 /* Internal only */
 static int clock_cd_complete( int tid );
 
-static int clock_signal_time( int tid, int dummy )
+static int clock_signal_time( int tid, int ready )
 {
+	int* ready_state = ( int* )ready;
 	time_signal( tid );
+	*ready_state = 1;
 
 	return ERR_NONE;
 }
@@ -65,6 +67,7 @@ void clock_main()
 	Clock_reply reply;
 	int event_handler_tid;
 	int courier_tid;
+	int courier_ready = 1;
 	int request_tid;
 	int time_tid = MyParentTid();
 	uint current_time = 0;
@@ -158,6 +161,7 @@ void clock_main()
 
 			/* Send request to event_start */
 			if( ! event_handling ){
+				clk_clear( &clock_1 );
 				status = event_start( event_handler_tid );
 				assert( status == ERR_NONE );
 				event_handling = 1;
@@ -170,8 +174,12 @@ void clock_main()
 		case CLOCK_COUNT_DOWN_COMPLETE:
 			clk_clear( &clock_1 );
 			event_handling = 0;
-			status = courier_go( courier_tid, time_tid, 0 );
-			assert( status == ERR_NONE );
+			if( courier_ready ){
+				courier_ready = 0;
+				status = courier_go( courier_tid, time_tid, ( int )&courier_ready );
+				assert( status == ERR_NONE );
+			}
+			/* Otherwise there is a notification going on, no need to send another one */
 			break;
 		}
 

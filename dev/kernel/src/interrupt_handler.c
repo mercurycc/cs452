@@ -71,6 +71,15 @@ static inline int interrupt_enable( uint interrupt_id )
 	return ERR_NONE;
 }
 
+int interrupt_deinit( Context* ctx )
+{
+	/* Disable all interrupts */
+	HW_WRITE( VIC1_BASE, VIC_INT_EN_CLEAR_OFFSET, ~0 );
+	HW_WRITE( VIC2_BASE, VIC_INT_EN_CLEAR_OFFSET, ~0 );
+
+	return ERR_NONE;
+}
+
 int interrupt_init( Context* ctx )
 {
 	uint* interrupt_addr = ( uint* )0x38;
@@ -79,9 +88,8 @@ int interrupt_init( Context* ctx )
 	/* Install IRQ exception entry */
 	*interrupt_addr = (uint)interrupt_trap;
 
-	/* Disable all interrupts */
-	HW_WRITE( VIC1_BASE, VIC_INT_EN_CLEAR_OFFSET, ~0 );
-	HW_WRITE( VIC2_BASE, VIC_INT_EN_CLEAR_OFFSET, ~0 );
+	status = interrupt_deinit( ctx );
+	ASSERT( status == ERR_NONE );
 
 	/* Set all interrupts to generate IRQ */
 	HW_WRITE( VIC1_BASE, VIC_INT_SELECT_OFFSET, 0 );

@@ -88,12 +88,10 @@ void event_handler()
 		
 		DEBUG_NOTICE( DBG_EVENT, "received request\n" );
 
-		do {
-			AwaitEvent( event );
-			DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );
-			status = callback( parent_tid );
-			assert( status == ERR_NONE );
-		} while( always );
+		AwaitEvent( event );
+		DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );
+		status = callback( parent_tid );
+		assert( status == ERR_NONE );
 	}
 
 	DEBUG_NOTICE( DBG_EVENT, "quit!\n" );
@@ -135,10 +133,10 @@ int event_start( int tid )
 	return event_request( tid, EVENT_START_WAIT );
 }
 
-int event_always( int tid )
-{
-	return event_request( tid, EVENT_ALWAYS );
-}
+/* int event_always( int tid ) */
+/* { */
+/* 	return event_request( tid, EVENT_ALWAYS ); */
+/* } */
 
 int event_quit( int tid )
 {

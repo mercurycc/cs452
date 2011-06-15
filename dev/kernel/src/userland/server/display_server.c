@@ -126,7 +126,11 @@ static void display_drawer()
 					reloc = 0;
 					status = Putc( DISPLAY_PORT, ch );
 				} else {
-					reloc = 1;
+					if( reloc == 0 ){
+						reloc = 1;
+						status = display_drawer_cursor_request( DRAWER_RESTORE, 0, 0 );
+						assert( status == ERR_NONE );
+					}
 				}
 			}
 		}
@@ -179,11 +183,12 @@ static inline void display_fill( Region* reg, const char* msg, const char* curre
 	int row, col;
 	char ch;
 	int clear_line = 0;
+	int boundary = reg->boundary ? 1 : 0;
 
 	/* The 1 added/subtracted is for the boundry */
-	for( row = reg->margin / 2 + 1; row < ( reg->height - reg->margin / 2 - 1 ); row += 1 ){
+	for( row = reg->margin / 2 + boundary; row < ( reg->height - reg->margin / 2 - boundary ); row += 1 ){
 		clear_line = 0;
-		for( col = reg->margin + 1; col < ( reg->width - reg->margin - 1); col += 1 ){
+		for( col = reg->margin + boundary; col < ( reg->width - reg->margin - boundary ); col += 1 ){
 			if( clear_line ){
 				display_modify( col + reg->col, row + reg->row, ' ', current, target );
 			} else {
@@ -212,8 +217,12 @@ void display_server()
 	char* staging = commited + DISPLAY_SIZE;	
 	char* editing = staging + DISPLAY_SIZE;
 	char* temp_buf;
+	int edited = 1;
+	int drawer_tid;
+	int can_draw = 0;
 	int tid;
 	int chc;
+	int execute = 1;
 	int status;
 
 	DEBUG_PRINT( DBG_DISP, "launching, size = %d\n", DISPLAY_SIZE );
@@ -231,7 +240,7 @@ void display_server()
 		editing[ chc ] = DISPLAY_BACKGROUND;
 	}
 
-	while( 1 ){
+	while( execute ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		assert( status >= sizeof( request.metadata ) );
 #ifdef IPC_MAGIC
@@ -245,18 +254,28 @@ void display_server()
 		case DISPLAY_INIT:
 			/* Create drawer */
 
-			status = Create( SERVICE_PRIORITY, display_drawer );
-			assert( status > 0 );
+			drawer_tid = Create( SERVICE_PRIORITY + 1, display_drawer );
+			assert( drawer_tid > 0 );
 			break;
 		case DISPLAY_REGION_INIT:
 		case DISPLAY_REGION_CLEAR:
+			edited = 1;
 			display_region_clear( &request.regspec, commited, editing );
 			break;
 		case DISPLAY_REGION_DRAW:
+			edited = 1;
 			display_fill( &request.regspec, request.msg, commited, editing );
 			break;
 		case DISPLAY_DRAWER_READY:
-			/* TODO: one optimization here is to not to reply if no edit is done */
+			can_draw = 1;
+			break;
+		case DISPLAY_QUIT:
+			execute = 0;
+			break;
+		}
+
+		/* Reply drawer tid */
+		if( can_draw && edited ){
 			temp_buf = staging;
 			staging = editing;
 			editing = temp_buf;
@@ -271,16 +290,21 @@ void display_server()
 				}
 				editing[ chc ] = 0;
 			}
-			
-			break;
-		case DISPLAY_QUIT:
-			break;
+			edited = 0;
+			can_draw = 0;
+
+			status = Reply( drawer_tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
 		}
 
-		status = Reply( tid, ( char* )&reply, sizeof( reply ) );
-		assert( status == SYSCALL_SUCCESS );
+		if( tid != drawer_tid ){
+			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
+		}
 	}
 
+	Kill( drawer_tid );
+	
 	Exit();
 }
 
@@ -353,6 +377,11 @@ int region_clear( Region* region )
 	assert( region );
 	
 	return display_request( DISPLAY_REGION_CLEAR, region, 0, 0, 0 );
+}
+
+int display_quit()
+{
+	return display_request( DISPLAY_QUIT, 0, 0, 0, 0 );
 }
 
 static int display_drawer_ready( char** screen )

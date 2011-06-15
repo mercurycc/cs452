@@ -33,8 +33,8 @@ BUILT := built
 # Directory holding the kernel source code
 SOURCE := src
 
-CFLAGS  = -c -fPIC -Wall -I. -I$(INCLUDE) -mcpu=arm920t -msoft-float
-# -finline-functions -finline-functions-called-once -fgcse -fexpensive-optimizations -fif-conversion -fif-conversion2 -ftree-pre -ftree-ccp
+CFLAGS  = -c -fPIC -Wall -I. -I$(INCLUDE) -mcpu=arm920t -msoft-float -finline-functions -finline-functions-called-once -fgcse -fexpensive-optimizations -fif-conversion -fif-conversion2 -ftree-pre -ftree-ccp
+# 
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture

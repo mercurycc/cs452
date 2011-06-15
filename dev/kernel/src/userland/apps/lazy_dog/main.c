@@ -25,9 +25,9 @@ void lazy_lazy_dog()
 
 	bwprintf( COM2, "task %d starts\n", my_tid );
 	for( i = 0; i < param.delay_count; i += 1 ){
-		status = Delay( param.delay_time );
+		status = Delay( param.delay_time * 5 );
 		assert( status == 0 );
-		bwprintf( COM2, "task %d has finished delay %d of %d ms\n", my_tid, i+1, param.delay_time * 10 );
+		bwprintf( COM2, "task %d has finished delay %d of %d ms\n", my_tid, i+1, param.delay_time * 10 * 5 );
 	}
 
 	sync_responde( MyParentTid() );

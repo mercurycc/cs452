@@ -1,0 +1,31 @@
+			   ==========================
+			   Pinball System for TS-7200
+			           Release K4
+				   What's New
+			   ==========================
+				    cs452_08
+
+1. Overview
+===========
+
+* Kernel
+--------
+
+- Added new syscalls: Create_drv, Kill, PreShutdown
+- Interrupt handler now supports UART interrupts
+- Scheduling policy: unblocked receiver/event handler will be scheduled first
+  within its priority group
+
+
+* Userland
+----------
+
+- Added train controller application
+- Added UART driver
+- Added Display server for UI abstraction
+- Time server and clock driver no longer deadlocks
+
+
+2. Kernel Component Change Details
+==================================
+

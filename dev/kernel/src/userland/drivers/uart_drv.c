@@ -335,8 +335,6 @@ void uart_driver()
 		}
 
 		if( request.type == UART_QUIT ){
-			/* Not implemented yet, given general event handler implementation, we need to generate an interrupt to wake up general_handler */
-			assert( 0 );
 			break;
 		}
 
@@ -347,6 +345,10 @@ void uart_driver()
 
 		
 	}
+
+	Kill( general_handler_tid );
+	Kill( rxrdy_handler_tid );
+	Kill( txrdy_handler_tid );
 
 	Exit();
 }
