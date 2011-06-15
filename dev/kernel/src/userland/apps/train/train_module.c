@@ -136,8 +136,8 @@ int train_switch( int switch_id, int direction ){
 	return train_event( TRAIN_SWITCH, switch_id, direction );
 }
 
-int train_last_switch(){
-	return train_event( TRAIN_LAST_SWITCH, 0, 0 );
+int train_check_switch( int switch_id ){
+	return train_event( TRAIN_LAST_SWITCH, switch_id, 0 );
 }
 
 int train_last_sensor(){

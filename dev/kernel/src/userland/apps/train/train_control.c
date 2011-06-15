@@ -18,7 +18,8 @@ enum Command_type {
 	ST,
 	Q,
 	N,		// empty line
-	X		// unrecognized input
+	X,		// unrecognized input
+	PT		// pressure test
 };
 
 struct Command {
@@ -80,6 +81,7 @@ void train_control() {
 	char data;
 	char buf[MAX_BUFFER_SIZE];
 	int buf_i = 0;
+	int i;
 		
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
@@ -101,8 +103,8 @@ void train_control() {
 				cmd.command = N;
 			}
 			else if ( buf_i == 1 ) {
-				/* q: quit */
 				if ( buf[0] == 'q' ) {
+					/* q: quit */
 					cmd.command = Q;
 				}
 				else {
@@ -110,9 +112,13 @@ void train_control() {
 				}
 			}
 			else if ( buf_i == 2 ) {
-				/* wh: the last sensor */
 				if (( buf[0] == 'w' )&&( buf[1] == 'h' )) {
+					/* wh: the last sensor */
 					cmd.command = WH;
+				}
+				else if (( buf[0] == 'p' )&&( buf[1] == 't' )) {
+					/* PR: the last sensor */
+					cmd.command = PT;
 				}
 				else {
 					cmd.command = X;
@@ -186,11 +192,18 @@ void train_control() {
 			status = train_reverse( cmd.arg0 );
 			assert( status == 0 );
 			break;
+		case SW:
+			status = train_switch( cmd.arg0, cmd.arg1 );
+			assert( status == 0 );
+			break;
+		case ST:
+			status = train_switch( cmd.arg0 );
+			break;
 		case WH:
 			echo("LAST SENSOR");
 			break;
-		case ST:
-		case SW:
+		case PT:
+			break;
 		default:
 			echo( "Invalid command" );
 			break;
