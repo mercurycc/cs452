@@ -18,5 +18,6 @@ int train_check_switch( int switch_id );
 int train_last_sensor();
 int train_all_sensor();
 int train_module_suicide();
+int train_pressure_test();
 
 #endif

@@ -17,7 +17,8 @@ enum Train_event_type {
 	TRAIN_LAST_SWITCH,
 	TRAIN_LAST_SENSOR,
 	TRAIN_ALL_SENSORS,
-	TRAIN_MODULE_SUICIDE
+	TRAIN_MODULE_SUICIDE,
+	TRAIN_PRESSURE_TEST
 };
 
 struct Train_event_s {
@@ -34,6 +35,8 @@ void train_module() {
 	int tid;
 	int quit = 0;
 	int status;
+	int i;
+	int last_speed = 5;
 	Train_event event;
 	Train_reply reply;
 
@@ -52,15 +55,23 @@ void train_module() {
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
+			last_speed = args[1];
 			break;
 		case TRAIN_REVERSE:
 			status = Putc( COM_1, (char)15 );
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
+			status = Putc( COM_1, last_speed );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
-			// send to train control uart
+			status = Putc( COM_1, (char)event.args[1] );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_LAST_SWITCH:
 			// send to train control uart
@@ -77,6 +88,20 @@ void train_module() {
 				break;
 			}
 			// warning message
+			break;
+		case TRAIN_PRESSURE_TEST:
+			for ( i = 0; i 4 15; i++ ) {
+				status = Putc( COM_1, i );
+				assert( status == ERR_NONE );
+				status = Putc( COM_1, 22 );
+				assert( status == ERR_NONE );
+			}
+			for ( i = 14; i >= 0; i-- ) {
+				status = Putc( COM_1, i );
+				assert( status == ERR_NONE );
+				status = Putc( COM_1, 22 );
+				assert( status == ERR_NONE );
+			}
 			break;
 		default:
 			// should not get to here
@@ -153,3 +178,8 @@ int train_all_sensor(){
 int train_module_suicide(){
 	return train_event( TRAIN_MODULE_SUICIDE, 0, 0 );
 }
+
+int train_pressure_test(){
+	return train_event( TRAIN_PRESSURE_TEST, 0, 0 );
+}
+

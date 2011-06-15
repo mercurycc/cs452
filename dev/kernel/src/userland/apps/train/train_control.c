@@ -134,12 +134,12 @@ void train_control() {
 				}
 				else {
 					cmd.command = TR;
-					cmd.arg[0] = arg0;
-					cmd.arg[1] = arg1;
+					cmd.args[0] = arg0;
+					cmd.args[1] = arg1;
 				}
 			}
 			else if (( buf[0] == 'r' )&&( buf[1] == 'v' )){
-				/* RV: rv train movement */
+				/* RV: reverse train movement */
 				arg0 = parse_int( buf, 3, buf_i, &start );
 
 				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
@@ -148,6 +148,34 @@ void train_control() {
 				else {
 					cmd.command = RV;
 					cmd.arg[0] = arg0;
+				}
+			}
+			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i] == 'S' )||( buf[buf_i] == 'C' ))){
+				/* SW: shift switch */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+
+				if (( arg0 == PARSE_INT_ERR )||( start != buf_i-2 )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = SW;
+					cmd.args[0] = arg0;
+					if ( buf[buf_i-1] == 'S' )
+						cmd.args[1] = 33;
+					else
+						cmd.args[1] = 34;
+				}
+			}
+			else if (( buf[0] == 's' )&&( buf[1] == 't' )){
+				/* SW: shift switch */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+
+				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = ST;
+					cmd.args[0] = arg0;
 				}
 			}
 			else {
@@ -185,24 +213,34 @@ void train_control() {
 			echo( "Goodbye!" );
 			break;
 		case TR:
+			echo( "Train speed changes" );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case RV:
+			echo( "Train reverses" );
 			status = train_reverse( cmd.args[0] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case SW:
+			echo( "switch shifts" );
 			status = train_switch( cmd.args[0], cmd.args[1] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case ST:
-			status = train_switch( cmd.args[0] );
+			echo( "check switch" );
+			status = train_check_switch( cmd.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case WH:
-			echo("LAST SENSOR");
+			echo("last sensor");
+			status = train_last_sensor();
+			assert( status == ERR_NONE );
 			break;
 		case PT:
+			echo("pressure test");
+			status = train_pressure_test();
+			assert( status == ERR_NONE );
 			break;
 		default:
 			echo( "Invalid command" );
