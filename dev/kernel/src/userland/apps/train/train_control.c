@@ -5,6 +5,7 @@
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
+#include <user/lib/sync.h>
 
 
 #define MAX_BUFFER_SIZE 256
@@ -201,5 +202,6 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
+	sync_responde( MyParentTid() );
 	Exit();
 }
