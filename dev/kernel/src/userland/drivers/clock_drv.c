@@ -131,9 +131,9 @@ void clock_main()
 			clk_clear( &clock_1 );
 			current_time += 1;
 			if( current_cd != 0 && current_time >= current_cd ){
-				DEBUG_NOTICE( DBG_CLK_DRV, "cd notified\n" );
 				current_cd = 0;
 				time_signal( time_tid );
+				DEBUG_NOTICE( DBG_CLK_DRV, "cd notified\n" );
 			}
 			break;
 		}

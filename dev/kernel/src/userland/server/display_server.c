@@ -108,7 +108,6 @@ static void display_drawer()
 
 		status = display_drawer_cursor_request( DRAWER_SAVE, 0, 0 );
 		assert( status == ERR_NONE );
-
 		DEBUG_NOTICE( DBG_DISP, "cursor saved\n" );
 
 		for( row = 0; row < DISPLAY_HEIGHT; row += 1 ){
@@ -131,6 +130,7 @@ static void display_drawer()
 		status = display_drawer_cursor_request( DRAWER_RESTORE, 0, 0 );
 		assert( status == ERR_NONE );
 	}
+
 
 	DEBUG_NOTICE( DBG_DISP, "quit!\n" );
 	Exit();

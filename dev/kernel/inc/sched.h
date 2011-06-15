@@ -12,6 +12,7 @@ struct Sched_s {
 	List* task_queue[32];
 	List* zombie;
 	int blocked_task;
+	int task_count;
 };
 
 int sched_init( Context* ctx, Sched* scheduler );

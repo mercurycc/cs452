@@ -94,7 +94,7 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
-		DEBUG_NOTICE( DBG_TEMP, "Got send\n" );
+		ASSERT( reason->target_tid != ctx->current_task->tid );
 		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		sender_task = ctx->current_task;
 		if ( ! receiver_task ) {
@@ -128,9 +128,8 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		}
 		break;
 	case TRAP_RECEIVE:
-		DEBUG_NOTICE( DBG_TEMP, "Got receive\n" );
 		receiver_task = ctx->current_task;
-		if ( receiver_task->send_queue ) {
+		if( receiver_task->send_queue ) {
 			// get sender;
 			status = list_remove_head( &(receiver_task->send_queue), &elem );
 			ASSERT( status == ERR_NONE );
@@ -210,8 +209,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	int status = 0;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
 
-	DEBUG_PRINT( DBG_TEMP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n",
-		     ctx->current_task->tid, sp_caller, mode );
+	// DEBUG_PRINT( DBG_TEMP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n", ctx->current_task->tid, sp_caller, mode );
 
 	ctx->current_task->stack = sp_caller;
 	ctx->current_task->reason = reason;
@@ -224,7 +222,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	// TODO: change err codes
 
 	if( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_IRQ ){
-		DEBUG_NOTICE( DBG_TEMP, "coming from IRQ\n" );
+		DEBUG_NOTICE( DBG_TRAP, "coming from IRQ\n" );
 		{
 			Task* event_handler;
 			
