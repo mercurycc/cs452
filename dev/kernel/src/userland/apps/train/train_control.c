@@ -121,27 +121,27 @@ void train_control() {
 			else if (( buf[0] == 't' )&&( buf[1] == 'r' )) {
 				/* TR: set train speed */
 				arg0 = parse_int( buf, 3, buf_i, &start );
-				arg1 = parse_int( buf, start+1, buf_i, start );
+				arg1 = parse_int( buf, start+1, buf_i, &start );
 
-				if (( arg0 == PARSE_INT_ERR )||( arg1 == PARSE_INT_ERR )||( start != buf_i )) {
+				if (( arg0 == PARSE_INT_FAIL )||( arg1 == PARSE_INT_FAIL )||( start != buf_i )) {
 					cmd.command = X;
 				}
 				else {
 					cmd.command = TR;
-					cmd.arg[0] = arg0;
-					cmd.arg[1] = arg1;
+					cmd.args[0] = arg0;
+					cmd.args[1] = arg1;
 				}
 			}
 			else if (( buf[0] == 'r' )&&( buf[1] == 'v' )){
 				/* RV: rv train movement */
 				arg0 = parse_int( buf, 3, buf_i, &start );
 
-				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
+				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i )) {
 					cmd.command = X;
 				}
 				else {
 					cmd.command = RV;
-					cmd.arg[0] = arg0;
+					cmd.args[0] = arg0;
 				}
 			}
 			else {
@@ -179,11 +179,11 @@ void train_control() {
 			echo( "Goodbye!" );
 			break;
 		case TR:
-			status = train_set_speed( cmd.arg0, cmd.arg1 );
+			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == 0 );
 			break;
 		case RV:
-			status = train_reverse( cmd.arg0 );
+			status = train_reverse( cmd.args[0] );
 			assert( status == 0 );
 			break;
 		case WH:
