@@ -6,6 +6,7 @@
 #include <user/event.h>
 #include <user/assert.h>
 #include <user/protocals.h>
+#include <user/courier.h>
 #include <user/time.h>
 #include <err.h>
 #include <bwio.h>
@@ -49,6 +50,14 @@ struct Clock_reply_s {
 /* Internal only */
 static int clock_cd_complete( int tid );
 
+/* For courier */
+static int clock_signal_time( int tid, int dummy )
+{
+	time_signal( tid );
+
+	return ERR_NONE;
+}
+
 void clock_main()
 {
 	Clock clock_1 = {0};         /* For interrupt */
@@ -56,6 +65,7 @@ void clock_main()
 	Clock_request request;
 	Clock_reply reply;
 	int event_handler_tid = 0;
+	int courier_tid = 0;
 	int request_tid;
 	int time_tid = MyParentTid();
 	uint current_time = 0;
@@ -72,10 +82,18 @@ void clock_main()
 	/* clk_reset( &clock_3, ~0 ); */
 	/* clk_clear( &clock_3 ); */
 
+	/* Interrupt handler */
 	event_handler_tid = Create_drv( 0, event_handler );
 	assert( event_handler_tid > 0 );
 
 	status = event_init( event_handler_tid, EVENT_SRC_TC1UI, clock_cd_complete );
+	assert( status == ERR_NONE );
+
+	/* Courier talking to the time server */
+	courier_tid = Create( 1, courier );
+	assert( courier_tid > 0 );
+
+	status = courier_init( courier_tid, clock_signal_time );
 	assert( status == ERR_NONE );
 
 #ifdef IPC_MAGIC
@@ -132,7 +150,8 @@ void clock_main()
 			current_time += 1;
 			if( current_cd != 0 && current_time >= current_cd ){
 				current_cd = 0;
-				time_signal( time_tid );
+				status = courier_go( courier_tid, time_tid, 0 );
+				assert( status == ERR_NONE );
 				DEBUG_NOTICE( DBG_CLK_DRV, "cd notified\n" );
 			}
 			break;

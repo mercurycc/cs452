@@ -52,6 +52,7 @@ KERNELSRC += userland/lib/sync.c
 KERNELSRC += userland/lib/event.c
 KERNELSRC += userland/lib/uart.c
 KERNELSRC += userland/lib/cursor_control.c
+KERNELSRC += userland/lib/courier.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock_drv.c

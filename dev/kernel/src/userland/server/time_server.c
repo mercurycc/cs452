@@ -107,7 +107,7 @@ void time_main(){
 			
 			// TODO rewrite structure
 			reply.result = 0;
-			status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
+			status = Reply( tid, (char*)&reply, sizeof(reply) );
 			assert( status == 0 );
 
 			// TODO find corresponding tid for the blocked task;
