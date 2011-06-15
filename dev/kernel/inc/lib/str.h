@@ -17,7 +17,7 @@ int strcmp( const char* str1, const char* str2 );
 
 int memcpy( uchar* dst, const uchar* src, uint size );
 
-/* TODO */
 int sprintf( char* dst, const char* fmt, ... );
+int sformat ( char* dst, const char *fmt, va_list va );
 
 #endif

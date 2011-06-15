@@ -52,11 +52,14 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 	Task* receiver_task;
 	List* elem;
 	int status = 0;
+	int interrupt = 1;
 
 	switch( reason->code ){
 		/* Task management */
+	case TRAP_CREATE_DRV:
+		interrupt = 0;
 	case TRAP_CREATE:
-		task_setup( ctx, &temp, reason->data, ctx->current_task, reason->datalen );
+		task_setup( ctx, &temp, reason->data, ctx->current_task, reason->datalen, interrupt );
 		if ( status == ERR_INVALID_PRIORITY ) {
 			reason->result = CREATE_INVALID_PRIORITY;
 		} else if ( status == ERR_OUT_OF_TASK_DESCRIPTOR ){
@@ -91,6 +94,7 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		break;
 		/* Message passing */
 	case TRAP_SEND:
+		DEBUG_NOTICE( DBG_TEMP, "Got send\n" );
 		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		sender_task = ctx->current_task;
 		if ( ! receiver_task ) {
@@ -124,6 +128,7 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		}
 		break;
 	case TRAP_RECEIVE:
+		DEBUG_NOTICE( DBG_TEMP, "Got receive\n" );
 		receiver_task = ctx->current_task;
 		if ( receiver_task->send_queue ) {
 			// get sender;
@@ -204,6 +209,7 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	Context* ctx = (Context*)(*(uint*)kernelsp);
 	int status = 0;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
+
 	DEBUG_PRINT( DBG_TEMP, "Trap handler called by tid: %d, sp = 0x%x, mode = 0x%x\n",
 		     ctx->current_task->tid, sp_caller, mode );
 
@@ -211,12 +217,11 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 	ctx->current_task->reason = reason;
 
 #ifdef KERNEL_ENABLE_WATCHDOG
-	/* Fed watchdog */
+	/* Feed watchdog */
 	watchdog_refresh();
 #endif
 
 	// TODO: change err codes
-	// TODO: Split syscall handling out
 
 	if( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_IRQ ){
 		DEBUG_NOTICE( DBG_TEMP, "coming from IRQ\n" );

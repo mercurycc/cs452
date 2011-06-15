@@ -35,7 +35,7 @@ struct Task_s {
 
 int task_init_all( Task* array, uint count );
 /* Initialize new task, return the TD at task */
-int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority );
+int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority, int interrupt );
 int task_zombiefy( Context* ctx, Task* task );
 uint task_tid( Task* task );
 int task_parent_tid( Task* task, int* ret );

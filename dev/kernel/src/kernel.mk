@@ -27,6 +27,7 @@ KERNELSRC += lib/str.c
 KERNELSRC += lib/rbuf.c
 KERNELSRC += lib/list.c
 KERNELSRC += lib/hashtable.c
+KERNELSRC += lib/strprintf.c
 
 # ==================================================
 # Userland (too much trouble to modify the Makefile)
@@ -47,6 +48,8 @@ KERNELSRC += userland/lib/prng.c
 KERNELSRC += userland/lib/heap.c
 KERNELSRC += userland/lib/sync.c
 KERNELSRC += userland/lib/event.c
+KERNELSRC += userland/lib/uart.c
+KERNELSRC += userland/lib/cursor_control.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock_drv.c
@@ -54,3 +57,4 @@ KERNELSRC += userland/drivers/uart_drv.c
 
 # Services
 KERNELSRC += userland/server/time_server.c
+KERNELSRC += userland/server/display_server.c

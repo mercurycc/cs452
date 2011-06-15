@@ -20,8 +20,8 @@
 enum Clock_request_type {
 	CLOCK_CURRENT_TICK,
 	CLOCK_COUNT_DOWN,
-	CLOCK_QUIT,             /* Only parent can send */
-	CLOCK_COUNT_DOWN_COMPLETE
+	CLOCK_COUNT_DOWN_COMPLETE,
+	CLOCK_QUIT             /* Only parent can send */
 };
 
 #define CLOCK_MAGIC           0xc10c411e
@@ -52,7 +52,7 @@ static int clock_cd_complete( int tid );
 void clock_main()
 {
 	Clock clock_1 = {0};         /* For interrupt */
-	Clock clock_3 = {0};         /* For timer */
+	// Clock clock_3 = {0};         /* For timer */
 	Clock_request request;
 	Clock_reply reply;
 	int event_handler_tid = 0;
@@ -61,19 +61,18 @@ void clock_main()
 	uint current_time = 0;
 	uint current_cd = 0;
 	uint event_handling = 0;
-	uint cd_ticks;
 	int execute = 1;
 	int status = 0;
-
+	
 	/* clk_reset to ensure the clock is fully reset */
-	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, ~0 );
-	clk_reset( &clock_1, ~0 );
+	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, CLOCK_USER_TICK_TO_SYSTEM_TICK( 1 ) );
 	clk_clear( &clock_1 );
-	clk_enable( &clock_3, CLK_3, CLK_MODE_FREE_RUN, CLOCK_CLK_SRC, ~0 );
-	clk_reset( &clock_3, ~0 );
-	clk_clear( &clock_3 );
 
-	event_handler_tid = Create( 0, event_handler );
+	/* clk_enable( &clock_3, CLK_3, CLK_MODE_FREE_RUN, CLOCK_CLK_SRC, ~0 ); */
+	/* clk_reset( &clock_3, ~0 ); */
+	/* clk_clear( &clock_3 ); */
+
+	event_handler_tid = Create_drv( 0, event_handler );
 	assert( event_handler_tid > 0 );
 
 	status = event_init( event_handler_tid, EVENT_SRC_TC1UI, clock_cd_complete );
@@ -84,6 +83,8 @@ void clock_main()
 #endif
 
 	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
+
+	event_always( event_handler_tid );
 
 	while( execute ){
 		status = Receive( &request_tid, ( char* )&request, sizeof( request ) );
@@ -111,39 +112,14 @@ void clock_main()
 		}
 #endif
 
-		/* Update current time */
-		status = clk_diff_cycles( &clock_3, &reply.data );
-		assert( status == ERR_NONE );
-
-		current_time += reply.data;
-
 		/* Process request */
 		switch( request.type ){
 		case CLOCK_CURRENT_TICK:
-			reply.data = CLOCK_SYSTEM_TICK_TO_USER_TICK( current_time );
+			reply.data = current_time;
 			break;
 		case CLOCK_COUNT_DOWN:
-			status = clk_value( &clock_1, &current_cd );
-			assert( status == ERR_NONE );
-
-			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data );
-			if( cd_ticks < current_time ){
-				cd_ticks = 1;
-			} else {
-				cd_ticks -= current_time;
-			}
-			
-			/* Reset clock interrupt */
-			if( ( ! event_handling ) || ( cd_ticks  + CLOCK_OPERATION_TICKS ) < current_cd ){
-				status = clk_reset( &clock_1, cd_ticks );
-				assert( status == ERR_NONE );
-			}
-
-			/* Send request to event_start */
-			if( ! event_handling ){
-				status = event_start( event_handler_tid );
-				assert( status == ERR_NONE );
-				event_handling = 1;
+			if( request.data < current_cd || current_cd == 0 ){
+				current_cd = request.data;
 			}
 			break;
 		case CLOCK_QUIT:
@@ -151,9 +127,14 @@ void clock_main()
 			execute = 0;
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:
-			clk_clear( &clock_1 );
 			event_handling = 0;
-			time_signal( time_tid );
+			clk_clear( &clock_1 );
+			current_time += 1;
+			if( current_cd != 0 && current_time >= current_cd ){
+				DEBUG_NOTICE( DBG_CLK_DRV, "cd notified\n" );
+				current_cd = 0;
+				time_signal( time_tid );
+			}
 			break;
 		}
 
@@ -178,6 +159,7 @@ static int clock_request( int tid, uint type, uint* data )
 	request.type = type;
 	request.data = *data;
 
+	DEBUG_NOTICE( DBG_CLK_DRV, "About to send request\n" );
 	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
 #ifdef IPC_MAGIC

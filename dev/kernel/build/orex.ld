@@ -28,7 +28,6 @@ text : /* The actual instructions. */
 *(.got)
 *(.got.plt)
 *(.rodata)
-*(.rodata.str1.4)
 *(.glue_7)
 *(.glue_7t)
 } >ram

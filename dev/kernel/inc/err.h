@@ -34,7 +34,8 @@ enum Debug_type {
 	DBG_SYNC,
 	DBG_EVENT,
 	DBG_WATCHDOG,
-	DBG_UART
+	DBG_UART,
+	DBG_DISP
 };
 
 #ifdef DEBUG
@@ -68,6 +69,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_TEMP:
 	case DBG_WATCHDOG:
 	case DBG_UART:
+	case DBG_DISP:
 		return 0;
 	default:
 		return 1;

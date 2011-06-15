@@ -347,6 +347,8 @@ void uart_driver()
 
 		
 	}
+
+	Exit();
 }
 
 int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
@@ -437,6 +439,7 @@ int uart_quit( int tid )
 	return uart_request( tid, UART_QUIT, &data );
 }
 
+/* Interrupt notifiers */
 static int uart_txrdy( int tid )
 {
 	uint data;

@@ -8,7 +8,7 @@
 #include <sched.h>
 
 /* As defined in task_init.s */
-ptr task_init( void (*code)(), ptr stack );
+ptr task_init( void (*code)(), ptr stack, int interrupt );
 
 static inline uint task_next_tid( uint tid )
 {
@@ -29,7 +29,7 @@ int task_init_all( Task* array, uint count )
 	return ERR_NONE;
 }
 
-int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority )
+int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint priority, int interrupt )
 {
 	Task* newtask;
 	ptr stack = 0;
@@ -51,8 +51,8 @@ int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint pr
 	ASSERT( status == ERR_NONE );
 	
 	newtask->stack_orig = stack;
-	newtask->stack = task_init( code, stack );
-	DEBUG_PRINT( DBG_TASK, "priority %d\n",priority );
+	newtask->stack = task_init( code, stack, 1 );
+	DEBUG_PRINT( DBG_TASK, "priority %d\n", priority );
 	newtask->priority = priority;
 	newtask->state = TASK_READY;
 	newtask->reason = 0;

@@ -20,6 +20,7 @@ struct Event_s {
 
 enum Event_type {
 	EVENT_START_WAIT,
+	EVENT_ALWAYS,
 	EVENT_QUIT
 };
 
@@ -32,6 +33,7 @@ void event_handler()
 	int status = 0;
 	Event_callback callback;
 	uint event;
+	uint always = 0;
 
 #ifdef IPC_MAGIC
 	reply.magic = EVENT_MAGIC;
@@ -80,16 +82,18 @@ void event_handler()
 
 		if( request.type == EVENT_QUIT ){
 			break;
+		} else if( request.type == EVENT_ALWAYS ){
+			always = 1;
 		}
-
+		
 		DEBUG_NOTICE( DBG_EVENT, "received request\n" );
-		
-		AwaitEvent( event );
-
-		DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );
-		
-		status = callback( parent_tid );
-		assert( status == ERR_NONE );
+	
+		do {
+			AwaitEvent( event );
+			DEBUG_NOTICE( DBG_EVENT, "received interrupt\n" );
+			status = callback( parent_tid );
+			assert( status == ERR_NONE );
+		} while( always );
 	}
 
 	DEBUG_NOTICE( DBG_EVENT, "quit!\n" );
@@ -129,6 +133,11 @@ int event_init( int tid, uint event, Event_callback callback )
 int event_start( int tid )
 {
 	return event_request( tid, EVENT_START_WAIT );
+}
+
+int event_always( int tid )
+{
+	return event_request( tid, EVENT_ALWAYS );
 }
 
 int event_quit( int tid )

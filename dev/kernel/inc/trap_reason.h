@@ -21,7 +21,8 @@ enum TrapReason {
 	/* Non-standard syscalls */
 	TRAP_KERNEL_CONTEXT,
 	TRAP_EXIST,
-	TRAP_KILL
+	TRAP_KILL,
+	TRAP_CREATE_DRV
 };
 
 #endif /* _TRAP_REASON_H_ */

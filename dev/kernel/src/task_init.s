@@ -8,6 +8,7 @@ task_init:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	@ a1: Target task pc
 	@ a2: Target task sp
+        @ a3: Condition if the target task will have interrupt on, 0 for no
 	@ TODO: We could find a way to use the trap_handler_begin to do this.  However be warned that trap.s might need renovation in order to carry out this task.
 	@ Save v1, v2 as we are going to use them
 	stmdb	sp!, {v1, v2}
@@ -20,7 +21,11 @@ task_init:
 	mrs	v1, cpsr
 	@ Clear nzcv bits, I bit and mode bits
 	bic	v1, v1, #0xf0000000
+	@ cmp     a3, #0
+	@ beq	._int_off
+	@ Turn on interrupt
 	bic	v1, v1, #0x80
+@ ._int_off:	
 	bic	v1, v1, #0x1f
 	@ Set user mode in cpsr
 	orr	v1, v1, #0x10

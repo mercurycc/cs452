@@ -59,7 +59,7 @@ void time_main(){
 
 	assert( MyTid() == CLOCK_SERVER_TID );
 	
-	clock_tid = Create( FAST_DRIVER_PRIORITY, clock_main );
+	clock_tid = Create_drv( SLOW_DRIVER_PRIORITY, clock_main );
 	
 	status = RegisterAs( "time" );
 	assert( status == 0 );
@@ -68,7 +68,7 @@ void time_main(){
 		status = Receive(&tid, (char*)&msg, sizeof(msg));
 		assert( status == sizeof(msg) );
 		
-		DEBUG_PRINT( DBG_TIME, "timer server received request 0x%x, interval %d\n", msg.request, msg.interval );
+		DEBUG_PRINT( DBG_TIME, "received request 0x%x, interval %d\n", msg.request, msg.interval );
 		
 		switch ( msg.request ) {
 		case TIME_ASK:
@@ -97,10 +97,14 @@ void time_main(){
 
 			heap_insert( &heap, (Heap_node*)&node );
 
+			DEBUG_PRINT( DBG_TIME, "delay until %d\n", msg.interval );
+
 			status = clock_count_down( clock_tid, node.time );
 			assert( status == 0 );
 			break;
 		case TIME_SIGNAL:
+			DEBUG_NOTICE( DBG_TIME, "received signal\n" );
+			
 			// TODO rewrite structure
 			reply.result = 0;
 			status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
@@ -110,6 +114,7 @@ void time_main(){
 			status = heap_read_top( &heap, (Heap_node*)&node );
 			assert( status == 0 );
 			cur_time = node.time;
+			
 			while ( node.time == cur_time ){
 				status = Reply( node.tid, (char*)&reply, sizeof(reply) );
 				DEBUG_PRINT( DBG_TIME, "status = 0x%x\n", status );
@@ -123,7 +128,6 @@ void time_main(){
 				assert( status == 0 );
 			}
 
-			
 			DEBUG_PRINT( DBG_TIME, "status = 0x%x\n", status );
 
 			if ( status == 0 ) {

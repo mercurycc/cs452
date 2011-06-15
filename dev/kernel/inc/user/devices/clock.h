@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-#define CLOCK_COUNT_DOWN_MS_PER_TICK      50
+#define CLOCK_COUNT_DOWN_MS_PER_TICK      10
 
 int clock_current_time( int tid, uint* time );
 int clock_count_down( int tid, uint ticks );

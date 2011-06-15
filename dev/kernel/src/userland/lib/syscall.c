@@ -28,10 +28,15 @@ static inline int syscall_make( uint reason, uint target_tid, void* data, uint d
 	return call_reason.result;
 }
 
-int Create( int priority, void(*code)() )
+int Create( int priority, void (*code)() )
 {
 	/* TODO: code must be word-aligned non NULL pointer */
 	return syscall_make( TRAP_CREATE, 0, code, priority, 0, 0 );
+}
+
+int Create_drv( int priority, void (*code)() )
+{
+	return syscall_make( TRAP_CREATE_DRV, 0, code, priority, 0, 0 );
 }
 
 int MyTid()

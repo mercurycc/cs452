@@ -107,7 +107,7 @@ int main()
 	DEBUG_NOTICE( DBG_KER, "Kernel init done\n" );
 
 	/* Start user session by getting into the init */
-	status = task_setup( ctx, &user_init_td, user_init, 0, KERNEL_INIT_TASK_PRIORITY );
+	status = task_setup( ctx, &user_init_td, user_init, 0, KERNEL_INIT_TASK_PRIORITY, 1 );
 	ASSERT( status == ERR_NONE );
 
 	DEBUG_PRINT( DBG_KER, "User session, td 0x%x, sp 0x%x\n", user_init_td, user_init_td->stack );
