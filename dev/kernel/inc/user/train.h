@@ -6,6 +6,9 @@
 #define TRAIN_CLOCK_PRIORITY 5
 #define TRAIN_SENSOR_PRIORITY 5
 
+/* constant */
+#define TRAIN_MODULE_NAME "train_module"
+
 /* train event api */
 int train_update_time( int ticks );
 int train_set_speed( int speed );

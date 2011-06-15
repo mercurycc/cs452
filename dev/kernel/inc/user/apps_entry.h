@@ -15,4 +15,8 @@ void srr_bench();
 /* clock server clients */
 void lazy_dog();
 
+/* A0 train program */
+void train_control();
+void train_module();
+
 #endif /* _USER_APPS_ENTRY_H_ */
