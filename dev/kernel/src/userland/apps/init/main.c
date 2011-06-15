@@ -12,7 +12,7 @@
 #include <user/lib/sync.h>
 #include <bwio.h>
 #include <err.h>
-
+/*
 void region_demo()
 {
 	Region regspec = {2, 1, 10, 20, 1, 1};
@@ -30,7 +30,7 @@ void region_demo()
 		region_printf( &subreg, "%d", i );
 	}
 }
-
+*/
 void user_init()
 {
 	int tid;
@@ -74,28 +74,13 @@ void user_init()
 
 	DEBUG_NOTICE( DBG_USER, "uart init done\n" );
 
-	/* Display server init */
-	status = display_init();
-	assert( status == ERR_NONE );
-	DEBUG_NOTICE( DBG_USER, "display init done\n" );
 
-	DEBUG_NOTICE( DBG_USER, "launching user program\n" );
-
-	region_demo();
-
-	tid = Create( 1, lazy_dog );
-	assert( tid > 0 );
-	DEBUG_NOTICE( DBG_USER, "test case created\n" );
-
-	while( data != 'q' ){
-		data = Getc( COM_2 );
-		assert( status == ERR_NONE );
-
-		status = Putc( COM_2, data );
-		assert( status == ERR_NONE );
-	}
+	tid = Create( 5, train_control );
 	
 	sync_wait();
+
+	status = Putc( COM_2, '8' );
+	assert( status == ERR_NONE );
 
 	PreShutdown();
 	

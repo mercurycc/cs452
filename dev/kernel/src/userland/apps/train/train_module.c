@@ -17,7 +17,8 @@ enum Train_event_type {
 	TRAIN_LAST_SWITCH,
 	TRAIN_LAST_SENSOR,
 	TRAIN_ALL_SENSORS,
-	TRAIN_MODULE_SUICIDE
+	TRAIN_MODULE_SUICIDE,
+	TRAIN_PRESSURE_TEST
 };
 
 struct Train_event_s {
@@ -34,6 +35,8 @@ void train_module() {
 	int tid;
 	int quit = 0;
 	int status;
+	int i;
+	int last_speed = 5;
 	Train_event event;
 	Train_reply reply;
 
@@ -48,13 +51,27 @@ void train_module() {
 		case TRAIN_UPDATE_TIME:
 			break;
 		case TRAIN_SET_SPEED:
-			// send to train control uart
+			status = Putc( COM_1, (char)event.args[1] );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
+			last_speed = args[1];
 			break;
 		case TRAIN_REVERSE:
-			// send to train control uart
+			status = Putc( COM_1, (char)15 );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, last_speed );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
-			// send to train control uart
+			status = Putc( COM_1, (char)event.args[1] );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_LAST_SWITCH:
 			// send to train control uart
@@ -68,20 +85,35 @@ void train_module() {
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == MyParentTid() ) {
 				quit = 1;
-				reply.result = 0;
-				status = Reply( tid, (char*)&reply, sizeof( reply ) );
-				assert( status == 0 );
 				break;
 			}
 			// warning message
+			break;
+		case TRAIN_PRESSURE_TEST:
+			for ( i = 0; i 4 15; i++ ) {
+				status = Putc( COM_1, i );
+				assert( status == ERR_NONE );
+				status = Putc( COM_1, 22 );
+				assert( status == ERR_NONE );
+			}
+			for ( i = 14; i >= 0; i-- ) {
+				status = Putc( COM_1, i );
+				assert( status == ERR_NONE );
+				status = Putc( COM_1, 22 );
+				assert( status == ERR_NONE );
+			}
 			break;
 		default:
 			// should not get to here
 			// TODO: change to uart
 			assert(0);
 		}
+		reply.result = 0;
+		status = Reply( tid, (char*)&reply, sizeof( reply ) );
+		assert( status == 0 );
 	}
 	
+/*
 	// wait to sell sensor and clock task to exit
 	int i = 0;
 	for ( i = 0; i < 2; i++ ) {
@@ -91,6 +123,7 @@ void train_module() {
 		status = Reply( tid, (char*)&reply, sizeof( reply ) );
 		assert( status == 0 );
 	}
+*/
 	
 	// tell anything produced by this to exit
 	Exit();
@@ -130,8 +163,8 @@ int train_switch( int switch_id, int direction ){
 	return train_event( TRAIN_SWITCH, switch_id, direction );
 }
 
-int train_last_switch(){
-	return train_event( TRAIN_LAST_SWITCH, 0, 0 );
+int train_check_switch( int switch_id ){
+	return train_event( TRAIN_LAST_SWITCH, switch_id, 0 );
 }
 
 int train_last_sensor(){
@@ -145,3 +178,8 @@ int train_all_sensor(){
 int train_module_suicide(){
 	return train_event( TRAIN_MODULE_SUICIDE, 0, 0 );
 }
+
+int train_pressure_test(){
+	return train_event( TRAIN_PRESSURE_TEST, 0, 0 );
+}
+
