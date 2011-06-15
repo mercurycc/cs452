@@ -94,5 +94,9 @@ void user_init()
 	display_quit();
 	DEBUG_NOTICE( DBG_USER, "display killed\n" );
 
+	uart_quit( UART1_DRV_TID );
+	uart_quit( UART2_DRV_TID );
+	DEBUG_NOTICE( DBG_USER, "uart killed\n" );
+
 	Exit();
 }

@@ -304,7 +304,8 @@ void display_server()
 	}
 
 	Kill( drawer_tid );
-	
+
+	DEBUG_NOTICE( DBG_USER, "quit!\n" );
 	Exit();
 }
 
