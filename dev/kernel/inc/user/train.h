@@ -8,6 +8,7 @@
 
 /* constant */
 #define TRAIN_MODULE_NAME "train_module"
+#define TRAIN_XMIT_DELAY 20
 
 /* train event api */
 int train_update_time( int ticks );

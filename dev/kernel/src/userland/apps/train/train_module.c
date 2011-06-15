@@ -14,7 +14,7 @@ enum Train_event_type {
 	TRAIN_SET_SPEED,
 	TRAIN_REVERSE,
 	TRAIN_SWITCH,
-	TRAIN_LAST_SWITCH,
+	TRAIN_CHECK_SWITCH,
 	TRAIN_LAST_SENSOR,
 	TRAIN_ALL_SENSORS,
 	TRAIN_MODULE_SUICIDE,
@@ -37,6 +37,15 @@ void train_module() {
 	int status;
 	int i;
 	int last_speed = 5;
+
+	char switch_table[22];
+	for ( i = 0; i < 22; i++ ) {
+		switch_table[i] = 'S';
+	}
+
+	// reset all switches
+
+
 	Train_event event;
 	Train_reply reply;
 
@@ -46,7 +55,11 @@ void train_module() {
 	while ( !quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
-		
+
+		reply.result = 0;
+		status = Reply( tid, (char*)&reply, sizeof( reply ) );
+		assert( status == 0 );
+
 		switch (event.event_type) {
 		case TRAIN_UPDATE_TIME:
 			break;
@@ -56,17 +69,21 @@ void train_module() {
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
 			last_speed = event.args[1];
+			status = Delay( TRAIN_XMIT_DELAY );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_REVERSE:
 			status = Putc( COM_1, (char)15 );
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
-			status = Delay(20);
+			status = Delay( TRAIN_XMIT_DELAY );
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, last_speed );
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
+			status = Delay( TRAIN_XMIT_DELAY );
 			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
@@ -74,9 +91,14 @@ void train_module() {
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
+			status = Delay( TRAIN_XMIT_DELAY );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)32 );
+			assert( status == ERR_NONE );
+			status = Delay( TRAIN_XMIT_DELAY );
+			assert( status == ERR_NONE );
 			break;
-		case TRAIN_LAST_SWITCH:
-			// send to train control uart
+		case TRAIN_CHECK_SWITCH:
 			break;
 		case TRAIN_LAST_SENSOR:
 			// send to SENSOR uart
@@ -110,9 +132,6 @@ void train_module() {
 			// TODO: change to uart
 			assert(0);
 		}
-		reply.result = 0;
-		status = Reply( tid, (char*)&reply, sizeof( reply ) );
-		assert( status == 0 );
 	}
 	
 /*
@@ -166,7 +185,7 @@ int train_switch( int switch_id, int direction ){
 }
 
 int train_check_switch( int switch_id ){
-	return train_event( TRAIN_LAST_SWITCH, switch_id, 0 );
+	return train_event( TRAIN_CHECK_SWITCH, switch_id, 0 );
 }
 
 int train_last_sensor(){
