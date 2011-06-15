@@ -55,12 +55,14 @@ void train_module() {
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
 			assert( status == ERR_NONE );
-			last_speed = args[1];
+			last_speed = event.args[1];
 			break;
 		case TRAIN_REVERSE:
 			status = Putc( COM_1, (char)15 );
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
+			status = Delay(20);
 			assert( status == ERR_NONE );
 			status = Putc( COM_1, last_speed );
 			assert( status == ERR_NONE );
@@ -90,7 +92,7 @@ void train_module() {
 			// warning message
 			break;
 		case TRAIN_PRESSURE_TEST:
-			for ( i = 0; i 4 15; i++ ) {
+			for ( i = 0; i < 15; i++ ) {
 				status = Putc( COM_1, i );
 				assert( status == ERR_NONE );
 				status = Putc( COM_1, 22 );
