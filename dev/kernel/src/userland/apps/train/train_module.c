@@ -48,10 +48,16 @@ void train_module() {
 		case TRAIN_UPDATE_TIME:
 			break;
 		case TRAIN_SET_SPEED:
-			// send to train control uart
+			status = Putc( COM_1, (char)event.args[1] );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_REVERSE:
-			// send to train control uart
+			status = Putc( COM_1, (char)15 );
+			assert( status == ERR_NONE );
+			status = Putc( COM_1, (char)event.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
 			// send to train control uart

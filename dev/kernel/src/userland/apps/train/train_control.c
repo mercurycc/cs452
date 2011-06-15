@@ -89,6 +89,10 @@ void train_control() {
 		data = Getc( COM_2 );
 
 		// parse input
+		int start;
+		int arg0;
+		int arg1;
+		
 		switch (data) {
 		case '\r':
 			// trigger
@@ -96,19 +100,48 @@ void train_control() {
 				/* empty line */
 				cmd.command = N;
 			}
-			else if (( buf_i == 1 ) && ( buf[0] == 'q' )) {
-				/* quit */
-				cmd.command = Q;
+			else if ( buf_i == 1 ) {
+				/* q: quit */
+				if ( buf[0] == 'q' ) {
+					cmd.command = Q;
+				}
+				else {
+					cmd.command = X;
+				}
 			}
 			else if ( buf_i == 2 ) {
-				if (( buf[0] == 'S' )&&( buf[1] == 'T' )) {
-					cmd.command = ST;
-				}
-				else if (( buf[0] == 'W' )&&( buf[1] == 'H' )) {
+				/* wh: the last sensor */
+				if (( buf[0] == 'w' )&&( buf[1] == 'h' )) {
 					cmd.command = WH;
 				}
 				else {
 					cmd.command = X;
+				}
+			}
+			else if (( buf[0] == 't' )&&( buf[1] == 'r' )) {
+				/* TR: set train speed */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+				arg1 = parse_int( buf, start+1, buf_i, start );
+
+				if (( arg0 == PARSE_INT_ERR )||( arg1 == PARSE_INT_ERR )||( start != buf_i )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = TR;
+					cmd.arg[0] = arg0;
+					cmd.arg[1] = arg1;
+				}
+			}
+			else if (( buf[0] == 'r' )&&( buf[1] == 'v' )){
+				/* RV: rv train movement */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+
+				if (( arg0 == PARSE_INT_ERR )||( start != buf_i )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = RV;
+					cmd.arg[0] = arg0;
 				}
 			}
 			else {
@@ -145,15 +178,19 @@ void train_control() {
 			quit = 1;
 			echo( "Goodbye!" );
 			break;
-		case ST:
-			echo("LAST SWITCH");
+		case TR:
+			status = train_set_speed( cmd.arg0, cmd.arg1 );
+			assert( status == 0 );
+			break;
+		case RV:
+			status = train_reverse( cmd.arg0 );
+			assert( status == 0 );
 			break;
 		case WH:
 			echo("LAST SENSOR");
 			break;
-		case TR:
+		case ST:
 		case SW:
-		case RV:
 		default:
 			echo( "Invalid command" );
 			break;
