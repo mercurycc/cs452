@@ -1,3 +1,10 @@
+#include <types.h>
+#include <err.h>
+#include <user/assert.h>
+#include <user/syscall.h>
+#include <user/train.h>
+#include <user/uart.h>
+#include <user/name_server.h>
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
@@ -28,7 +35,10 @@ void train_module() {
 	int quit = 0;
 	int status;
 	Train_event event;
-	Train_event reply;
+	Train_reply reply;
+
+	status = RegisterAs( TRAIN_MODULE_NAME );
+	assert( status == ERR_NONE );
 
 	while ( !quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
@@ -46,20 +56,20 @@ void train_module() {
 		case TRAIN_SWITCH:
 			// send to train control uart
 			break;
-		case TRAIN_DISPLAY_LAST_SWITCH:
+		case TRAIN_LAST_SWITCH:
 			// send to train control uart
 			break;
-		case TRAIN_DISPLAY_LAST_SENSOR:
+		case TRAIN_LAST_SENSOR:
 			// send to SENSOR uart
 			break;
-		case TRAIN_GET_ALL_SENSOR:
+		case TRAIN_ALL_SENSORS:
 			// send and receive all sensor data
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == MyParentTid() ) {
 				quit = 1;
 				reply.result = 0;
-				status = Reply( tid, (char*)reply, sizeof( reply ) );
+				status = Reply( tid, (char*)&reply, sizeof( reply ) );
 				assert( status == 0 );
 				break;
 			}
@@ -78,7 +88,7 @@ void train_module() {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 		reply.result = -1;
-		status = Reply( tid, (char*)reply, sizeof( reply ) );
+		status = Reply( tid, (char*)&reply, sizeof( reply ) );
 		assert( status == 0 );
 	}
 	
@@ -92,10 +102,12 @@ int train_event( uint type, int arg0, int arg1 ) {
 	Train_reply reply;
 
 	event.event_type = type;
-	event.arg[0] = arg0;
-	event.arg[1] = arg1;
+	event.args[0] = arg0;
+	event.args[1] = arg1;
 
-	int status = Send( module_id, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
+	int module_tid = WhoIs( TRAIN_MODULE_NAME );
+
+	int status = Send( module_tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
 	
 	return reply.result;

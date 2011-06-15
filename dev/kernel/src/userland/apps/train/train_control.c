@@ -1,3 +1,11 @@
+#include <types.h>
+#include <err.h>
+#include <user/apps_entry.h>
+#include <user/assert.h>
+#include <user/syscall.h>
+#include <user/train.h>
+#include <user/uart.h>
+
 
 #define MAX_BUFFER_SIZE 256
 
@@ -20,46 +28,45 @@ struct Command {
 int echo( char* str ) {
 	// give the str to the print server
 	// test version
-	int status = uart_putc( UART2_DRV_TID, '\n' );
+	int status = Putc( COM_2, '\n' );
 	assert( status == 0 );
 	char* c = str;
 	while ( *c ) {
-		status = uart_putc( UART2_DRV_TID, *c );
+		status = Putc( COM_2, *c );
 		assert( status == 0 );
+		c++;
 	}
+	status = Putc( COM_2, '\n' );
+	assert( status == 0 );
 	return 0;
 }
 
 
 void train_control() {
 	
-	int tid;
 	int module_id;
 	int quit = 0;
 	int status;
 	char data;
 	char buf[MAX_BUFFER_SIZE];
 	int buf_i = 0;
-	
-	Train_event event;
-	Train_reply reply;
-	
+		
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
 	
 	while ( !quit ) {
 		// await input
-		status = uart_getc( UART2_DRV_TID, &data );
-		assert( status == ERR_NONE );
+		data = Getc( COM_2 );
 
 		// parse input
 		switch (data) {
-		case '\n':
+		case '\r':
 			// trigger
 			if ( buf_i == 0 ) {
 				cmd.command = N;
 			}
-			else if (( buf_i == 1 ) && ( buf[0] == q )) {
+			else if (( buf_i == 1 ) && ( buf[0] == 'q' )) {
+				cmd.command = Q;
 			}
 			else {
 				cmd.command = X;
@@ -71,7 +78,7 @@ void train_control() {
 			// undo
 			if ( buf_i > 0 ){
 				buf_i--;
-				status = uart_putc( UART2_DRV_TID, data );
+				status = Putc( COM_2, data );
 				assert( status == ERR_NONE );
 			}
 			continue;
@@ -80,7 +87,7 @@ void train_control() {
 			buf[buf_i] = data;
 			buf_i++;
 			assert( buf_i < MAX_BUFFER_SIZE );
-			status = uart_putc( UART2_DRV_TID, data );
+			status = Putc( COM_2, data );
 			assert( status == ERR_NONE );
 			continue;
 		}
@@ -111,4 +118,3 @@ void train_control() {
 
 	Exit();
 }
-

@@ -62,11 +62,11 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_NS:
 	case DBG_HASH:
 	case DBG_INT:
-		// case DBG_CLK_DRV:
+	case DBG_CLK_DRV:
 	case DBG_TIME:
 	case DBG_SYNC:
 	case DBG_EVENT:
-		// case DBG_TEMP:
+	case DBG_TEMP:
 	case DBG_WATCHDOG:
 	case DBG_UART:
 	case DBG_DISP:
