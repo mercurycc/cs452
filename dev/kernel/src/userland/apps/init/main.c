@@ -74,7 +74,6 @@ void user_init()
 
 	DEBUG_NOTICE( DBG_USER, "uart init done\n" );
 
-
 	tid = Create( 5, train_control );
 	
 	sync_wait();

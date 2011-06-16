@@ -168,7 +168,7 @@ void clock_main()
 			}
 			break;
 		case CLOCK_QUIT:
-			status = event_quit( event_handler_tid );
+			Kill( event_handler_tid );
 			execute = 0;
 			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:
@@ -190,6 +190,7 @@ void clock_main()
 	}
 
 	Kill( courier_tid );
+	DEBUG_NOTICE( DBG_USER, "quit!\n" );
 	
 	Exit();
 }

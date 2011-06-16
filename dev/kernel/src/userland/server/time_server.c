@@ -154,7 +154,7 @@ void time_main(){
 			break;
 		}
 	}
-	DEBUG_NOTICE( DBG_TIME, "time server suicided\n" );
+	DEBUG_NOTICE( DBG_USER, "time server suicided\n" );
 	Exit();
 }
 
