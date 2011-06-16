@@ -65,7 +65,7 @@ static inline void sw( int n, char d ){
 static inline void sw_off() {
 	int status = Putc( COM_1, (char)32 );
 	assert( status == ERR_NONE );
-	status = Delay( SWITCH_XMIT_DELAY );
+	status = Delay( SWITCH_OFF_DELAY );
 	assert( status == ERR_NONE );
 }
 
@@ -85,6 +85,7 @@ static inline void switch_all( char d ){
 void train_module() {
 
 	int tid;
+	int ptid = MyParentTid();
 	int quit = 0;
 	int status;
 	int i;
@@ -106,6 +107,8 @@ void train_module() {
 	while ( !quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
+
+		Putc( COM_2, 'R' );
 
 		reply.result = 0;
 		status = Reply( tid, (char*)&reply, sizeof( reply ) );
@@ -135,7 +138,7 @@ void train_module() {
 			// send and receive all sensor data
 			break;
 		case TRAIN_MODULE_SUICIDE:
-			if ( tid == MyParentTid() ) {
+			if ( tid == ptid ) {
 				quit = 1;
 				break;
 			}

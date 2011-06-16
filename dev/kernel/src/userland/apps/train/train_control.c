@@ -270,6 +270,7 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
+	echo("so long");
 	sync_responde( MyParentTid() );
 	Exit();
 }

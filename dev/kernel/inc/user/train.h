@@ -9,6 +9,7 @@
 /* constant */
 #define TRAIN_MODULE_NAME "train_module"
 #define SWITCH_XMIT_DELAY 10
+#define SWITCH_OFF_DELAY 200
 #define TRAIN_XMIT_DELAY 20
 
 /* train event api */
