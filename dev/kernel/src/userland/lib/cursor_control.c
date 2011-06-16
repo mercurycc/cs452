@@ -16,7 +16,8 @@ enum { CURSOR_CONTROL_SAVE,
        CURSOR_CONTROL_CLS,
        CURSOR_CONTROL_BACK,
        CURSOR_CONTROL_INSERT,
-       CURSOR_CONTROL_COUNT };
+       CURSOR_CONTROL_COUNT,
+       CURSOR_CONTROL_SCROLL };
 
 static int cursor_control( uint op, uint op1, uint op2, uint op3, char* cmdbuf )
 {
@@ -37,6 +38,7 @@ static int cursor_control( uint op, uint op1, uint op2, uint op3, char* cmdbuf )
 	case CURSOR_CONTROL_SET_POS:
 	case CURSOR_CONTROL_CLS:
 	case CURSOR_CONTROL_REMOVE_LEFT:
+	case CURSOR_CONTROL_SCROLL:
 		CURSOR_CONTROL_ASSIGN_CMD( '[' );
 		break;
 	}
@@ -66,6 +68,12 @@ static int cursor_control( uint op, uint op1, uint op2, uint op3, char* cmdbuf )
 		cmdsize += utos( op2, cmdbuf + cmdsize );
 		CURSOR_CONTROL_ASSIGN_CMD( 'H' );
 		break;
+	case CURSOR_CONTROL_SCROLL:
+		cmdsize += utos( op1, cmdbuf + cmdsize );
+		CURSOR_CONTROL_ASSIGN_CMD( ';' );
+		cmdsize += utos( op2, cmdbuf + cmdsize );
+		CURSOR_CONTROL_ASSIGN_CMD( 'r' );
+		break;
 	}
 
 	return cmdsize;
@@ -89,4 +97,9 @@ int cursor_control_setposn( char* cmdbuf, int row, int col )
 int cursor_control_restore( char* cmdbuf )
 {
 	return cursor_control( CURSOR_CONTROL_RESTORE, 0, 0, 0, cmdbuf );
+}
+
+int cursor_control_scroll( char* cmdbuf, int low, int high )
+{
+	return cursor_control( CURSOR_CONTROL_SCROLL, low, high, 0, cmdbuf );
 }

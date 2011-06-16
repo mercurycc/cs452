@@ -34,7 +34,6 @@ void region_demo()
 void user_init()
 {
 	int tid;
-	uint data = 0;
 	int status;
 
 	/* Fixed launch order in order to obtain fixed tid for servers */
