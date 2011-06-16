@@ -44,7 +44,9 @@ void train_module() {
 	}
 
 	// reset all switches
-
+	for ( i = 1; i < 19; i++ ) {
+		
+	}
 
 	Train_event event;
 	Train_reply reply;
