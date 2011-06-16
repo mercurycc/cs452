@@ -315,7 +315,6 @@ void uart_driver()
 					if( config.flow_ctrl && ( ! uart_ready_cts( flags ) ) ){
 						/* Enable MSI */
 						uart_set_interrupt( ctrl, MSIEN_MASK, 1 );
-						DEBUG_NOTICE( DBG_TEMP, "hit CTS low\n" );
 						break;
 					} else {
 						if( config.flow_ctrl ){
