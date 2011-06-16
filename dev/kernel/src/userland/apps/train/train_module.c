@@ -81,6 +81,11 @@ static inline void switch_all( char d ){
 	sw_off();
 }
 
+static inline void delay( int ticks ) {
+	int status = Delay( ticks );
+	assert( status == ERR_NONE );
+
+}
 
 void train_module() {
 
@@ -153,6 +158,7 @@ void train_module() {
 			break;
 		case TRAIN_SWITCH_ALL:
 			switch_all( event.args[0] );
+			delay( 180 );
 			break;
 		default:
 			// should not get to here
