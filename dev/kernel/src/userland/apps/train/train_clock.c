@@ -1,6 +1,13 @@
+#include <types.h>
+#include <err.h>
+#include <user/assert.h>
+#include <user/syscall.h>
+#include <user/clock_server.h>
+#include <user/devices/clock.h>
+#include <user/train.h>
+
 
 void train_clock() {
-	int tid;
 	int quit = 0;
 	int status;
 	uint ticks = 0;

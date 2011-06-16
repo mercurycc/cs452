@@ -1,10 +1,13 @@
 #include <types.h>
 #include <err.h>
+#include <user/apps_entry.h>
 #include <user/assert.h>
+#include <user/display.h>
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
 #include <user/name_server.h>
+#include <user/lib/sync.h>
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
@@ -63,7 +66,9 @@ static inline void sw( int n, char d ){
 }
 
 static inline void sw_off() {
-	int status = Putc( COM_1, (char)32 );
+	int status = Delay( SWITCH_OFF_DELAY );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)32 );
 	assert( status == ERR_NONE );
 	status = Delay( SWITCH_OFF_DELAY );
 	assert( status == ERR_NONE );
@@ -87,6 +92,12 @@ static inline void delay( int ticks ) {
 
 }
 
+static inline void print_switch_table( Region* r, char* table ){
+	int status;
+	status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c      7: %c    8: %c    9: %c   10: %c   11: %c   12: %c     13: %c   14: %c   15: %c   16: %c   17: %c   18: %c    153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
+	assert( status == ERR_NONE );
+}
+
 void train_module() {
 
 	int tid;
@@ -95,11 +106,24 @@ void train_module() {
 	int status;
 	int i;
 	int last_speed = 5;
+	int children = 0;
+	char* time_str = "00:00:00.0";
+	char direction;
 
 	char switch_table[22];
 	for ( i = 0; i < 22; i++ ) {
 		switch_table[i] = 'C';
 	}
+
+	Region clock_rect = { 1, 1, 1, 14, 0, 0 };
+	Region *clock_region = &clock_rect;
+	status = region_init( clock_region );
+	assert( status == ERR_NONE );
+
+	Region switch_rect = { 1, 3, 5, 50, 0, 0 };
+	Region *switch_region = &switch_rect;
+	status = region_init( switch_region );
+	assert( status == ERR_NONE );
 
 	switch_all( (char)34 );
 
@@ -109,18 +133,63 @@ void train_module() {
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
+	tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
+	assert( tid > 0 );
+	children++;
+	assert( children > 0 );
+	status = region_printf( clock_region, " %s ", time_str );
+	assert( status == ERR_NONE );
+
+	print_switch_table( switch_region, switch_table );
+
+	sync_responde( ptid );
+
 	while ( !quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 
-		Putc( COM_2, 'R' );
-
-		reply.result = 0;
-		status = Reply( tid, (char*)&reply, sizeof( reply ) );
-		assert( status == 0 );
+		// early reply
+		switch ( event.event_type ){
+		case TRAIN_CHECK_SWITCH:
+		case TRAIN_LAST_SENSOR:
+			break;
+		default:
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+		}
 
 		switch (event.event_type) {
 		case TRAIN_UPDATE_TIME:
+			time_str[9]++;
+			if ( time_str[9] > '9' ) {
+				time_str[9] -= 10;
+				time_str[7] += 1;
+			}
+			if ( time_str[7] > '9' ) {
+				time_str[7] -= 10;
+				time_str[6] += 1;
+			}
+			if ( time_str[6] > '5' ) {
+				time_str[6] -= 6;
+				time_str[4] += 1;
+			}
+			if ( time_str[4] > '9' ) {
+				time_str[3] -= 10;
+				time_str[3] += 1;
+			}
+			if ( time_str[3] > '5' ) {
+				time_str[3] -= 6;
+				time_str[1] += 1;
+			}
+			if ( time_str[1] > '9' ) {
+				time_str[0] -= 10;
+				time_str[0] += 1;
+			}
+
+			status = region_printf( clock_region, " %s ", time_str );
+			assert( status == ERR_NONE );
+
 			break;
 		case TRAIN_SET_SPEED:
 			last_speed = event.args[1];
@@ -131,13 +200,32 @@ void train_module() {
 			tr( event.args[0], last_speed );
 			break;
 		case TRAIN_SWITCH:
+			direction = (event.args[1] % 2) * 'S' + ((event.args[1]+1) % 2) * 'C';
+			if ( event.args[0] < 19 ) {
+				switch_table[event.args[0]-1] = direction;
+			}
+			else {
+				switch_table[event.args[0]-135] = direction;
+			}
+			print_switch_table( switch_region, switch_table );
 			sw( event.args[0], event.args[1] );
 			sw_off();
 			break;
 		case TRAIN_CHECK_SWITCH:
+			if ( event.args[0] < 19 ) {
+				i = event.args[0] - 1;
+			}
+			else {
+				i = event.args[0] - 135;
+			}
+			reply.result = switch_table[i];
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
 			break;
 		case TRAIN_LAST_SENSOR:
-			// send to SENSOR uart
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
 			// send and receive all sensor data
@@ -157,27 +245,31 @@ void train_module() {
 			tr( 22, 0 );
 			break;
 		case TRAIN_SWITCH_ALL:
+			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
+			for ( i = 0; i < 22; i++ ) {
+				switch_table[i] = direction;
+			}
+			print_switch_table( switch_region, switch_table );
 			switch_all( event.args[0] );
 			delay( 180 );
 			break;
 		default:
 			// should not get to here
-			// TODO: change to uart
 			assert(0);
 		}
+
 	}
 	
-/*
+
 	// wait to sell sensor and clock task to exit
-	int i = 0;
-	for ( i = 0; i < 2; i++ ) {
+	for ( i = 0; i < children; i++ ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 		reply.result = -1;
 		status = Reply( tid, (char*)&reply, sizeof( reply ) );
 		assert( status == 0 );
 	}
-*/
+
 
 	// tell anything produced by this to exit
 	Exit();

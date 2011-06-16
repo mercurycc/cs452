@@ -73,6 +73,9 @@ void user_init()
 
 	DEBUG_NOTICE( DBG_USER, "uart init done\n" );
 
+	status = display_init();
+	assert( status == ERR_NONE );
+
 	tid = Create( 5, train_control );
 	
 	sync_wait();

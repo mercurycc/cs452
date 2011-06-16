@@ -69,25 +69,25 @@ void time_main(){
 		assert( status == sizeof(msg) );
 		
 		DEBUG_PRINT( DBG_TIME, "received request 0x%x, interval %d\n", msg.request, msg.interval );
-		
-		switch ( msg.request ) {
-		case TIME_ASK:
+
+		if ( msg.request < TIME_SIGNAL ) {
 			status = clock_current_time( clock_tid, &result );
 			assert( status == 0 );
+		}
+
+		switch ( msg.request ) {
+		case TIME_ASK:
 			reply.result = result;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
 			break;
 		case TIME_DELAY:
-			status = clock_current_time( clock_tid, &result );
-			assert( status == 0 );
-
 			msg.interval += result;
 		case TIME_DELAY_UNTIL:
-		
+
 			if ( msg.interval <= result ) {
 				reply.result = 0;
-				status = Reply( clock_tid, (char*)&reply, sizeof(reply) );
+				status = Reply( tid, (char*)&reply, sizeof(reply) );
 				assert ( status == 0 );
 				break;
 			}

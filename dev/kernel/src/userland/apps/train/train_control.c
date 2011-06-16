@@ -2,6 +2,7 @@
 #include <err.h>
 #include <user/apps_entry.h>
 #include <user/assert.h>
+#include <user/display.h>
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
@@ -28,23 +29,27 @@ struct Command {
 	int args[2];
 };
 
-int echo( Ragion *r, char* str ) {
+int ack( Region* r, char* str ) {
 	// give the str to the print server
-	int status = region_printf( r, "\n%s\n", str);
-	assert ( status == ERR_NONE );
-	/*
-	// test version
-	int status = Putc( COM_2, '\n' );
-	assert( status == 0 );
-	char* c = str;
-	while ( *c ) {
-		status = Putc( COM_2, *c );
-		assert( status == 0 );
-		c++;
-	}
-	status = Putc( COM_2, '\n' );
-	assert( status == 0 );
-	*/
+	int status = region_clear( r );
+	assert( status == ERR_NONE );
+	status = region_printf( r, "STATUS: %s\n > ", str);
+	assert( status == ERR_NONE );
+	return 0;
+}
+
+int ack_st( Region* r, int id, char state ) {
+	int status = region_clear( r );
+	assert( status == ERR_NONE );
+	status = region_printf( r, "STATUS: switch %d is in state %c\n > ", id, state );
+	assert( status == ERR_NONE );
+	return 0;
+}
+
+int echo( Region* r, char* str ) {
+	// give the str to the print server
+	int status = region_printf( r, "\n > %s", str);
+	assert( status == ERR_NONE );
 	return 0;
 }
 
@@ -91,16 +96,44 @@ void train_control() {
 		buf[i] = 0;
 	}
 	
-	Region echo_rect = {1, 11, 5, 20, 0, 0};
-	Ragion *r = &echo_rect;
-	region_init( r );
+	Region echo_rect = {1, 16, 6, 70, 0, 0};
+	Region *echo_region = &echo_rect;
+	status = region_init( echo_region );
+	assert( status == ERR_NONE );
+	status = region_clear( echo_region );
+	assert( status == ERR_NONE );
+
+/*
+	Region prompt_rect = {1, 24, 1, 80, 0, 0};
+	Region *prompt_region = &prompt_rect;
+	status = region_init( prompt_region );
+	assert( status == ERR_NONE );
+	assert(0);
+	status = region_clear( prompt_region );
+	assert( status == ERR_NONE );
+*/
+	status = region_printf( echo_region, "Please wait for the track to initialize" );
+	assert( status == ERR_NONE );
 
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
 	
+
+	sync_wait();
+	status = region_clear( echo_region );
+	assert( status == ERR_NONE );
+	status = region_printf( echo_region, "\n > " );
+	assert( status == ERR_NONE );
+	
+
 	while ( !quit ) {
 		// await input
 		data = Getc( COM_2 );
+
+		if ( !buf_i ) {
+			status = region_clear( echo_region );
+			assert( status == ERR_NONE );
+		}
 
 		// parse input
 		int start;
@@ -203,8 +236,7 @@ void train_control() {
 			else {
 				cmd.command = X;
 			}
-			status = Putc( COM_2, '\n' );
-			assert( status == ERR_NONE );
+			echo( echo_region, "" );
 			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
 				buf[i] = 0;
 			}
@@ -214,8 +246,8 @@ void train_control() {
 			// undo
 			if ( buf_i > 0 ){
 				buf_i--;
-				status = Putc( COM_2, data );
-				assert( status == ERR_NONE );
+				buf[buf_i] = 0;
+				echo( echo_region, buf );
 			}
 			continue;
 		default: 
@@ -223,53 +255,51 @@ void train_control() {
 			buf[buf_i] = data;
 			buf_i++;
 			assert( buf_i < MAX_BUFFER_SIZE );
-			status = Putc( COM_2, data );
-			assert( status == ERR_NONE );
+			echo( echo_region, buf );
 			continue;
 		}
 		
 		// do action
 		switch ( cmd.command ) {
 		case N:
-			echo( r, "" );
+			ack( echo_region, "" );
 			break;
 		case Q:
 			quit = 1;
-			echo( r, "Goodbye!" );
+			ack( echo_region, "Goodbye!" );
 			break;
 		case TR:
-			echo( r, "Train speed changes" );
+			ack( echo_region, "Train speed changes" );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case RV:
-			echo( r, "Train reverses" );
+			ack( echo_region, "Train reverses" );
 			status = train_reverse( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case SW:
-			echo( r, "Switch shifts" );
+			ack( echo_region, "Switch shifts" );
 			status = train_switch( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case ST:
-			echo( r, "Switch state" );
 			status = train_check_switch( cmd.args[0] );
-			assert( status == ERR_NONE );
+			ack_st( echo_region, cmd.args[0], (char)status );
 			break;
 		case WH:
-			echo( r, "LAST SENSOR" );
+			ack( echo_region, "LAST SENSOR" );
 			break;
 		case SA:
-			echo( r, "Shift all switches" );
+			ack( echo_region, "Shift all switches" );
 			status = train_switch_all( cmd. args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case PT:
-			echo( r, "pressure test" );
+			ack( echo_region, "pressure test" );
 			break;
 		default:
-			echo( r, "Invalid command" );
+			ack( echo_region, "Invalid command" );
 			break;
 		}
 	}
@@ -278,7 +308,7 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
-	echo("so long");
+	ack( echo_region, "so long" );
 	sync_responde( MyParentTid() );
 
 	DEBUG_NOTICE( DBG_USER, "quit!\n" );
