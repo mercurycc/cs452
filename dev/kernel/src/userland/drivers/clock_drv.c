@@ -189,6 +189,8 @@ void clock_main()
 		DEBUG_NOTICE( DBG_CLK_DRV, "request responded\n" );
 	}
 
+	Kill( courier_tid );
+	
 	Exit();
 }
 

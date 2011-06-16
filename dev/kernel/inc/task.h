@@ -44,6 +44,6 @@ uint task_array_index_tid( uint tid );
 /* Return 0 if tid does not map to an existing task */
 Task* task_get_by_tid( Context* ctx, uint tid );
 /* Kill the task by modifying its pc to Exit */
-void task_kill( uint sp );
+void task_kill( uint sp, uint addr );
 
 #endif /* _TASK_H_ */

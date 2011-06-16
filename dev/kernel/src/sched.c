@@ -66,7 +66,7 @@ int sched_schedule( Context* ctx, Task** next ){
 	uint selector = ctx->scheduler->selector;
 	if ( !selector ) {
 		if( ctx->scheduler->blocked_task ) {
-			DEBUG_PRINT( DBG_SCHED,"Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
+			DEBUG_PRINT( DBG_TEMP, "Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
 #ifdef DEBUG
 			uint reg_val =
 #endif
@@ -191,7 +191,7 @@ int sched_block( Context* ctx ) {
 
 	DEBUG_PRINT( DBG_SCHED, "task blocked: 0x%x\n", task->tid );
 	task->state = TASK_BLOCK;
-	//update number of blocked tasks
+	// update number of blocked tasks
 	ctx->scheduler->blocked_task++;
 	ASSERT( ctx->scheduler->blocked_task > 0 );
 	return ERR_NONE;
@@ -206,6 +206,19 @@ int sched_signal( Context* ctx, Task* task ){
 	if (err) {
 		return err;
 	}
+	
+#ifdef DEBUG
+	switch( task->state ){
+	case TASK_BLOCK:
+	case TASK_RCV_BLK:
+	case TASK_RPL_BLK:
+	case TASK_SEND_BLK:
+		break;
+	default:
+		ASSERT_M( 0, "got %d\n", task->state );
+	}
+#endif
+	
 	task->state = TASK_READY;
 
 	// change the bit in selector
@@ -217,6 +230,6 @@ int sched_signal( Context* ctx, Task* task ){
 	}
 
 	ctx->scheduler->blocked_task--;
-	ASSERT( ctx->scheduler->blocked_task >= 0 );
+	ASSERT_M( ctx->scheduler->blocked_task >= 0, "got %d\n", ctx->scheduler->blocked_task );
 	return ERR_NONE;
 }
