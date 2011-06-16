@@ -142,6 +142,11 @@ void train_module() {
 
 	print_switch_table( switch_region, switch_table );
 
+	tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
+	assert( tid > 0 );
+	children++;
+	assert( children > 0 );
+
 	sync_responde( ptid );
 
 	while ( !quit ) {
@@ -152,6 +157,7 @@ void train_module() {
 		switch ( event.event_type ){
 		case TRAIN_CHECK_SWITCH:
 		case TRAIN_LAST_SENSOR:
+		case TRAIN_ALL_SENSORS:
 			break;
 		default:
 			reply.result = 0;
@@ -228,7 +234,9 @@ void train_module() {
 			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
-			// send and receive all sensor data
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
