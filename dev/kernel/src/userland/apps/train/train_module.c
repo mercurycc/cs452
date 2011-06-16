@@ -101,6 +101,7 @@ static inline void print_switch_table( Region* r, char* table ){
 static inline void get_sensor( char* table ){
 	int status = Putc( COM_1, (char)133 );
 	assert( status == ERR_NONE );
+	delay(20);
 	int i;
 	for ( i = 0; i < 10; i++ ) {
 		table[i] = Getc( COM_1 );
@@ -136,7 +137,7 @@ void train_module() {
 	status = region_init( switch_region );
 	assert( status == ERR_NONE );
 	
-	Region sensor_rect = { 1, 10, 1, 40, 0, 0 };
+	Region sensor_rect = { 1, 10, 2, 60, 0, 0 };
 	Region *sensor_region = &sensor_rect;
 	status = region_init( sensor_region );
 	assert( status == ERR_NONE );
@@ -158,11 +159,12 @@ void train_module() {
 
 	print_switch_table( switch_region, switch_table );
 
+/*
 	tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
 	assert( tid > 0 );
 	children++;
 	assert( children > 0 );
-
+*/
 	sync_responde( ptid );
 
 	while ( !quit ) {
@@ -251,7 +253,8 @@ void train_module() {
 			break;
 		case TRAIN_ALL_SENSORS:
 			get_sensor( sensor_table );
-			region_printf( sensor_region, "SENSORS:|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
+			status = region_printf( sensor_region, "SENSORS:\n|%d|%d|%d|%d|%d|\n|%d|%d|%d|%d|%d|", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
+			assert( status == 0 );
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
