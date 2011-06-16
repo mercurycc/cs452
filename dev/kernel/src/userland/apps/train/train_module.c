@@ -99,11 +99,11 @@ static inline void print_switch_table( Region* r, char* table ){
 }
 
 static inline void get_sensor( char* table ){
-	status = Putc( COM_1, (char)133 );
+	int status = Putc( COM_1, (char)133 );
 	assert( status == ERR_NONE );
 	int i;
 	for ( i = 0; i < 10; i++ ) {
-		table[i] = Gutc( COM_1 );
+		table[i] = Getc( COM_1 );
 	}
 }
 
