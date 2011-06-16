@@ -15,6 +15,7 @@
 #include <regopts.h>
 #include <devices/clock.h>
 #include <watchdog.h>
+#include <user/syscall.h>
 
 static inline int msg_copy( Task* sender, Task* receiver ){
 	// TODO: implement with assemble?
@@ -88,10 +89,10 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 	case TRAP_KILL:
 		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		if( receiver_task ){
-			if( receiver_task->state != TASK_READY ){
+			if( receiver_task->state != TASK_READY && receiver_task->state != TASK_ACTIVE ){
 				sched_signal( ctx, receiver_task );
 			}
-			task_kill( receiver_task->stack );
+			task_kill( receiver_task->stack, ( uint )Exit );
 		}
 		break;
 	case TRAP_EXIT:

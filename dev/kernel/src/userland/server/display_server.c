@@ -139,7 +139,6 @@ static void display_drawer()
 		assert( status == ERR_NONE );
 	}
 
-
 	DEBUG_NOTICE( DBG_DISP, "quit!\n" );
 	Exit();
 }

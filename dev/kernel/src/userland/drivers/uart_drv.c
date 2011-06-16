@@ -236,6 +236,7 @@ void uart_driver()
 		case UART_TXRDY:
 		case UART_GENERAL_INT:
 		case UART_PUT:
+		case UART_QUIT:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			tid = 0;
 		default:
@@ -264,8 +265,6 @@ void uart_driver()
 				*intr = 0;
 			} else if( ( *intr & RTIS_MASK ) || ( *intr & RIS_MASK ) ){
 				request.type = UART_RXRDY;
-			} else {
-				assert( 0 );
 			}
 		default:
 			break;
@@ -339,39 +338,23 @@ void uart_driver()
 			general_waiting = 1;
 		}
 
-		if( request.type == UART_QUIT ){
-			DEBUG_NOTICE( DBG_USER, "quiting...\n" );
-			break;
-		}
-
 		if( can_reply ){
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		}
 
-		
+		if( request.type == UART_QUIT ){
+			DEBUG_NOTICE( DBG_USER, "quiting...\n" );
+			break;
+		}
 	}
 
-	if( general_waiting ){
-		Kill( general_handler_tid );
-	} else {
-		event_quit( general_handler_tid );
-	}
-	DEBUG_NOTICE( DBG_USER, "general killed\n" );
-	
-	if( rxrdy_waiting ){
-		Kill( rxrdy_handler_tid );
-	} else {
-		event_quit( rxrdy_handler_tid );
-	}
-	DEBUG_NOTICE( DBG_USER, "rxrdy killed\n" );
-
-	if( txrdy_waiting ){
-		Kill( txrdy_handler_tid );
-	} else {
-		event_quit( txrdy_handler_tid );
-	}
-	DEBUG_NOTICE( DBG_USER, "txrdy killed\n" );
+	Kill( rxrdy_handler_tid );
+	DEBUG_NOTICE( DBG_USER, "rxrdy!\n" );
+	Kill( txrdy_handler_tid );
+	DEBUG_NOTICE( DBG_USER, "txrdy!\n" );
+	Kill( general_handler_tid );
+	DEBUG_NOTICE( DBG_USER, "general!\n" );
 
 	DEBUG_NOTICE( DBG_USER, "quit!\n" );
 
