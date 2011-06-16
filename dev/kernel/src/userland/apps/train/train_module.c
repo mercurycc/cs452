@@ -98,6 +98,15 @@ static inline void print_switch_table( Region* r, char* table ){
 	assert( status == ERR_NONE );
 }
 
+static inline void get_sensor( char* table ){
+	status = Putc( COM_1, (char)133 );
+	assert( status == ERR_NONE );
+	int i;
+	for ( i = 0; i < 10; i++ ) {
+		table[i] = Gutc( COM_1 );
+	}
+}
+
 void train_module() {
 
 	int tid;
@@ -109,8 +118,10 @@ void train_module() {
 	int children = 0;
 	char* time_str = "00:00:00.0";
 	char direction;
-
+	
+	char sensor_table[10];
 	char switch_table[22];
+	
 	for ( i = 0; i < 22; i++ ) {
 		switch_table[i] = 'C';
 	}
@@ -123,6 +134,11 @@ void train_module() {
 	Region switch_rect = { 1, 3, 5, 50, 0, 0 };
 	Region *switch_region = &switch_rect;
 	status = region_init( switch_region );
+	assert( status == ERR_NONE );
+	
+	Region sensor_rect = { 1, 10, 1, 40, 0, 0 };
+	Region *sensor_region = &sensor_rect;
+	status = region_init( sensor_region );
 	assert( status == ERR_NONE );
 
 	switch_all( (char)34 );
@@ -234,6 +250,8 @@ void train_module() {
 			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
+			get_sensor( sensor_table );
+			region_printf( sensor_region, "SENSORS:|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
