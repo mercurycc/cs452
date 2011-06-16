@@ -164,6 +164,8 @@ void name_server_start()
 	
 	while( !name_server_listen( &table ) );
 
+	DEBUG_NOTICE( DBG_USER, "quit!\n" );
+
 	Exit();
 }
 

@@ -172,10 +172,9 @@ void train_module() {
 		assert( status == 0 );
 	}
 */
-	
+
 	// tell anything produced by this to exit
 	Exit();
-
 }
 
 int train_event( uint type, int arg0, int arg1 ) {

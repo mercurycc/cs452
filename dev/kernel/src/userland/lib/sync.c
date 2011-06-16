@@ -32,6 +32,7 @@ int sync_responde( int tid )
 	status = Send( tid, ( char* )&buf, sizeof( buf ), ( char* )&buf, sizeof( buf ) );
 	assert( status == sizeof( buf ) );
 	assert( buf == SYNC_MAGIC );
+	DEBUG_NOTICE( DBG_SYNC, "received reply\n" );
 
 	return ERR_NONE;
 }

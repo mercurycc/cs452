@@ -96,6 +96,7 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		}
 		break;
 	case TRAP_EXIT:
+		DEBUG_PRINT( DBG_TEMP, "exit on %d\n", ctx->current_task->tid );
 		status = sched_kill( ctx, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 

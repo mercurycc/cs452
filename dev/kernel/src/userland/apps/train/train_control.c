@@ -266,11 +266,14 @@ void train_control() {
 		}
 	}
 
-	//tell children to suicide
+	// tell children to suicide
 	status = train_module_suicide();
 	assert( status == 0 );
 
 	echo("so long");
 	sync_responde( MyParentTid() );
+
+	DEBUG_NOTICE( DBG_USER, "quit!\n" );
+
 	Exit();
 }
