@@ -28,8 +28,11 @@ struct Command {
 	int args[2];
 };
 
-int echo( char* str ) {
+int echo( Ragion *r, char* str ) {
 	// give the str to the print server
+	int status = region_printf( r, "\n%s\n", str);
+	assert ( status == ERR_NONE );
+	/*
 	// test version
 	int status = Putc( COM_2, '\n' );
 	assert( status == 0 );
@@ -41,6 +44,7 @@ int echo( char* str ) {
 	}
 	status = Putc( COM_2, '\n' );
 	assert( status == 0 );
+	*/
 	return 0;
 }
 
@@ -75,7 +79,7 @@ int parse_int( char* str, int start, int end, int* stop ){
 }
 
 void train_control() {
-	
+
 	int module_id;
 	int quit = 0;
 	int status;
@@ -86,6 +90,10 @@ void train_control() {
 	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
 		buf[i] = 0;
 	}
+	
+	Region echo_rect = {1, 11, 5, 20, 0, 0};
+	Ragion *r = &echo_rect;
+	region_init( r );
 
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
@@ -223,45 +231,45 @@ void train_control() {
 		// do action
 		switch ( cmd.command ) {
 		case N:
-			echo( "" );
+			echo( r, "" );
 			break;
 		case Q:
 			quit = 1;
-			echo( "Goodbye!" );
+			echo( r, "Goodbye!" );
 			break;
 		case TR:
-			echo( "Train speed changes" );
+			echo( r, "Train speed changes" );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case RV:
-			echo( "Train reverses" );
+			echo( r, "Train reverses" );
 			status = train_reverse( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case SW:
-			echo( "Switch shifts" );
+			echo( r, "Switch shifts" );
 			status = train_switch( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case ST:
-			echo( "Switch state" );
+			echo( r, "Switch state" );
 			status = train_check_switch( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case WH:
-			echo( "LAST SENSOR" );
+			echo( r, "LAST SENSOR" );
 			break;
 		case SA:
-			echo( "Shift all switches" );
+			echo( r, "Shift all switches" );
 			status = train_switch_all( cmd. args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case PT:
-			echo( "pressure test" );
+			echo( r, "pressure test" );
 			break;
 		default:
-			echo( "Invalid command" );
+			echo( r, "Invalid command" );
 			break;
 		}
 	}
