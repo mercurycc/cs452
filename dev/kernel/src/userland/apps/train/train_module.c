@@ -18,7 +18,8 @@ enum Train_event_type {
 	TRAIN_LAST_SENSOR,
 	TRAIN_ALL_SENSORS,
 	TRAIN_MODULE_SUICIDE,
-	TRAIN_PRESSURE_TEST
+	TRAIN_PRESSURE_TEST,
+	TRAIN_SWITCH_ALL
 };
 
 struct Train_event_s {
@@ -30,6 +31,57 @@ struct Train_reply_s {
 	int result;
 };
 
+void train_delay(){
+	
+}
+
+static inline void tr( int train, int speed ){
+	int status = Putc( COM_1, (char)speed );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)train );
+	assert( status == ERR_NONE );
+	status = Delay( TRAIN_XMIT_DELAY );
+	assert( status == ERR_NONE );
+}
+
+static inline void rv( int train ){
+	int status = Putc( COM_1, (char)15 );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)train );
+	assert( status == ERR_NONE );
+	status = Delay( TRAIN_XMIT_DELAY );
+	assert( status == ERR_NONE );
+}
+
+static inline void sw( int n, char d ){
+	int status = Putc( COM_1, d );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)n );
+	assert( status == ERR_NONE );
+	status = Delay( SWITCH_XMIT_DELAY );
+	assert( status == ERR_NONE );
+}
+
+static inline void sw_off() {
+	int status = Putc( COM_1, (char)32 );
+	assert( status == ERR_NONE );
+	status = Delay( SWITCH_XMIT_DELAY );
+	assert( status == ERR_NONE );
+}
+
+static inline void switch_all( char d ){
+	int i;
+	// reset all switches
+	for ( i = 1; i < 19; i++ ) {
+		sw( i, d );
+	}
+	for ( i = 153; i < 157; i++ ) {
+		sw( i, d );
+	}
+	sw_off();
+}
+
+
 void train_module() {
 
 	int tid;
@@ -40,13 +92,10 @@ void train_module() {
 
 	char switch_table[22];
 	for ( i = 0; i < 22; i++ ) {
-		switch_table[i] = 'S';
+		switch_table[i] = 'C';
 	}
 
-	// reset all switches
-	for ( i = 1; i < 19; i++ ) {
-		
-	}
+	switch_all( (char)34 );
 
 	Train_event event;
 	Train_reply reply;
@@ -66,39 +115,16 @@ void train_module() {
 		case TRAIN_UPDATE_TIME:
 			break;
 		case TRAIN_SET_SPEED:
-			status = Putc( COM_1, (char)event.args[1] );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, (char)event.args[0] );
-			assert( status == ERR_NONE );
 			last_speed = event.args[1];
-			status = Delay( TRAIN_XMIT_DELAY );
-			assert( status == ERR_NONE );
+			tr( event.args[0], event.args[1] );
 			break;
 		case TRAIN_REVERSE:
-			status = Putc( COM_1, (char)15 );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, (char)event.args[0] );
-			assert( status == ERR_NONE );
-			status = Delay( TRAIN_XMIT_DELAY );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, last_speed );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, (char)event.args[0] );
-			assert( status == ERR_NONE );
-			status = Delay( TRAIN_XMIT_DELAY );
-			assert( status == ERR_NONE );
+			rv( event.args[0] );
+			tr( event.args[0], last_speed );
 			break;
 		case TRAIN_SWITCH:
-			status = Putc( COM_1, (char)event.args[1] );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, (char)event.args[0] );
-			assert( status == ERR_NONE );
-			status = Delay( TRAIN_XMIT_DELAY );
-			assert( status == ERR_NONE );
-			status = Putc( COM_1, (char)32 );
-			assert( status == ERR_NONE );
-			status = Delay( TRAIN_XMIT_DELAY );
-			assert( status == ERR_NONE );
+			sw( event.args[0], event.args[1] );
+			sw_off();
 			break;
 		case TRAIN_CHECK_SWITCH:
 			break;
@@ -116,18 +142,14 @@ void train_module() {
 			// warning message
 			break;
 		case TRAIN_PRESSURE_TEST:
-			for ( i = 0; i < 15; i++ ) {
-				status = Putc( COM_1, i );
-				assert( status == ERR_NONE );
-				status = Putc( COM_1, 22 );
-				assert( status == ERR_NONE );
+			for ( i = 0; i < 10; i++ ) {
+				tr( 22, i+4 );
+				rv( 22 );
 			}
-			for ( i = 14; i >= 0; i-- ) {
-				status = Putc( COM_1, i );
-				assert( status == ERR_NONE );
-				status = Putc( COM_1, 22 );
-				assert( status == ERR_NONE );
-			}
+			tr( 22, 0 );
+			break;
+		case TRAIN_SWITCH_ALL:
+			switch_all( event.args[0] );
 			break;
 		default:
 			// should not get to here
@@ -206,3 +228,6 @@ int train_pressure_test(){
 	return train_event( TRAIN_PRESSURE_TEST, 0, 0 );
 }
 
+int train_switch_all( int d ){
+	return train_event( TRAIN_SWITCH_ALL, d, 0 );
+}

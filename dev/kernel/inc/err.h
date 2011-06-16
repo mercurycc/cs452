@@ -56,7 +56,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_TRAP:
 	case DBG_KER:
 	case DBG_TASK:
-		// case DBG_USER:
+	case DBG_USER:
 	case DBG_CMD:
 	case DBG_SCHED:
 	case DBG_NS:
@@ -66,7 +66,7 @@ static inline int DEBUG_ENABLE( uint x )
 	case DBG_TIME:
 	case DBG_SYNC:
 	case DBG_EVENT:
-		// case DBG_TEMP:
+	case DBG_TEMP:
 	case DBG_WATCHDOG:
 	case DBG_UART:
 	case DBG_DISP:

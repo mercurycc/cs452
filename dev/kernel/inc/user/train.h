@@ -8,6 +8,7 @@
 
 /* constant */
 #define TRAIN_MODULE_NAME "train_module"
+#define SWITCH_XMIT_DELAY 10
 #define TRAIN_XMIT_DELAY 20
 
 /* train event api */
@@ -20,5 +21,6 @@ int train_last_sensor();
 int train_all_sensor();
 int train_module_suicide();
 int train_pressure_test();
+int train_switch_all( int d );
 
 #endif

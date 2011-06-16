@@ -17,9 +17,10 @@ enum Command_type {
 	WH,
 	ST,
 	Q,
+	PT,		// pressure test
+	SA,		// switch all
 	N,		// empty line
-	X,		// unrecognized input
-	PT		// pressure test
+	X		// unrecognized input
 };
 
 struct Command {
@@ -86,7 +87,6 @@ void train_control() {
 		buf[i] = 0;
 	}
 
-		
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
 	struct Command cmd;
 	
@@ -128,6 +128,14 @@ void train_control() {
 					cmd.command = X;
 				}
 			}
+			else if (( buf_i == 4 )&&( buf[0] == 's' )&&( buf[1] == 'a' )&&( buf[2] == 'l' )&&( buf[3] == 'l' )){
+				cmd.command = SA;
+				cmd.args[0] = 33;
+			}
+			else if (( buf_i == 4 )&&( buf[0] == 'c' )&&( buf[1] == 'a' )&&( buf[2] == 'l' )&&( buf[3] == 'l' )){
+				cmd.command = SA;
+				cmd.args[0] = 34;
+			}
 			else if (( buf[0] == 't' )&&( buf[1] == 'r' )) {
 				/* TR: set train speed */
 				arg0 = parse_int( buf, 3, buf_i, &start );
@@ -152,6 +160,36 @@ void train_control() {
 				else {
 					cmd.command = RV;
 					cmd.args[0] = arg0;
+				}
+			}
+			else if (( buf[0] == 's' )&&( buf[1] == 't' )){
+				/* RV: rv train movement */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+
+				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = ST;
+					cmd.args[0] = arg0;
+				}
+			}
+			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i-1] == 'S' )||( buf[buf_i-1] == 'C' ))){
+				/* SW: shift switch */
+				arg0 = parse_int( buf, 3, buf_i, &start );
+
+				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i-2 )) {
+					cmd.command = X;
+				}
+				else {
+					cmd.command = SW;
+					cmd.args[0] = arg0;
+					if ( buf[buf_i-1] == 'S' ){
+						cmd.args[1] = 33;
+					}
+					else {
+						cmd.args[1] = 34;
+					}
 				}
 			}
 			else {
@@ -194,26 +232,33 @@ void train_control() {
 		case TR:
 			echo( "Train speed changes" );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case RV:
 			echo( "Train reverses" );
 			status = train_reverse( cmd.args[0] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case SW:
 			echo( "Switch shifts" );
 			status = train_switch( cmd.args[0], cmd.args[1] );
-			assert( status == 0 );
+			assert( status == ERR_NONE );
 			break;
 		case ST:
 			echo( "Switch state" );
 			status = train_check_switch( cmd.args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case WH:
-			echo("LAST SENSOR");
+			echo( "LAST SENSOR" );
+			break;
+		case SA:
+			echo( "Shift all switches" );
+			status = train_switch_all( cmd. args[0] );
+			assert( status == ERR_NONE );
 			break;
 		case PT:
+			echo( "pressure test" );
 			break;
 		default:
 			echo( "Invalid command" );
