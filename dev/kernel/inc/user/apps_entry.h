@@ -20,5 +20,6 @@ void train_control();
 void train_module();
 void train_clock();
 void train_sensor();
+void train_switch();
 
 #endif /* _USER_APPS_ENTRY_H_ */

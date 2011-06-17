@@ -92,10 +92,7 @@ static inline void delay( int ticks ) {
 
 }
 
-static inline void print_switch_table( Region* r, char* table ){
-	int status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c\n    7: %c    8: %c    9: %c   10: %c   11: %c   12: %c\n   13: %c   14: %c   15: %c   16: %c   17: %c   18: %c\n  153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
-	assert( status == ERR_NONE );
-}
+
 
 void train_module() {
 
@@ -108,19 +105,13 @@ void train_module() {
 	char direction;
 	int clock_tid;
 	int sensor_tid;
+	int switch_tid;
 	
 	char switch_table[22];
 	
 	for ( i = 0; i < 22; i++ ) {
 		switch_table[i] = 'C';
 	}
-
-
-	Region switch_rect = { 1, 3, 5, 50, 0, 0 };
-	Region *switch_region = &switch_rect;
-	status = region_init( switch_region );
-	assert( status == ERR_NONE );
-	
 
 	switch_all( (char)34 );
 
@@ -133,10 +124,10 @@ void train_module() {
 	clock_tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
 	assert( clock_tid > 0 );
 
-	print_switch_table( switch_region, switch_table );
-
-
 	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
+	assert( sensor_tid > 0 );
+	
+	switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switch );
 	assert( sensor_tid > 0 );
 
 	sync_responde( ptid );
@@ -149,6 +140,7 @@ void train_module() {
 		switch ( event.event_type ){
 		case TRAIN_CHECK_SWITCH:
 		case TRAIN_LAST_SENSOR:
+		case TRAIN_ALL_SENSORS:
 			break;
 		default:
 			reply.result = 0;
@@ -171,12 +163,13 @@ void train_module() {
 		case TRAIN_SWITCH:
 			direction = (event.args[1] % 2) * 'S' + ((event.args[1]+1) % 2) * 'C';
 			if ( event.args[0] < 19 ) {
-				switch_table[event.args[0]-1] = direction;
+				i = event.args[0]-1;
 			}
 			else {
-				switch_table[event.args[0]-135] = direction;
+				i = event.args[0]-135;
 			}
-			print_switch_table( switch_region, switch_table );
+			status = switch_update_id( i, direction );
+			assert( status == 0 );
 			sw( event.args[0], event.args[1] );
 			sw_off();
 			break;
@@ -187,9 +180,15 @@ void train_module() {
 			else {
 				i = event.args[0] - 135;
 			}
-			reply.result = switch_table[i];
+			reply.result = switch_check_id( i );
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
+			break;
+		case TRAIN_SWITCH_ALL:
+			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
+			switch_update_all( direction );
+			switch_all( event.args[0] );
+			delay( 180 );
 			break;
 		case TRAIN_LAST_SENSOR:
 			reply.result = 0;
@@ -197,6 +196,12 @@ void train_module() {
 			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
+			status = Putc( COM_1, (char)133 );
+			assert( status == ERR_NONE );
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+			sync_responde( tid );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
@@ -212,15 +217,6 @@ void train_module() {
 			}
 			tr( 22, 0 );
 			break;
-		case TRAIN_SWITCH_ALL:
-			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
-			for ( i = 0; i < 22; i++ ) {
-				switch_table[i] = direction;
-			}
-			print_switch_table( switch_region, switch_table );
-			switch_all( event.args[0] );
-			delay( 180 );
-			break;
 		default:
 			// should not get to here
 			assert(0);
@@ -230,6 +226,7 @@ void train_module() {
 
 	Kill( clock_tid );
 	Kill( sensor_tid );
+	Kill( switch_tid );
 	// tell anything produced by this to exit
 	Exit();
 }

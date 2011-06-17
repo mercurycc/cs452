@@ -12,6 +12,7 @@ void train_sensor() {
 	int quit = 0;
 	int status;
 	int i;
+	int ptid = MyParentTid();
 
 	char sensor_table[10];
 
@@ -22,18 +23,24 @@ void train_sensor() {
 
 	while ( !quit ) {
 
-		status = Putc( COM_1, (char)133 );
-		assert( status == ERR_NONE );
+		status = train_all_sensor();
+		assert( status == 0 );
+		
 		for ( i = 0; i < 10; i++ ) {
 			sensor_table[i] = Getc( COM_1 );
 		}
 
-		status = region_printf( sensor_region, "\n|%d|%d|%d|%d|%d|\n|%d|%d|%d|%d|%d|\n", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
+		sync_wait();
+
+		status = region_printf( sensor_region, "SENSORS:\n|%d|%d|%d|%d|%d|\n|%d|%d|%d|%d|%d|\n",
+								sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4],
+								sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
 		assert( status == 0 );
 
-
+/*
 		status = Delay(1);
 		assert( status == 0 );
+*/
 	}
 
 	Exit();
