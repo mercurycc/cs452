@@ -18,8 +18,8 @@
 int train_update_time( int ticks );
 int train_set_speed( int train, int speed );
 int train_reverse( int train );
-int train_switch( int switch_id, int direction );
-int train_check_switch( int switch_id );
+int train_change_switch( int switch_id, int direction );
+int train_switch( int switch_id );
 int train_last_sensor();
 int train_all_sensor();
 int train_module_suicide();
