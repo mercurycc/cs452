@@ -120,6 +120,7 @@ void train_module() {
 	char* time_str = "00:00:00.0";
 	char direction;
 	
+	int sensor_test = 0;
 	char sensor_table[10];
 	char switch_table[22];
 	
@@ -159,12 +160,11 @@ void train_module() {
 
 	print_switch_table( switch_region, switch_table );
 
-/*
 	tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
 	assert( tid > 0 );
 	children++;
 	assert( children > 0 );
-*/
+
 	sync_responde( ptid );
 
 	while ( !quit ) {
@@ -252,9 +252,13 @@ void train_module() {
 			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
+			/*
 			get_sensor( sensor_table );
 			status = region_printf( sensor_region, "SENSORS:\n|%d|%d|%d|%d|%d|\n|%d|%d|%d|%d|%d|", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
 			assert( status == 0 );
+			*/
+			sensor_test += 1;
+			region_printf( sensor_region, "sensor test #%d", sensor_test );
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
