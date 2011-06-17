@@ -81,9 +81,6 @@ void user_init()
 	
 	sync_wait();
 
-	status = Putc( COM_2, '8' );
-	assert( status == ERR_NONE );
-
 	PreShutdown();
 	
 	DEBUG_NOTICE( DBG_USER, "Finishing...\n" );

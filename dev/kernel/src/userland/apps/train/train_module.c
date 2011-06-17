@@ -93,7 +93,7 @@ static inline void delay( int ticks ) {
 }
 
 static inline void print_switch_table( Region* r, char* table ){
-	int status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c      7: %c    8: %c    9: %c   10: %c   11: %c   12: %c     13: %c   14: %c   15: %c   16: %c   17: %c   18: %c    153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
+	int status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c\n    7: %c    8: %c    9: %c   10: %c   11: %c   12: %c\n   13: %c   14: %c   15: %c   16: %c   17: %c   18: %c\n  153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
 	assert( status == ERR_NONE );
 }
 
