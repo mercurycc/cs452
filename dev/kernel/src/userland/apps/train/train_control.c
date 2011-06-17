@@ -48,7 +48,7 @@ int ack_st( Region* r, int id, char state ) {
 
 int echo( Region* r, char* str ) {
 	// give the str to the print server
-	int status = region_printf( r, "\n > %s", str);
+	int status = region_printf( r, "\n > %s ", str);
 	assert( status == ERR_NONE );
 	return 0;
 }
@@ -132,6 +132,8 @@ void train_control() {
 
 		if ( !buf_i ) {
 			status = region_clear( echo_region );
+			assert( status == ERR_NONE );
+			status = region_printf( echo_region, "\n > " );
 			assert( status == ERR_NONE );
 		}
 
@@ -308,7 +310,6 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
-	ack( echo_region, "so long" );
 	sync_responde( MyParentTid() );
 
 	DEBUG_NOTICE( DBG_USER, "quit!\n" );

@@ -5,6 +5,7 @@
 #define TRAIN_MODULE_PRIORITY 5
 #define TRAIN_CLOCK_PRIORITY 5
 #define TRAIN_SENSOR_PRIORITY 5
+#define TRAIN_CONTROL_PRIORITY 5
 
 /* constant */
 #define TRAIN_MODULE_NAME "train_module"

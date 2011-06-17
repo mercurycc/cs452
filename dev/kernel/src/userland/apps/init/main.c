@@ -10,6 +10,7 @@
 #include <user/uart.h>
 #include <user/display.h>
 #include <user/lib/sync.h>
+#include <user/train.h>
 #include <bwio.h>
 #include <err.h>
 /*
@@ -65,7 +66,7 @@ void user_init()
 	DEBUG_PRINT( DBG_USER, "display_server created with tid %d\n", tid );
 
 	/* Driver initialization */
-	status = uart_init( UART_1, 2400, 0, 1, 1 );
+	status = uart_init( UART_1, 2400, 1, 1, 1 );
 	assert( status == ERR_NONE );
 
 	status = uart_init( UART_2, 115200, 1, 0, 0 );
@@ -76,7 +77,7 @@ void user_init()
 	status = display_init();
 	assert( status == ERR_NONE );
 
-	tid = Create( 5, train_control );
+	tid = Create( TRAIN_CONTROL_PRIORITY, train_control );
 	
 	sync_wait();
 

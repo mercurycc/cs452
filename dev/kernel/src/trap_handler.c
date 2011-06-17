@@ -18,7 +18,6 @@
 #include <user/syscall.h>
 
 static inline int msg_copy( Task* sender, Task* receiver ){
-	// TODO: implement with assemble?
 	char* data = sender->reason->data;
 	uint datalen = sender->reason->datalen;
 	char* buffer = receiver->reason->buffer;

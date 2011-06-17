@@ -93,19 +93,8 @@ static inline void delay( int ticks ) {
 }
 
 static inline void print_switch_table( Region* r, char* table ){
-	int status;
-	status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c      7: %c    8: %c    9: %c   10: %c   11: %c   12: %c     13: %c   14: %c   15: %c   16: %c   17: %c   18: %c    153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
+	int status = region_printf( r, "Switch Table:\n     1: %c    2: %c    3: %c    4: %c    5: %c    6: %c      7: %c    8: %c    9: %c   10: %c   11: %c   12: %c     13: %c   14: %c   15: %c   16: %c   17: %c   18: %c    153: %c  154: %c  155: %c  156: %c", table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8], table[9], table[10], table[11], table[12], table[13], table[14], table[15], table[16], table[17], table[18], table[19], table[20], table[21] );
 	assert( status == ERR_NONE );
-}
-
-static inline void get_sensor( char* table ){
-	int status = Putc( COM_1, (char)133 );
-	assert( status == ERR_NONE );
-	delay(20);
-	int i;
-	for ( i = 0; i < 10; i++ ) {
-		table[i] = Getc( COM_1 );
-	}
 }
 
 void train_module() {
@@ -116,32 +105,22 @@ void train_module() {
 	int status;
 	int i;
 	int last_speed = 5;
-	int children = 0;
-	char* time_str = "00:00:00.0";
 	char direction;
+	int clock_tid;
+	int sensor_tid;
 	
-	int sensor_test = 0;
-	char sensor_table[10];
 	char switch_table[22];
 	
 	for ( i = 0; i < 22; i++ ) {
 		switch_table[i] = 'C';
 	}
 
-	Region clock_rect = { 1, 1, 1, 14, 0, 0 };
-	Region *clock_region = &clock_rect;
-	status = region_init( clock_region );
-	assert( status == ERR_NONE );
 
 	Region switch_rect = { 1, 3, 5, 50, 0, 0 };
 	Region *switch_region = &switch_rect;
 	status = region_init( switch_region );
 	assert( status == ERR_NONE );
 	
-	Region sensor_rect = { 1, 10, 2, 60, 0, 0 };
-	Region *sensor_region = &sensor_rect;
-	status = region_init( sensor_region );
-	assert( status == ERR_NONE );
 
 	switch_all( (char)34 );
 
@@ -151,19 +130,14 @@ void train_module() {
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
-	tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
-	assert( tid > 0 );
-	children++;
-	assert( children > 0 );
-	status = region_printf( clock_region, " %s ", time_str );
-	assert( status == ERR_NONE );
+	clock_tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
+	assert( clock_tid > 0 );
 
 	print_switch_table( switch_region, switch_table );
 
-	tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
-	assert( tid > 0 );
-	children++;
-	assert( children > 0 );
+
+	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
+	assert( sensor_tid > 0 );
 
 	sync_responde( ptid );
 
@@ -175,45 +149,16 @@ void train_module() {
 		switch ( event.event_type ){
 		case TRAIN_CHECK_SWITCH:
 		case TRAIN_LAST_SENSOR:
-		case TRAIN_ALL_SENSORS:
 			break;
 		default:
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
+			break;
 		}
 
 		switch (event.event_type) {
 		case TRAIN_UPDATE_TIME:
-			time_str[9]++;
-			if ( time_str[9] > '9' ) {
-				time_str[9] -= 10;
-				time_str[7] += 1;
-			}
-			if ( time_str[7] > '9' ) {
-				time_str[7] -= 10;
-				time_str[6] += 1;
-			}
-			if ( time_str[6] > '5' ) {
-				time_str[6] -= 6;
-				time_str[4] += 1;
-			}
-			if ( time_str[4] > '9' ) {
-				time_str[3] -= 10;
-				time_str[3] += 1;
-			}
-			if ( time_str[3] > '5' ) {
-				time_str[3] -= 6;
-				time_str[1] += 1;
-			}
-			if ( time_str[1] > '9' ) {
-				time_str[0] -= 10;
-				time_str[0] += 1;
-			}
-
-			status = region_printf( clock_region, " %s ", time_str );
-			assert( status == ERR_NONE );
-
 			break;
 		case TRAIN_SET_SPEED:
 			last_speed = event.args[1];
@@ -252,16 +197,6 @@ void train_module() {
 			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
-			/*
-			get_sensor( sensor_table );
-			status = region_printf( sensor_region, "SENSORS:\n|%d|%d|%d|%d|%d|\n|%d|%d|%d|%d|%d|", sensor_table[0], sensor_table[1], sensor_table[2], sensor_table[3], sensor_table[4], sensor_table[5], sensor_table[6], sensor_table[7], sensor_table[8], sensor_table[9] );
-			assert( status == 0 );
-			*/
-			sensor_test += 1;
-			region_printf( sensor_region, "sensor test #%d", sensor_test );
-			reply.result = 0;
-			status = Reply( tid, (char*)&reply, sizeof( reply ) );
-			assert( status == 0 );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
@@ -292,18 +227,9 @@ void train_module() {
 		}
 
 	}
-	
 
-	// wait to sell sensor and clock task to exit
-	for ( i = 0; i < children; i++ ) {
-		status = Receive( &tid, (char*)&event, sizeof(event) );
-		assert( status == sizeof(event) );
-		reply.result = -1;
-		status = Reply( tid, (char*)&reply, sizeof( reply ) );
-		assert( status == 0 );
-	}
-
-
+	Kill( clock_tid );
+	Kill( sensor_tid );
 	// tell anything produced by this to exit
 	Exit();
 }
