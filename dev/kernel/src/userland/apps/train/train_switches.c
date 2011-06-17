@@ -30,7 +30,7 @@ struct Switch_reply_s {
 	int result;
 };
 
-void train_switch() {
+void train_switches() {
 	int quit = 0;
 	int status;
 	int tid;
