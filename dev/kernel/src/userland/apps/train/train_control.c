@@ -56,7 +56,7 @@ int ack( Region* r, char* str, Screen* screen ) {
 int ack_st( Region* r, int id, char state, Screen* screen ) {
 	char str[64];
 	int status = sprintf( str, "switch %d is in state %c", id, state );
-	assert( status < 64 );
+	//assert( status < 64 );
 
 	return ack( r, str, screen);
 }
@@ -64,7 +64,7 @@ int ack_st( Region* r, int id, char state, Screen* screen ) {
 int ack_wh( Region* r, int id, Screen* screen ) {
 	char str[64];
 	int status = sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
-	assert( status < 64 );
+	//assert( status < 64 );
 
 	return ack( r, str, screen );
 }
