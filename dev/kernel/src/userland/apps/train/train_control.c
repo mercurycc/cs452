@@ -1,5 +1,6 @@
 #include <types.h>
 #include <err.h>
+#include <lib/str.h>
 #include <user/apps_entry.h>
 #include <user/assert.h>
 #include <user/display.h>
@@ -30,29 +31,42 @@ struct Command {
 	int args[2];
 };
 
-int ack( Region* r, char* str ) {
+
+typedef struct Screen_s {
+	char line[5][MAX_BUFFER_SIZE];
+	int head;
+	char nextline[MAX_BUFFER_SIZE];
+} Screen;
+
+int ack( Region* r, char* str, Screen* screen ) {
 	// give the str to the print server
 	int status = region_clear( r );
 	assert( status == ERR_NONE );
-	status = region_printf( r, "STATUS: %s\n > ", str);
+
+	screen->head = (screen->head + 4) % 5;
+	int head = screen->head;
+	status = sprintf( screen->line[head], "%s: %s", screen->nextline, str );
+	assert( status );
+
+	status = region_printf( r, "%s\n%s\n%s\n%s\n%s\n", screen->line[(head+4)%5], screen->line[(head+3)%5], screen->line[(head+2)%5], screen->line[(head+1)%5], screen->line[head] );
 	assert( status == ERR_NONE );
 	return 0;
 }
 
-int ack_st( Region* r, int id, char state, char* screen ) {
-	int status = region_clear( r );
-	assert( status == ERR_NONE );
-	status = region_printf( r, "STATUS: switch %d is in state %c\n > ", id, state );
-	assert( status == ERR_NONE );
-	return 0;
+int ack_st( Region* r, int id, char state, Screen* screen ) {
+	char str[64];
+	int status = sprintf( str, "switch %d is in state %c", id, state );
+	assert( status < 64 );
+
+	return ack( r, str, screen);
 }
 
-int ack_wh( Region* r, int id, char* screen ) {
-	int status = region_clear( r );
-	assert( status == ERR_NONE );
-	status = region_printf( r, "STATUS: the last sensor triggered is %c%d\n > ", (id / 32 + 'A'), (id % 32) );
-	assert( status == ERR_NONE );
-	return 0;
+int ack_wh( Region* r, int id, Screen* screen ) {
+	char str[64];
+	int status = sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
+	assert( status < 64 );
+
+	return ack( r, str, screen );
 }
 
 
@@ -100,40 +114,33 @@ void train_control() {
 	int status;
 	char data;
 	char buf[MAX_BUFFER_SIZE];
-	char screen[MAX_SCREEN_SIZE];
-	int screen_head;
-	int screen_tail;
+	Screen screen_data;
+	Screen* screen = &screen_data;
 	int buf_i = 0;
 	int i;
 	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
 		buf[i] = 0;
 	}
-	for ( i = 0; i < 7; i++ ){
-		screen[i] = '\n';
+	for ( i = 0; i < 5; i++ ){
+		screen->line[i][0] = 0;
 	}
-	screen[7] = ' ';
-	screen[8] = '>';
-	screen[9] = ' ';
-	for ( i = 10; i < MAX_SCREEN_SIZE; i++ ){
-		screen[i] = 0;
-	}
+	screen->head = 0;
+	screen->nextline[0] = 0;
 	
+	Region ack_rect = {5, 15, 8, 70, 0, 1};
+	Region *ack_region = &ack_rect;
+	status = region_init( ack_region );
+	assert( status == ERR_NONE );
+	status = region_clear( ack_region );
+	assert( status == ERR_NONE );	
 	
-	
-	Region echo_rect = {5, 22, 1, 70, 0, 0};
+	Region echo_rect = {6, 21, 1, 68, 0, 0};
 	Region *echo_region = &echo_rect;
 	status = region_init( echo_region );
 	assert( status == ERR_NONE );
 	status = region_clear( echo_region );
 	assert( status == ERR_NONE );
 	
-	Region ack_rect = {5, 15, 7, 70, 0, 1};
-	Region *echo_region = &echo_rect;
-	status = region_init( echo_region );
-	assert( status == ERR_NONE );
-	status = region_clear( echo_region );
-	assert( status == ERR_NONE );
-
 
 	status = region_printf( echo_region, "Please wait for the track to initialize" );
 	assert( status == ERR_NONE );
@@ -144,7 +151,7 @@ void train_control() {
 	sync_wait();
 	status = region_clear( echo_region );
 	assert( status == ERR_NONE );
-	status = region_printf( echo_region, "%s", screen );
+	status = region_printf( echo_region, " > " );
 	assert( status == ERR_NONE );
 	
 
@@ -152,14 +159,14 @@ void train_control() {
 		// await input
 		data = Getc( COM_2 );
 
-		/*
+/*
 		if ( !buf_i ) {
 			status = region_clear( echo_region );
 			assert( status == ERR_NONE );
-			status = region_printf( echo_region, "%s" );
+			status = region_printf( echo_region, "" );
 			assert( status == ERR_NONE );
 		}
-		*/
+*/
 
 		// parse input
 		int start;
@@ -262,9 +269,10 @@ void train_control() {
 			else {
 				cmd.command = X;
 			}
-			echo( echo_region, "" );
+			echo( echo_region, " \n" );
 			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
-				
+				screen->nextline[i] = buf[i];
+				if ( buf[i] == 0 ) break;
 				buf[i] = 0;
 			}
 			buf_i = 0;
@@ -275,6 +283,9 @@ void train_control() {
 				buf_i--;
 				buf[buf_i] = 0;
 				echo( echo_region, buf );
+			}
+			else {
+				echo( echo_region, " \n" );
 			}
 			continue;
 		default: 
@@ -289,7 +300,6 @@ void train_control() {
 		// do action
 		switch ( cmd.command ) {
 		case N:
-			ack( ack_region, "", screen );
 			break;
 		case Q:
 			quit = 1;
@@ -344,3 +354,4 @@ void train_control() {
 
 	Exit();
 }
+
