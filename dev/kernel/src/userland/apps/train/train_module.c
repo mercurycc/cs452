@@ -106,6 +106,7 @@ void train_module() {
 	int clock_tid;
 	int sensor_tid;
 	int switch_tid;
+	int last_sensor = 0;
 	
 	char switch_table[22];
 	
@@ -121,13 +122,13 @@ void train_module() {
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
+	switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switches );
+	assert( switch_tid > 0 );
+
 	clock_tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
 	assert( clock_tid > 0 );
 
 	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
-	assert( sensor_tid > 0 );
-	
-	switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switch );
 	assert( sensor_tid > 0 );
 
 	sync_responde( ptid );
@@ -191,7 +192,7 @@ void train_module() {
 			delay( 180 );
 			break;
 		case TRAIN_LAST_SENSOR:
-			reply.result = 0;
+			reply.result = last_sensor;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
 			break;
@@ -201,7 +202,7 @@ void train_module() {
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
-			sync_responde( tid );
+			last_sensor = sensor_last( sensor_tid );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {

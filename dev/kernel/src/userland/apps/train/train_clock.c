@@ -12,11 +12,11 @@
 void train_clock() {
 	int quit = 0;
 	int status;
-	uint ticks = 0;
+	uint ticks = Time();
 
 	char* time_str = "00:00:00.0";
 
-	Region clock_rect = { 1, 1, 1, 14, 0, 0 };
+	Region clock_rect = { 59, 1, 3, 16, 0, 1 };
 	Region *clock_region = &clock_rect;
 	status = region_init( clock_region );
 	assert( status == ERR_NONE );
@@ -52,7 +52,7 @@ void train_clock() {
 			time_str[0] += 1;
 		}
 
-		status = region_printf( clock_region, " %s ", time_str );
+		status = region_printf( clock_region, "  %s", time_str );
 		assert( status == 0 );
 
 	}

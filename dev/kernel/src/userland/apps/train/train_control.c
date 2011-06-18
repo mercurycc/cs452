@@ -46,6 +46,15 @@ int ack_st( Region* r, int id, char state ) {
 	return 0;
 }
 
+int ack_wh( Region* r, int id ) {
+	int status = region_clear( r );
+	assert( status == ERR_NONE );
+	status = region_printf( r, "STATUS: the last sensor triggered is %c%d\n > ", (id / 32 + 'A'), (id % 32) );
+	assert( status == ERR_NONE );
+	return 0;
+}
+
+
 int echo( Region* r, char* str ) {
 	// give the str to the print server
 	int status = region_printf( r, "\n > %s ", str);
@@ -96,7 +105,7 @@ void train_control() {
 		buf[i] = 0;
 	}
 	
-	Region echo_rect = {1, 16, 6, 70, 0, 0};
+	Region echo_rect = {5, 15, 8, 70, 0, 1};
 	Region *echo_region = &echo_rect;
 	status = region_init( echo_region );
 	assert( status == ERR_NONE );
@@ -290,7 +299,10 @@ void train_control() {
 			ack_st( echo_region, cmd.args[0], (char)status );
 			break;
 		case WH:
-			ack( echo_region, "LAST SENSOR" );
+			status = train_last_sensor();
+			if ( status ) {
+				ack_wh( echo_region, status );
+			}
 			break;
 		case SA:
 			ack( echo_region, "Shift all switches" );
