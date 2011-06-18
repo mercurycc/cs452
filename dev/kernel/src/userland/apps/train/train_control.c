@@ -8,7 +8,8 @@
 #include <user/uart.h>
 #include <user/lib/sync.h>
 
-#define MAX_BUFFER_SIZE 256
+#define MAX_BUFFER_SIZE 128
+#define MAX_SCREEN_SIZE 1024
 #define PARSE_INT_FAIL -1
 
 enum Command_type {
@@ -38,7 +39,7 @@ int ack( Region* r, char* str ) {
 	return 0;
 }
 
-int ack_st( Region* r, int id, char state ) {
+int ack_st( Region* r, int id, char state, char* screen ) {
 	int status = region_clear( r );
 	assert( status == ERR_NONE );
 	status = region_printf( r, "STATUS: switch %d is in state %c\n > ", id, state );
@@ -46,7 +47,7 @@ int ack_st( Region* r, int id, char state ) {
 	return 0;
 }
 
-int ack_wh( Region* r, int id ) {
+int ack_wh( Region* r, int id, char* screen ) {
 	int status = region_clear( r );
 	assert( status == ERR_NONE );
 	status = region_printf( r, "STATUS: the last sensor triggered is %c%d\n > ", (id / 32 + 'A'), (id % 32) );
@@ -57,7 +58,7 @@ int ack_wh( Region* r, int id ) {
 
 int echo( Region* r, char* str ) {
 	// give the str to the print server
-	int status = region_printf( r, "\n > %s ", str);
+	int status = region_printf( r, " > %s ", str);
 	assert( status == ERR_NONE );
 	return 0;
 }
@@ -99,39 +100,51 @@ void train_control() {
 	int status;
 	char data;
 	char buf[MAX_BUFFER_SIZE];
+	char screen[MAX_SCREEN_SIZE];
+	int screen_head;
+	int screen_tail;
 	int buf_i = 0;
 	int i;
 	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
 		buf[i] = 0;
 	}
+	for ( i = 0; i < 7; i++ ){
+		screen[i] = '\n';
+	}
+	screen[7] = ' ';
+	screen[8] = '>';
+	screen[9] = ' ';
+	for ( i = 10; i < MAX_SCREEN_SIZE; i++ ){
+		screen[i] = 0;
+	}
 	
-	Region echo_rect = {5, 15, 8, 70, 0, 1};
+	
+	
+	Region echo_rect = {5, 22, 1, 70, 0, 0};
+	Region *echo_region = &echo_rect;
+	status = region_init( echo_region );
+	assert( status == ERR_NONE );
+	status = region_clear( echo_region );
+	assert( status == ERR_NONE );
+	
+	Region ack_rect = {5, 15, 7, 70, 0, 1};
 	Region *echo_region = &echo_rect;
 	status = region_init( echo_region );
 	assert( status == ERR_NONE );
 	status = region_clear( echo_region );
 	assert( status == ERR_NONE );
 
-/*
-	Region prompt_rect = {1, 24, 1, 80, 0, 0};
-	Region *prompt_region = &prompt_rect;
-	status = region_init( prompt_region );
-	assert( status == ERR_NONE );
-	assert(0);
-	status = region_clear( prompt_region );
-	assert( status == ERR_NONE );
-*/
+
 	status = region_printf( echo_region, "Please wait for the track to initialize" );
 	assert( status == ERR_NONE );
 
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
-	struct Command cmd;
-	
+	struct Command cmd;	
 
 	sync_wait();
 	status = region_clear( echo_region );
 	assert( status == ERR_NONE );
-	status = region_printf( echo_region, "\n > " );
+	status = region_printf( echo_region, "%s", screen );
 	assert( status == ERR_NONE );
 	
 
@@ -139,12 +152,14 @@ void train_control() {
 		// await input
 		data = Getc( COM_2 );
 
+		/*
 		if ( !buf_i ) {
 			status = region_clear( echo_region );
 			assert( status == ERR_NONE );
-			status = region_printf( echo_region, "\n > " );
+			status = region_printf( echo_region, "%s" );
 			assert( status == ERR_NONE );
 		}
+		*/
 
 		// parse input
 		int start;
@@ -249,6 +264,7 @@ void train_control() {
 			}
 			echo( echo_region, "" );
 			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
+				
 				buf[i] = 0;
 			}
 			buf_i = 0;
@@ -273,47 +289,47 @@ void train_control() {
 		// do action
 		switch ( cmd.command ) {
 		case N:
-			ack( echo_region, "" );
+			ack( ack_region, "", screen );
 			break;
 		case Q:
 			quit = 1;
-			ack( echo_region, "Goodbye!" );
+			ack( ack_region, "Goodbye!", screen );
 			break;
 		case TR:
-			ack( echo_region, "Train speed changes" );
+			ack( ack_region, "Train speed changes", screen );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case RV:
-			ack( echo_region, "Train reverses" );
+			ack( ack_region, "Train reverses", screen );
 			status = train_reverse( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case SW:
-			ack( echo_region, "Switch shifts" );
+			ack( ack_region, "Switch shifts", screen );
 			status = train_switch( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case ST:
 			status = train_check_switch( cmd.args[0] );
-			ack_st( echo_region, cmd.args[0], (char)status );
+			ack_st( ack_region, cmd.args[0], (char)status, screen );
 			break;
 		case WH:
 			status = train_last_sensor();
 			if ( status ) {
-				ack_wh( echo_region, status );
+				ack_wh( ack_region, status, screen );
 			}
 			break;
 		case SA:
-			ack( echo_region, "Shift all switches" );
+			ack( ack_region, "Shift all switches", screen );
 			status = train_switch_all( cmd. args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case PT:
-			ack( echo_region, "pressure test" );
+			ack( ack_region, "pressure test", screen );
 			break;
 		default:
-			ack( echo_region, "Invalid command" );
+			ack( ack_region, "Invalid command", screen );
 			break;
 		}
 	}
