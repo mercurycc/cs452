@@ -32,6 +32,11 @@
 
 
 
+* New Scheduling Policy
+-----------------------
+
+Scheduler now will add unblocked tasks to the head of the task's priority queue. We made this change because that we want the event handler tasks to handle the events as soon as possible. 
+
 
 
 
