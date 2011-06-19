@@ -1,0 +1,409 @@
+			   ==========================
+			   Pinball System for TS-7200
+			           Release K4
+				 Kernel Design
+			   ==========================
+				    cs452_08
+
+1. Overview
+===========
+
+* Design Goal
+-------------
+
+The Pinball kernel is designed to be a real time micro-kernel running on TS-7200
+board.  Its design goals includes:
+
+ - Constant trap time
+ - Cooperative multi-tasking
+ - Convenient kernel programming interface
+ - Highly modularize
+
+At the point of K4 release the kernel only supports part of the compability
+TS-7200 provides, yet enables the system to provide just enough functionality
+for future works on the CS 452 train project.
+
+The only part of the kernel that is not constant time is the Send/Receive/Reply
+syscalls which requires message copying, which apparently cannot be achieved in
+constant time.
+
+
+* Functional Units and Data Strucutures
+---------------------------------------
+
+The kernel is composed of functional units including memory manager, task
+manager, scheduler, trap handler, and interrupt manager.
+
+Kernel data structures includes the global kernel context, task descriptor,
+generic ring buffer, doubly linked circular list, syscall descriptor, and data
+structures internal to each functional modules, such as memory descriptor, task
+array, scheduling queues, etc.
+
+The kernel implements all the syscalls except Destroy from the cs452 kernel
+specification, while also added several non-standard syscalls to ease user
+programming.
+
+
+2. Components Details
+=====================
+
+* Functional Units (a.k.a. Kernel Libraries)
+--------------------------------------------
+
+- Memory Manager
+
+The memory manager manages allocation and deallocation of volatile data
+structures such as task descriptors and stack memory for user tasks.  For each
+type of memory the memory manager maintains a ring buffer initialized with all
+possible allocations.  Notice this can be done because both the size of a task
+descriptor and the size of a user stack are fixed, so all the ring buffer need
+to record are the pointers to each one of the pre-allocated data structure.
+
+The memory manager uses the memory descriptors to allocate memory.  Since the
+memory descriptors are simply ring buffers, a mem_alloc is just a wrapper of
+rbuf_get, and similarly a mem_free is just a rbuf_put, both taking constant
+time.  Initialization can be done by a bunch of puts, and out of memory
+detection is equivalent to a ring buffer empty.
+
+All memory needed by the memory manager, as well as all the operational data
+needed by all other units, are allocated in main and passed in to either the
+memory manager or the global kernel context.
+
+
+- Task Manager
+
+The task manager is used to create and initialize task descriptors and
+associated resources, such as tid and stack space.
+
+A new task will have its stack initialized as if the task was saved by the trap
+handler, and can be restored/launched by the trap handler.
+
+As of Release K4 the task manager can only execute task creation and
+zombification as Destroy is neither implemented nor implied in Exit.
+
+Task creation requires allocating a task descriptor from the memory manager,
+which as described in the memory manager section takes constant time, and
+setting up the task descriptor to be returned.  Each task descriptor has its
+pre-allocated tid in its last 7 bits, and the rest of the bits is used for
+versioning.
+
+Task zombification will increase the versioning of the task descriptor and free
+the stack space occupied by the task, which again, takes constant time as
+described in the memory manager section.
+
+The complete process of creating a task is described in the syscall section.
+
+
+- Scheduler
+
+The scheduler consists 32 scheduling queues, indexed from 0 to 31, indicating
+the 32 different priority levels.  In order to quickly locate the highest
+priority non-empty queue, a 32-bit selector, of which each bit indicates if a
+corresponding queue is empty or not. Moreover, the scheduler has a zombie queue
+for tasks that are finished.  The scheduler will schedule the first task in the
+queue with highest priority.  If there is not any task in any of the scheduling
+queues and no task is blocked, the scheduler will the handler to return to the
+kernel main, which will terminate the kernel.
+
+The scheduler maintains a current highest priority.  A traverse of all
+priorities to update this value only happens when a task is removed from the
+scheduler.  Given we have a constant number of priorities, even this operation
+takes constant time.
+
+The scheduler supports add, schedule, block, signal, and kill.  The
+implementations of these functionalities takes time mainly when the highest
+priority needs to be updated.  Thus these operations are comfortably implemented
+to run in constant time.
+
+To implement and define blocking we simply remove the task from the ready queue
+it belongs to and put it in some place (the send queue of a task for instance)
+that sooner or later someone will come and respond to.  When the response is
+completed the task is supposed to be added back to the ready queue, essentially
+unblock the task.
+
+
+- Trap Handler
+
+The trap handler is the only entry point of the kernel space from the user
+space.  The trap handler takes the syscall descriptor as its only parameter.
+This parameter is setup by the userland syscall library.
+
+At entry the trap handler entry code saves the current processor states, both
+user mode and IRQ mode, out to the user's stack, and pass the syscall
+descriptor, user stack pointer, supervisor mode spsr, kernel stack pointer into
+the main trap handler routine.  The trap handler handles the syscall or
+interrupt, distinguishing the source of trap by the spsr, calls scheduler to
+schedule the next task, and then calls into the trap handler exit code.  The
+trap handler exit code will restore the scheduled task and set processor back
+into user space.
+
+One thing worth mention here is that the trap exit code is called by the trap
+handler, rather than making the syscall handler return into the trap entry code
+to exit.  This is because the trap exit code needs some parameters from the trap
+handler, such as the scheduled task's stack pointer, so calling the trap exit
+code is more natural.
+
+The reason the kernel stack pointer is needed by the trap handler is because
+first the trap handler relies on the fact that the global kernel context is on
+the top of the kernel stack; and second the trap exit code needs this address to
+forcifully restore the kernel stack, as the call into it from the trap handler
+will not return.
+
+
+- Syscall Handler
+
+The syscall handler implements the syscall inside the kernel.  It takes the
+syscall descriptor and uses different functional units of the kernel to
+implement the functionality of each syscall.
+
+A runtime analysis of the syscall handler is in the syscall section.
+
+
+- Interrupt Manager
+
+The interrupt manager manages the interrupt handlers and handles generic
+interrupt controler operations.
+
+The interrupt manager starts up with initializing all the interrupts that are
+going to be used by the kernel.  Intialization take place by disabling all
+interrupts and filling out the vectored interrupt registers
+(vic_vect_addr[0-15]).  The vectored interrupt registers are filled with the
+interrupt id rather than an ISR, because the kernel handles the interrupt by
+pushing the interrupt back to the user space and the only information needed by
+the kernel is the interrupt id.  Using the vectored interrupt registers we can
+obtain the interrupt id with one ld operation.  This is fast while also provide
+a way to simplify interrupt priority handling.
+
+The interrupt manager supports 2 methods provided to the kernel: register and
+handle.  Both are supposed to be called by the trap handler.
+
+Register registers a task as the interrupt handler for the specified interrupt,
+and then enables the interrupt in the VIC.  The task is supposed to be removed
+from the scheduler then.  Register should be called when a device driver calls
+AwaitEvent.
+
+Handle will return the interrupt handler for the specified interrupt so that the
+handler can be rescheduled, and disables the interrupt.  Handle should be called
+when the trap handler receives an interrupt.
+
+Handle identifies the interrupt by reading the vic_vect_addr register.
+
+The registry is simple an associate array mapping each interrupt to a tid,
+therefore both Register and Handle can be processed in constant time.
+
+As of Release K4 the interrupt manager supports configuring the CLK1/2/3 and
+UART1/2 interrupts, while adding new interrupts to be managed remains trivial.
+
+
+* Syscalls
+----------
+
+Here is a list of all implemented syscall with comments on non-intuitive
+processes.
+
+- int Create( int priority, void(*code)() );
+
+To create a task, the task manager takes the task entry point and priority, and
+returns a task descriptor ready to be scheduled.  This takes constant time as
+described in the task manager section.  Then the task is added into the
+scheduler.
+
+- int MyTid();
+- int MyParentTid();
+- void Pass();
+- void Exit();
+- int Send( int tid, char* msg, int msglen, char* reply, int replylen );
+- int Receive( int* tid, char* msg, int msglen );
+- int Reply( int tid, char* reply, int replylen );
+
+For Send/Receive/Reply since there is no guarantee of message length, these
+syscalls could take length of time linear to msglen/replylen.  This is not
+constant but still predictible.
+
+- int AwaitEvent( int eventid );
+
+In Pinball kernel an event is defined as an interrupt.  An event id is simply
+the interrupt id.  Therefore by definition only device drivers can call
+AwaitEvent.  The intention is that all more complex events should be handled by
+servers rather than the kernel.
+
+The AwaitEvent call will call into the interrupt manager to enable the
+interrupt, register the current task as the interrupt handler for the interrupt,
+and then the task will be removed from the scheduler.  When the interrupt is
+triggered another call into the interrupt handler will disable the interrupt,
+and return the interrupt handler task to be added back to the scheduler.
+
+As described in the interrupt handler section the interrupt handler can execute
+in constant time.  Therefore this syscall runs in constant time.
+
+The caller is expected to ensure that the specific device in concern is
+setup/reset properly to generate the expected interrupt.
+
+- int Exist( int tid );
+
+This syscall tests if the task identified with tid actually exists.  Used mainly
+by the name server to validate the mapping from names to tids.
+
+- int Kill( int tid );
+
+Kill task identified by tid.
+
+The motivation for this syscall is that at shutdown, there is no natural way to
+kill a notifier when the notifier is waiting for an event.  This could happen on
+UART driver with fifo on on UART 2.
+
+This syscall also provides an easy way to ensure a task is killed.
+
+It is implemented by modifying the pc (or supervisor lr) of the task to the Exit
+syscall, and force the task to be added into scheduler, thus once the task is
+re-scheduled it will call Exit on itself.  Given the way the scheduler is
+implemented, this is safer than simpler approaches.
+
+int Create_drv( int priority, void(*code)() );
+
+Same as Create, but the task create will have interrupt disabled so it will not
+be interrupted.  Intended to be used to create device drivers.
+
+int PreShutdown();
+
+Ask kernel to prepare for shutdown.  At the moment the kernel simple disables
+all the interrupts.
+
+The motivation for this syscall is to ensure correct shutdown sequence, just in
+case.
+
+
+* Data Structures
+-----------------
+
+- Generic Ring Buffer
+
+The generic ring buffer is supposed to be a simple and robust ring buffer
+implementation.  The ring buffer supports put and get operations.  Each instance
+has a pre-allocated buffer provided by user, get and put indices, and the
+element size.  The buffer contains a copy of the data sent to the buffer.  Each
+put and get thus requires a memcpy.
+
+This serve as a basic building block for many data structures.
+
+
+- Generic Doubly Linked Circular List
+
+The list implementation is partially taken from the Linux kernel list.h.  This
+list implementation has the advantage of being type neutural, thus enable the
+group to implement lists of different data structures easily.
+
+
+- Global Kernel Context
+
+To avoid using global variables to store global or local information, every
+functional unit was designed to keep its operational data into a data structure
+which is stored in the global kernel context.  The global kernel context is a
+data structure holding all the information needed by each of the functional
+units.  Itself and its contents are all allocated on the kernel stack.
+
+All kernel API takes a Context pointer pointing to the global kernel context and
+retrieve operational data from it, thus avoiding the use of global variables.
+The global kernel context is always saved on the top of the kernel stack once
+the system enters user mode, so the trap handler and other functional units can
+always find the global kernel context.
+
+
+- Syscall Descriptor
+
+Instead of passing the trap reason through paramter to swi, it was chosen to
+pass the the trap reason through a1 register.  This gave us more power.
+
+The reference passed into the kernel through a1 register is a data structure
+allocated on the user stack containing all possible parameter needed by the
+kernel, including the trap reason code, input data buffer, output data buffer,
+and syscall integer return value.  This allows very easy kernel programming
+especially when we start to implement message passing.
+
+A syscall descriptor contains the trap reason, return value, input buffer, and
+output buffer.  This makes trap handler much simpler because it does not need to
+search for the parameters passed into the kernel.
+
+
+- Task Descriptor
+
+The task descriptor consists information needed for each task.
+
+The task descriptor keeps record of tid, state, priority, current stack pointer,
+parent tid, parent pointer (point to parent task), syscall descrioptor, a
+listhead, and a send queue.
+
+
+- Memory Descriptor
+
+A memory descriptor is essentially a set of ring buffers.  Each ring buffer
+contains all possible allocations to a certain kind of memory, such as task
+descriptors or stack spaces.  The memory manager take an enum to distinguish on
+which ring buffer should the memory manager operates.
+
+
+- Task Array
+
+The task array is a pre-allocated array of all task descriptors on the kernel
+stack.  It is used for memory manager to initialize its task memory descriptor,
+but it is also stored in the global kernel context for message passing syscalls
+to find the target task.
+
+
+- Scheduling Queues
+
+The scheduling queue is basically a ring of double linked list, with a pointer
+points to the head. Since it is a ring, accessing the tail is simply finding the
+prev element of the head.
+
+
+3. Key Kernel Processes
+=======================
+
+* Launch
+--------
+
+The kernel follows this process to launch:
+
+ - Initialize task descriptor array, assigning initial tid
+ - Initialize global kernel context, pass in all operational data structures
+ - Pass all pre-allocated task descriptors and stack memory into memory manager
+ - Initialize scheduler
+ - Initialize device drivers
+ - Allocate the first user task
+ - Initialize/setup the first user task
+ - Enter the user mode and launch the first user task through trap handler
+
+
+* Trap
+------
+
+The kernel follows this process when swi is issued:
+
+- Saves all scratch registers onto kernel stack
+- Enters system mode
+- Save out user data
+- Enters IRQ mode
+- Save out IRQ data
+- Pass user sp into a2
+- Enter supervisor mode
+- Restore and save user's value of the scratch registers
+- Save user pc and cpsr onto user stack
+- Go into trap handler
+
+Once the syscall handler completes the syscall, it calls trap exit code which
+undo these steps.
+
+
+* Interrupt
+-----------
+
+When an interrupt is received the system enters the IRQ mode, and the following
+process is issued:
+
+- swi just like a user program
+- once rescheduled,
+
+  subs pc, lr, #4
+
+  as instructed by the EP9302 manual to return to the interrupted user program.

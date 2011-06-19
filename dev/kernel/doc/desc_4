@@ -55,17 +55,13 @@ Kill task identified by tid.
 
 The motivation for this syscall is that at shutdown, there is no natural way to
 kill a notifier when the notifier is waiting for an event.  This could happen on
-UART driver with fifo on on UART 2.  To Getc the UART driver on UART 2 might
-need 2 notifiers: one on rxrdy, one on the OR interrupt because we also want to
-wait for the time out interrupt.  However only one interrupt will be satisfied
-before we take the character away, leaving the other event notifier still
-waiting.
+UART driver with fifo on on UART 2.
 
 This syscall also provides an easy way to ensure a task is killed.
 
-It is implemented by modifier the pc (or supervisor lr) of the task to the Exit
-syscall, and force the task to be added into scheduler.  Once the task is
-scheduled again it will call Exit on itself.  Given the way the scheduler is
+It is implemented by modifying the pc (or supervisor lr) of the task to the Exit
+syscall, and force the task to be added into scheduler, thus once the task is
+re-scheduled it will call Exit on itself.  Given the way the scheduler is
 implemented, this is safer than simpler approaches.
 
 
@@ -76,20 +72,31 @@ Syntax: int PreShutdown()
 Ask kernel to prepare for shutdown.  At the moment the kernel simple disables
 all the interrupts.
 
-The motivation for this syscall is to ensure correct shutdown sequence.
+The motivation for this syscall is to ensure correct shutdown sequence, just in
+case.
 
 
-* 
+* Uart Interrupt Support
+------------------------
+
+All UART interrupts presenting in the VIC are registered in the vectored
+interrupt registers so they can be supported.  Recall that in Pinball the
+vectored interrupt ISR register holds the interrupt source id rather than the
+acutal ISR, which in Pinball is defined as a task managed by the interrupt
+manager.  Registering the interrupt thus is only a matter of writing the correct
+values in to the desinated vectored interrupt ISR and control registers.
+
+Only issue encountered was that the OR interrupt of each UART are handled by
+VIC2, thus required a bit reprograming of the interrupt manager to make use of
+VIC 2.
 
 
 * New Scheduling Policy
 -----------------------
 
-Scheduler now will add unblocked tasks to the head of the task's priority queue. We made this change because that we want the event handler tasks to handle the events as soon as possible. 
-
-
-
-
+Scheduler now will add unblocked tasks to the head of the task's priority
+queue. We made this change because that we want the event handler tasks to
+handle the events as soon as possible.
 
 
 3. User Component Change Details
