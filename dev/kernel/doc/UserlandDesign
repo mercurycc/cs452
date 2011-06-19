@@ -105,9 +105,9 @@ The data that tasks got from time server should be accurate. When a task asks
 for a time, there will be 2 send-receive-reply. One of them sends a 8-byte data,
 one sends a 12-byte data. By our measurement, these three sends should be
 completed within 500us each, which allows the task to get current time with in
-1.5ms. Since each tick is defined as 50ms in our system, this small delay is
-actually negligible. For delay, its 2 send-receive-reply when starting delay and
-2 when clock driver signals. So the error is also very small.
+1.5ms. Since each tick is defined as 10ms in our system, this small delay is
+actually negligible. For Delay and DelayUntil calls, its 2 send-receive-reply
+when starting delay and 2 when clock driver signals.
 
 This error is guaranteed by letting the driver and the server both running at
 priority 0 which is the highest priority.
@@ -150,7 +150,7 @@ request) is due to the way time server is implemented.  The time server will
 always restore the task that has least amount of delay.  Therefore the clock
 server will only keep track the shortest count down.
 
-Each tick is defined to be 50 ms, which is equivalent to 100 ticks on the clock,
+Each tick is defined to be 10 ms, which is equivalent to 20 ticks on the clock,
 as required by the kernel specification.
 
 
