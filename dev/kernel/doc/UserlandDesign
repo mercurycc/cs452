@@ -1,0 +1,320 @@
+			   ==========================
+			   Pinball System for TS-7200
+			           Release K4
+				Userland Design
+			   ==========================
+				    cs452_08
+
+1. Overview
+===========
+
+* Design Goal
+-------------
+
+The userland components of the Pinball system is designed to met the following
+goals:
+
+- Provide drivers to hardware components that the kernel does not serve
+- Provide libraries and IPC abstractions to ease user programming
+- Implement userland side interface with the kernel, i.e. the syscalls
+- Keep the code managable and extendible
+
+As of Release K4 these goals are not met in full, yet still providing enough
+power to continue with the train project.
+
+
+* Components
+------------
+
+The Pinball system provides a time server, a clock driver which is closely
+paired up with the time server, two uart driver tasks for each of the uart port,
+a name server for registering and querying services, a display server which
+manages the terminal UI, a courier-ish IPC agent, an event notifier for
+notifying interrupts, and the APIs related to each of the services.
+
+The system also provide various libraries provided to the user, most notibly a
+hash table implementation and the string functions mimiking the libc functions.
+
+The userland shares some libraries with the kernel such as the ring buffer and
+list.
+
+The system implements all the interfaces to syscalls implemented in the kernel.
+
+
+2. Component Details
+====================
+
+* Name Server
+-------------
+
+The name server is the second task created in when executing. It is directly
+created by the first task.  The name server's tid is fixed to 2 in our system,
+so that other tasks can to find it directly.
+
+A query to the name server via WhoIs call could block the task if the target
+name does not present in the server's records.  A problem encountered there is
+that a stacking mechanism is needed to stack all unhandled requests, because
+first an unhandled request should not block other requests, which could possibly
+satisfy the current unhandled request, and second we have to make sure the
+unhandled request is not lost.  This is done by making the name server request
+handler to recursivly call itself to satisfy the next request if the current
+request is not satisfied.  Enough stack space is assigned to the name server so
+it will never run out of stack space, given the maximum number of tasks the
+system support.
+
+This approach only work if all services will eventually register, otherwise
+there could be a deadlock.  For the train project this is fine.  Alternative
+approach includes implementing a data structure to take record of all
+unsatisfied requests.
+
+The name server uses a hash table to keep records of name-tid pairs of the
+registerd tasks. We fixed the length of names in the userland to atmost 16
+characters.  The hash table has 512 entries, while we only allow at most 128
+tasks to co-exist.  Although this still do not guarantee constant time response
+time, given the assumption that all tasks should calls into name server only
+before they need real time service, it is considered okay to leave the name
+server slow.
+
+
+* Time Server a.k.a Clock Server
+--------------------------------
+
+The timer server is designed to have much small number of sends and/or replys
+than the one described by Prof. Bill Cowan in class.  The tid of the time server
+is again pre-allocated, because the time APIs as specified by the kernel
+specification does not allow a tid to be carried.
+
+In our time server, we will create a clock driver to avoid the extra name server
+query. When ever a request coming in, the time server will communicate with the
+clock driver to resolve the request. When a Time() request comes in, the server
+will send a message to the clock driver to ask for current time. When a Delay()
+or DelayUntil() is received, the timer server will calculate the wake-up time of
+the delaying task, and send this information to the clock driver. The clock
+driver will send a signal to time server when the earliest delay is done. Then
+time server will reply to the delaying task to wake it up.
+
+Notice with multiple tasks asking for delaying the clock driver only reply once
+for the task that needs to be wake up earliest. Once the earliest task is waken
+up, if there are multiple tasks delaying, the time server will calculate the new
+delaying time for the next earliest task and send the request to the clock
+driver. The tasks that needed to be waken up is kept in a min-heap to achieve
+this in O(log n) time.  This is done as per given implementation of clock
+driver.
+
+The data that tasks got from time server should be accurate. When a task asks
+for a time, there will be 2 send-receive-reply. One of them sends a 8-byte data,
+one sends a 12-byte data. By our measurement, these three sends should be
+completed within 500us each, which allows the task to get current time with in
+1.5ms. Since each tick is defined as 50ms in our system, this small delay is
+actually negligible. For delay, its 2 send-receive-reply when starting delay and
+2 when clock driver signals. So the error is also very small.
+
+This error is guaranteed by letting the driver and the server both running at
+priority 0 which is the highest priority.
+
+
+* Clock Driver
+--------------
+
+The clock driver is built based on requirements of the time server.  It consists
+of 2 components: one is the driver which configures the clock hardware, and the
+other which is a interrupt handler which awaits interrupt events from the clock.
+The clock driver support 2 operations: obtaining current time and count down.
+
+The clock driver starts with initializing clock 1 and 3, where clock 1 is used
+to generate count down interrupts and clock 3 is used to keep track with the
+current time.  Then the driver creates the clock interrupt handler task.
+
+Whenever the clock driver receives a current time request it reads clock 3 to
+find out how long clock 3 has been running, and calculate the current time from
+this data.  Clock 3 is a 32 bit clock which runs 24 days with the 2000Hz clock
+source.
+
+We are not using constant clock interrupt to implement clock server as we think
+it is too expensive to trigger a kernel access and context switches every 50 ms
+than to simply read time from clk_3.  Interrupt is only used to implement count
+down requests as requested by the time server.
+
+When the clock driver receives a count down request, it checks if there is a
+undergoing count down and how much time the current count down has left.  If
+there is no count down going on or the current count down has more time left
+than the requested count down, the driver will reset the clock to generate an
+interrupt after the requested count down, and if no count down is going on, the
+driver notifies the clock interrupt handler to wait for the interrupt.
+Otherwise the clock interrupt handler must have been waiting on a shorter count
+down, and the count down request is discarded.
+
+The reason that the longer count down request can be discarded (either by
+ignoring a longer request or replacing current count down with a shorter
+request) is due to the way time server is implemented.  The time server will
+always restore the task that has least amount of delay.  Therefore the clock
+server will only keep track the shortest count down.
+
+Each tick is defined to be 50 ms, which is equivalent to 100 ticks on the clock,
+as required by the kernel specification.
+
+
+* UART Driver
+-------------
+
+The UART driver is a task that handles the transmission and reception of a UART
+port.  Each UART port will have its own driver task to manage its operations.
+The tids of the UART driver of each of the two UART ports are both pre-allocated
+to simplify the coding.
+
+The UART driver does not buffer multiple read requests, thus requiring only one
+task to read from the UART at a time.  Since transmission is non-blocking as
+specified, a buffer of characters to be transmitted is used, but in order to
+ensure the order of transmission it is still recommended to have only one task
+to transmit.
+
+The UART driver accepts three kinds of instructions: receive a byte, transmit a
+byte, or notification of availability of an interrupt.
+
+Each UART driver will manage three interrupts, i.e. RXRDY, TXRDY and the OR
+interrupt for the modem status and receiver fifo time out interrupts.
+
+The reason it is chosen to make two uart driver tasks is mainly due to the
+possible need to use both modem status and the receiver fifo time out
+interrupts.  As defined in the kernel an event can only be one interrupt.  In
+order for two servers to each wait on one of the modem status and receiver fifo
+time out interrupts, they both need to wait on the OR interrupt, which is
+impossible in Pinball.  This decision also allows the transmission and reception
+to easily share code, at the cost of increase the complexity of the code.
+
+When a receive request comes in, the requester's tid is saved, and the status of
+the line is checked.  If no data is buffered, RXRDY is turned on in the UART and
+the RXRDY event handler is instructed to wait for the interrupt, and receiver
+time out is turned on if fifo is on.  Otherwise the data is transfered to the
+requester.
+
+When a transmit request comes in, the requester is immediately replied and the
+character to be transmitted is buffered.  Then the line status is checked.  If
+the transmission buffer is not full, then we check CTS.  If CTS is asserted, as
+many as possible buffered tranmission bytes are dumped into the transmission
+buffer; otherwise modem status interrupt is turned on.  If otherwise, the
+transmission buffer is full, then the TXRDY is turned on and TXRDY event handler
+is instructed to wait for the interrupt.
+
+The OR interrupt is always waited on.
+
+If an OR interrupt is received, it is translated into either RXRDY, by receiver
+timeout interrupt, or TXRDY, by modem status interrupt possibly caused by a CTS
+change.  The rest would be handling the translated interrupt.
+
+If a RXRDY interrupt is received, the UART driver checks if anyone is waiting
+for receving.  Note it appears that if the RXRDY interrupt is on then there must
+always be some task waiting for receiver.  This is not always the case becuase
+of the following design flaw: we will be waiting for both the RXRDY and the OR
+interrupt if fifo is on.  Given the implementation of the kernel we could have
+both interrupt asserted and thus both will report back, making the driver deal
+the same request twice while the first response will clear the saved receiver.
+Due to time limitation this work around is implemented.
+
+If a receiver presents, the data is transfered to the receiver.
+
+If a TXRDY interrupt is received, the UART driver checks CTS if flow control is
+on.  If CTS is not asserted then modem status interrupt is turned on.  Otherwise
+the driver dumps as much data into the transmission buffer as possible.
+
+Currently the setting for the UARTs are, both will have fifo on, UART 1 baud
+2400, flow control on, double stop bit on; UART 2 baud 115200, flow control off,
+double stop bit off.
+
+The reason that UART 1 will have fifo on is because in practice this works,
+while there is some unknown timing problem when fifo is off, given our
+implemenation.
+
+
+* Event Handler
+---------------
+
+The event handler is designed to simplify interrupt handling for device drivers.
+Each event handler simple wait for a request, and then wait on the specified
+interrupt.  Once the interrupt occurs, it calls a specified call back function
+to notify the availibility of the interrupt.
+
+In practice, the callback will usually be a send to the driver.
+
+
+* Courier-ish Agent
+-------------------
+
+The agent is a simply message agent whose sole purpose is to make
+fire-and-forget Sends to be non-blocking.  Like an event handler, it awaits a
+request and, once requested, it calls a callback function which is supposed to
+send a message.
+
+The reply of the send is simple discarded.
+
+It will be easy to modify the courier to send the response to the requester.
+There is no sufficiently strong motivation to do that given our current
+implementation.
+
+* Display Server
+----------------
+
+The display server manages the UI displayed on the terminal.  It is implemented
+to first simplify UI programming and second to satisfy the requirement that only
+one task can be transmitting on a UART driver at a time.
+
+The display server consists of the drawer and the server.  The drawer is
+considered as a thread of the server, so they share memory.
+
+To reduce the amount of update of UI needed, we implemented a differential
+buffer idea, which essentially means we only update the terminal for parts that
+are different from the current screen.
+
+The drawer is given a differential frame buffer of the size of terminal UI.  The
+differential frame buffer is defined as an array of characters.  0 in a position
+means the position is not changed from the last draw.  Other than that means an
+update.
+
+The drawer will relocate the cursor if an update is needed, and update until a 0
+is encountered in the buffer.  It continues to read the buffer and redo the
+steps when an update is needed.
+
+The server is responsible for taking draw requests and construct the
+differential frame buffer.  The client sends a message and parameters of the
+message, such as where to draw, and how to draw.  The specific definition of
+these parameters is a bit redundant here so it is omitted.
+
+The display server maintains three frame buffers.  One represents the current
+display on the terminal.  The other two are used as differential frame buffers
+for the drawer.  Every 30 milliseconds it will transmit the buffer to the drawer
+to update the screen, if there is any update, and commit the changes in the
+differential buffer into the screen buffer, while switching the commited buffer
+with the other differential buffer to ensure the commited buffer, which is
+transfered to the drawer, does not get override.
+
+
+3. Libraries
+============
+
+* Syscall
+---------
+
+The userland program make a syscall by calling one of the user space syscall
+routine.  Each syscall routine sets up its own syscall descriptor, then calls
+into the syscall wrapper.  The syscall wrapper will have its first parameter
+being the syscall descriptor, so that once in the kernel the trap handler can
+obtain the syscall descriptor from a1 register.
+
+The syscall wrapper then simply executes swi.
+
+
+* Others
+--------
+
+Some standard heap/hash table/string manipuation/memory
+manipulation/etc. fucntions mimiking the libc are implemented.
+
+
+4. APIs
+=======
+
+Syscalls are provided by the Syscall library.
+
+Delay/DelayUntil/Time are provided by the Time server.
+
+Getc/Putc are provided by the UART drivers.

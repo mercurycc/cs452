@@ -1,9 +1,9 @@
-			   ==========================
-			   Pinball System for TS-7200
-			           Release K4
-				 Kernel Design
-			   ==========================
-				    cs452_08
+                           ==========================
+                           Pinball System for TS-7200
+                                   Release K4
+                                 Kernel Design
+                           ==========================
+                                    cs452_08
 
 1. Overview
 ===========
@@ -39,8 +39,11 @@ generic ring buffer, doubly linked circular list, syscall descriptor, and data
 structures internal to each functional modules, such as memory descriptor, task
 array, scheduling queues, etc.
 
+* Programming Interface
+-----------------------
+
 The kernel implements all the syscalls except Destroy from the cs452 kernel
-specification, while also added several non-standard syscalls to ease user
+specification, while also added several non-standard syscalls to ease userland
 programming.
 
 
@@ -110,8 +113,13 @@ priorities to update this value only happens when a task is removed from the
 scheduler.  Given we have a constant number of priorities, even this operation
 takes constant time.
 
-The scheduler supports add, schedule, block, signal, and kill.  The
-implementations of these functionalities takes time mainly when the highest
+The scheduler supports add, schedule, block, signal, and kill.  Add is used by
+adding new tasks to the scheduler.  Schedule is used to obtain the next
+scheduled task.  Block is used to block a task.  Signal, intended to undo block,
+is like add, except that it will make the added task to be the first to be
+scheduled in its priority group.  Kill will remove a task from the scheduler.
+
+The implementations of these functionalities takes time mainly when the highest
 priority needs to be updated.  Thus these operations are comfortably implemented
 to run in constant time.
 
@@ -193,84 +201,6 @@ therefore both Register and Handle can be processed in constant time.
 
 As of Release K4 the interrupt manager supports configuring the CLK1/2/3 and
 UART1/2 interrupts, while adding new interrupts to be managed remains trivial.
-
-
-* Syscalls
-----------
-
-Here is a list of all implemented syscall with comments on non-intuitive
-processes.
-
-- int Create( int priority, void(*code)() );
-
-To create a task, the task manager takes the task entry point and priority, and
-returns a task descriptor ready to be scheduled.  This takes constant time as
-described in the task manager section.  Then the task is added into the
-scheduler.
-
-- int MyTid();
-- int MyParentTid();
-- void Pass();
-- void Exit();
-- int Send( int tid, char* msg, int msglen, char* reply, int replylen );
-- int Receive( int* tid, char* msg, int msglen );
-- int Reply( int tid, char* reply, int replylen );
-
-For Send/Receive/Reply since there is no guarantee of message length, these
-syscalls could take length of time linear to msglen/replylen.  This is not
-constant but still predictible.
-
-- int AwaitEvent( int eventid );
-
-In Pinball kernel an event is defined as an interrupt.  An event id is simply
-the interrupt id.  Therefore by definition only device drivers can call
-AwaitEvent.  The intention is that all more complex events should be handled by
-servers rather than the kernel.
-
-The AwaitEvent call will call into the interrupt manager to enable the
-interrupt, register the current task as the interrupt handler for the interrupt,
-and then the task will be removed from the scheduler.  When the interrupt is
-triggered another call into the interrupt handler will disable the interrupt,
-and return the interrupt handler task to be added back to the scheduler.
-
-As described in the interrupt handler section the interrupt handler can execute
-in constant time.  Therefore this syscall runs in constant time.
-
-The caller is expected to ensure that the specific device in concern is
-setup/reset properly to generate the expected interrupt.
-
-- int Exist( int tid );
-
-This syscall tests if the task identified with tid actually exists.  Used mainly
-by the name server to validate the mapping from names to tids.
-
-- int Kill( int tid );
-
-Kill task identified by tid.
-
-The motivation for this syscall is that at shutdown, there is no natural way to
-kill a notifier when the notifier is waiting for an event.  This could happen on
-UART driver with fifo on on UART 2.
-
-This syscall also provides an easy way to ensure a task is killed.
-
-It is implemented by modifying the pc (or supervisor lr) of the task to the Exit
-syscall, and force the task to be added into scheduler, thus once the task is
-re-scheduled it will call Exit on itself.  Given the way the scheduler is
-implemented, this is safer than simpler approaches.
-
-int Create_drv( int priority, void(*code)() );
-
-Same as Create, but the task create will have interrupt disabled so it will not
-be interrupted.  Intended to be used to create device drivers.
-
-int PreShutdown();
-
-Ask kernel to prepare for shutdown.  At the moment the kernel simple disables
-all the interrupts.
-
-The motivation for this syscall is to ensure correct shutdown sequence, just in
-case.
 
 
 * Data Structures
@@ -357,7 +287,85 @@ points to the head. Since it is a ring, accessing the tail is simply finding the
 prev element of the head.
 
 
-3. Key Kernel Processes
+3. Syscalls Details
+===================
+
+Here is a list of all implemented syscall with comments on non-intuitive
+processes.
+
+- int Create( int priority, void(*code)() );
+
+To create a task, the task manager takes the task entry point and priority, and
+returns a task descriptor ready to be scheduled.  This takes constant time as
+described in the task manager section.  Then the task is added into the
+scheduler.
+
+- int MyTid();
+- int MyParentTid();
+- void Pass();
+- void Exit();
+- int Send( int tid, char* msg, int msglen, char* reply, int replylen );
+- int Receive( int* tid, char* msg, int msglen );
+- int Reply( int tid, char* reply, int replylen );
+
+For Send/Receive/Reply since there is no guarantee of message length, these
+syscalls could take length of time linear to msglen/replylen.  This is not
+constant but still predictible.
+
+- int AwaitEvent( int eventid );
+
+In Pinball kernel an event is defined as an interrupt.  An event id is simply
+the interrupt id.  Therefore by definition only device drivers can call
+AwaitEvent.  The intention is that all more complex events should be handled by
+servers rather than the kernel.
+
+The AwaitEvent call will call into the interrupt manager to enable the
+interrupt, register the current task as the interrupt handler for the interrupt,
+and then the task will be removed from the scheduler.  When the interrupt is
+triggered another call into the interrupt handler will disable the interrupt,
+and return the interrupt handler task to be added back to the scheduler.
+
+As described in the interrupt handler section the interrupt handler can execute
+in constant time.  Therefore this syscall runs in constant time.
+
+The caller is expected to ensure that the specific device in concern is
+setup/reset properly to generate the expected interrupt.
+
+- int Exist( int tid );
+
+This syscall tests if the task identified with tid actually exists.  Used mainly
+by the name server to validate the mapping from names to tids.
+
+- int Kill( int tid );
+
+Kill task identified by tid.
+
+The motivation for this syscall is that at shutdown, there is no natural way to
+kill a notifier when the notifier is waiting for an event.  This could happen on
+UART driver with fifo on on UART 2.
+
+This syscall also provides an easy way to ensure a task is killed.
+
+It is implemented by modifying the pc (or supervisor lr) of the task to the Exit
+syscall, and force the task to be added into scheduler, thus once the task is
+re-scheduled it will call Exit on itself.  Given the way the scheduler is
+implemented, this is safer than simpler approaches.
+
+int Create_drv( int priority, void(*code)() );
+
+Same as Create, but the task create will have interrupt disabled so it will not
+be interrupted.  Intended to be used to create device drivers.
+
+int PreShutdown();
+
+Ask kernel to prepare for shutdown.  At the moment the kernel simple disables
+all the interrupts.
+
+The motivation for this syscall is to ensure correct shutdown sequence, just in
+case.
+
+
+4. Key Kernel Processes
 =======================
 
 * Launch
