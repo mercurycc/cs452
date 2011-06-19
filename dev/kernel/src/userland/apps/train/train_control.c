@@ -1,13 +1,16 @@
 #include <types.h>
 #include <err.h>
+#include <lib/str.h>
 #include <user/apps_entry.h>
 #include <user/assert.h>
+#include <user/display.h>
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
 #include <user/lib/sync.h>
 
-#define MAX_BUFFER_SIZE 256
+#define MAX_BUFFER_SIZE 128
+#define MAX_SCREEN_SIZE 1024
 #define PARSE_INT_FAIL -1
 
 enum Command_type {
@@ -28,19 +31,49 @@ struct Command {
 	int args[2];
 };
 
-int echo( char* str ) {
+
+typedef struct Screen_s {
+	char line[5][MAX_BUFFER_SIZE];
+	int head;
+	char nextline[MAX_BUFFER_SIZE];
+} Screen;
+
+int ack( Region* r, char* str, Screen* screen ) {
 	// give the str to the print server
-	// test version
-	int status = Putc( COM_2, '\n' );
-	assert( status == 0 );
-	char* c = str;
-	while ( *c ) {
-		status = Putc( COM_2, *c );
-		assert( status == 0 );
-		c++;
-	}
-	status = Putc( COM_2, '\n' );
-	assert( status == 0 );
+	int status = region_clear( r );
+	assert( status == ERR_NONE );
+
+	screen->head = (screen->head + 4) % 5;
+	int head = screen->head;
+	status = sprintf( screen->line[head], "%s: %s", screen->nextline, str );
+	assert( status );
+
+	status = region_printf( r, "%s\n%s\n%s\n%s\n%s\n > ", screen->line[(head+4)%5], screen->line[(head+3)%5], screen->line[(head+2)%5], screen->line[(head+1)%5], screen->line[head] );
+	assert( status == ERR_NONE );
+	return 0;
+}
+
+int ack_st( Region* r, int id, char state, Screen* screen ) {
+	char str[64];
+	int status = sprintf( str, "switch %d is in state %c", id, state );
+	//assert( status < 64 );
+
+	return ack( r, str, screen);
+}
+
+int ack_wh( Region* r, int id, Screen* screen ) {
+	char str[64];
+	int status = sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
+	//assert( status < 64 );
+
+	return ack( r, str, screen );
+}
+
+
+int echo( Region* r, char* str ) {
+	// give the str to the print server
+	int status = region_printf( r, " > %s ", str);
+	assert( status == ERR_NONE );
 	return 0;
 }
 
@@ -75,24 +108,65 @@ int parse_int( char* str, int start, int end, int* stop ){
 }
 
 void train_control() {
-	
+
 	int module_id;
 	int quit = 0;
 	int status;
 	char data;
 	char buf[MAX_BUFFER_SIZE];
+	Screen screen_data;
+	Screen* screen = &screen_data;
 	int buf_i = 0;
 	int i;
 	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
 		buf[i] = 0;
 	}
+	for ( i = 0; i < 5; i++ ){
+		screen->line[i][0] = 0;
+	}
+	screen->head = 0;
+	screen->nextline[0] = 0;
+	
+	Region ack_rect = {5, 15, 8, 70, 0, 1};
+	Region *ack_region = &ack_rect;
+	status = region_init( ack_region );
+	assert( status == ERR_NONE );
+	status = region_clear( ack_region );
+	assert( status == ERR_NONE );	
+	
+	Region echo_rect = {6, 21, 1, 68, 0, 0};
+	Region *echo_region = &echo_rect;
+	status = region_init( echo_region );
+	assert( status == ERR_NONE );
+	status = region_clear( echo_region );
+	assert( status == ERR_NONE );
+	
+
+	status = region_printf( echo_region, "Please wait for the track to initialize" );
+	assert( status == ERR_NONE );
 
 	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
-	struct Command cmd;
+	struct Command cmd;	
+
+	sync_wait();
+	status = region_clear( echo_region );
+	assert( status == ERR_NONE );
+	status = region_printf( echo_region, " > " );
+	assert( status == ERR_NONE );
 	
+
 	while ( !quit ) {
 		// await input
 		data = Getc( COM_2 );
+
+/*
+		if ( !buf_i ) {
+			status = region_clear( echo_region );
+			assert( status == ERR_NONE );
+			status = region_printf( echo_region, "" );
+			assert( status == ERR_NONE );
+		}
+*/
 
 		// parse input
 		int start;
@@ -195,9 +269,10 @@ void train_control() {
 			else {
 				cmd.command = X;
 			}
-			status = Putc( COM_2, '\n' );
-			assert( status == ERR_NONE );
+			echo( echo_region, " \n" );
 			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
+				screen->nextline[i] = buf[i];
+				if ( buf[i] == 0 ) break;
 				buf[i] = 0;
 			}
 			buf_i = 0;
@@ -206,8 +281,11 @@ void train_control() {
 			// undo
 			if ( buf_i > 0 ){
 				buf_i--;
-				status = Putc( COM_2, data );
-				assert( status == ERR_NONE );
+				buf[buf_i] = 0;
+				echo( echo_region, buf );
+			}
+			else {
+				echo( echo_region, " \n" );
 			}
 			continue;
 		default: 
@@ -215,53 +293,53 @@ void train_control() {
 			buf[buf_i] = data;
 			buf_i++;
 			assert( buf_i < MAX_BUFFER_SIZE );
-			status = Putc( COM_2, data );
-			assert( status == ERR_NONE );
+			echo( echo_region, buf );
 			continue;
 		}
 		
 		// do action
 		switch ( cmd.command ) {
 		case N:
-			echo( "" );
 			break;
 		case Q:
 			quit = 1;
-			echo( "Goodbye!" );
+			ack( ack_region, "Goodbye!", screen );
 			break;
 		case TR:
-			echo( "Train speed changes" );
+			ack( ack_region, "Train speed changes", screen );
 			status = train_set_speed( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case RV:
-			echo( "Train reverses" );
+			ack( ack_region, "Train reverses", screen );
 			status = train_reverse( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case SW:
-			echo( "Switch shifts" );
+			ack( ack_region, "Switch shifts", screen );
 			status = train_switch( cmd.args[0], cmd.args[1] );
 			assert( status == ERR_NONE );
 			break;
 		case ST:
-			echo( "Switch state" );
 			status = train_check_switch( cmd.args[0] );
-			assert( status == ERR_NONE );
+			ack_st( ack_region, cmd.args[0], (char)status, screen );
 			break;
 		case WH:
-			echo( "LAST SENSOR" );
+			status = train_last_sensor();
+			if ( status ) {
+				ack_wh( ack_region, status, screen );
+			}
 			break;
 		case SA:
-			echo( "Shift all switches" );
+			ack( ack_region, "Shift all switches", screen );
 			status = train_switch_all( cmd. args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case PT:
-			echo( "pressure test" );
+			ack( ack_region, "pressure test", screen );
 			break;
 		default:
-			echo( "Invalid command" );
+			ack( ack_region, "Invalid command", screen );
 			break;
 		}
 	}
@@ -270,10 +348,10 @@ void train_control() {
 	status = train_module_suicide();
 	assert( status == 0 );
 
-	echo("so long");
 	sync_responde( MyParentTid() );
 
 	DEBUG_NOTICE( DBG_USER, "quit!\n" );
 
 	Exit();
 }
+

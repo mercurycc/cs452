@@ -80,3 +80,46 @@ The motivation for this syscall is to ensure correct shutdown sequence.
 
 
 * 
+
+
+* New Scheduling Policy
+-----------------------
+
+Scheduler now will add unblocked tasks to the head of the task's priority queue. We made this change because that we want the event handler tasks to handle the events as soon as possible. 
+
+
+
+
+
+
+3. User Component Change Details
+================================
+
+* Train Application
+-------------------
+
+This is basically the same train application as A0. It has all functionality as described in A0.
+
+Since we had our kernel ready, our application consists multiple tasks. Each task is taking care of its own job. Due to the better parallelism offered by our kernel than the A0 polling loop, our application is much more smooth and intractive than A0's rough version. The application is divided into 5 tasks: Module, Control, Clock, Sensor, and Switches. For each part, we will explain it in details later.
+
+The interface of the application is made out of 4 parts. On top-right cornor is the clock showing current time. It is in form <hour>:<minute>:<second>.<tenth-second>. Below the clock, it is the list of recent triggered sensors. The most recent triggered sensor is on the top of the list, and the earlier triggered sensors are shown toward the bottom of the list. When the list is full, it will roll up, so newly triggered sensor is always shown on the top. To the left of the sensor list and the clock is the table of all switches. The table shows the state of all 22 switches on the track, in form of <switch_id>:<switch_state>. The switch state is either 'S' or 'C', which represent "STRAIGHT" or "CURVE" correspondingly. To the bottom of the screen, there is the command prompt. it has 6 lines of height. The input is going to be on the bottom line, and the past commands are displayed from bottom to top in order from newest to oldest.
+
+- Train Module ( train_module )
+
+The train_module is the task that communicates with the track. At the start of the application, when train_module is just created, it will initialize the clock, sensor, and switch tasks. For any instruction needs to send to the track, the train_module will communicate with the UART server and send the corresponding bytes. Then the module will call Delay() to block for certain amount of time to makesure the instructions are not sent too fast. We make module to be the only task that will write to the track because we need to schedule the sending. Whenever an instruction is sent, the module will wait before send another one, and when the sensor task is gathering data from track, the module will be blocked, not sending any new instruction until all sensor data is gathered.
+
+- Train Control ( train_control )
+
+The train_control task is the task that communicates with the user. It has 2 jobs: 1. read and parse user's input and send it to module (if necessary); 2. draw the UI and display feedback to the user. The control task is in charge of the command line prompt. It reads input from the user, and buffer the input until user pulls the trigger (e.g. hit enter key). Then the control task parse the input, and do the corresponding work. If the command need any information from track or needs to send information from track, it will communicate with the module task. It also memorizes and displays the result up to last 5 commands.
+
+- Train Clock ( train_clock )
+
+This is the task taking care about displaying the clock. The structure of the task is really easy: it blocks until next designated time ( every 100 milliseconds ), and then reprint the clock on the screen.
+
+- Train Sensor ( train_sensor )
+
+This is the task that deal with the sensors. It works as following. First, it tell train module to send instruction to the track to start gathering sensor information. Then, the task reads from track until all 10-byte sensor data is read, and parse them. Then, it tells the module which sensor is last triggered (so user can get result of wh command quicker). At last, it reprints the sensor list on screen.
+
+- Train Switches ( train_switches )
+
+This is the task keeps the record of switch states. It is also responsible for displaying switch table on the screen.

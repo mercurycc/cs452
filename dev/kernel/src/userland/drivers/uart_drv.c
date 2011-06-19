@@ -210,6 +210,7 @@ void uart_driver()
 	while( 1 ){
 		/* By definition there should only be one task asking for input from any serial port */
 		uart_receive_request( &tid, &request );
+		assert( tid > 0 );
 
 		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 
@@ -250,6 +251,7 @@ void uart_driver()
 				assert( 0 );
 			}
 			read_tid = tid;
+			ASSERT( read_tid );
 			request.type = UART_RXRDY;
 			break;
 		case UART_PUT:
@@ -264,6 +266,7 @@ void uart_driver()
 				/* Clear MIS */
 				*intr = 0;
 			} else if( ( *intr & RTIS_MASK ) || ( *intr & RIS_MASK ) ){
+				assert( read_tid );
 				request.type = UART_RXRDY;
 			}
 		default:
@@ -280,10 +283,12 @@ void uart_driver()
 				DEBUG_NOTICE( DBG_UART, "read ready\n" );
 				/* Disable interrupt */
 				uart_config_interrupt( &config, ctrl, UART_RXRDY, 0 );
-				reply.data = *data;
-				tid = read_tid;
-				read_tid = 0;
-				can_reply = 1;
+				if( read_tid ){
+					reply.data = *data;
+					tid = read_tid;
+					read_tid = 0;
+					can_reply = 1;
+				}
 			} else {
 				DEBUG_NOTICE( DBG_UART, "read NOT ready\n" );
 				/* Enable interrupt */
@@ -340,7 +345,7 @@ void uart_driver()
 
 		if( can_reply ){
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
-			assert( status == SYSCALL_SUCCESS );
+			ASSERT_M( status == SYSCALL_SUCCESS, "got %d\n", status );
 		}
 
 		if( request.type == UART_QUIT ){

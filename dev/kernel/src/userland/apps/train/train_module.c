@@ -1,10 +1,13 @@
 #include <types.h>
 #include <err.h>
+#include <user/apps_entry.h>
 #include <user/assert.h>
+#include <user/display.h>
 #include <user/syscall.h>
 #include <user/train.h>
 #include <user/uart.h>
 #include <user/name_server.h>
+#include <user/lib/sync.h>
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
@@ -63,7 +66,9 @@ static inline void sw( int n, char d ){
 }
 
 static inline void sw_off() {
-	int status = Putc( COM_1, (char)32 );
+	int status = Delay( SWITCH_OFF_DELAY );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)32 );
 	assert( status == ERR_NONE );
 	status = Delay( SWITCH_OFF_DELAY );
 	assert( status == ERR_NONE );
@@ -87,6 +92,8 @@ static inline void delay( int ticks ) {
 
 }
 
+
+
 void train_module() {
 
 	int tid;
@@ -95,8 +102,14 @@ void train_module() {
 	int status;
 	int i;
 	int last_speed = 5;
-
+	char direction;
+	int clock_tid;
+	int sensor_tid;
+	int switch_tid;
+	int last_sensor = 0;
+	
 	char switch_table[22];
+	
 	for ( i = 0; i < 22; i++ ) {
 		switch_table[i] = 'C';
 	}
@@ -109,15 +122,33 @@ void train_module() {
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
+	switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switches );
+	assert( switch_tid > 0 );
+
+	clock_tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
+	assert( clock_tid > 0 );
+
+	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
+	assert( sensor_tid > 0 );
+
+	sync_responde( ptid );
+
 	while ( !quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 
-		Putc( COM_2, 'R' );
-
-		reply.result = 0;
-		status = Reply( tid, (char*)&reply, sizeof( reply ) );
-		assert( status == 0 );
+		// early reply
+		switch ( event.event_type ){
+		case TRAIN_CHECK_SWITCH:
+		case TRAIN_LAST_SENSOR:
+		case TRAIN_ALL_SENSORS:
+			break;
+		default:
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+			break;
+		}
 
 		switch (event.event_type) {
 		case TRAIN_UPDATE_TIME:
@@ -131,16 +162,47 @@ void train_module() {
 			tr( event.args[0], last_speed );
 			break;
 		case TRAIN_SWITCH:
+			direction = (event.args[1] % 2) * 'S' + ((event.args[1]+1) % 2) * 'C';
+			if ( event.args[0] < 19 ) {
+				i = event.args[0]-1;
+			}
+			else {
+				i = event.args[0]-135;
+			}
+			status = switch_update_id( i, direction );
+			assert( status == 0 );
 			sw( event.args[0], event.args[1] );
 			sw_off();
 			break;
 		case TRAIN_CHECK_SWITCH:
+			if ( event.args[0] < 19 ) {
+				i = event.args[0] - 1;
+			}
+			else {
+				i = event.args[0] - 135;
+			}
+			reply.result = switch_check_id( i );
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+			break;
+		case TRAIN_SWITCH_ALL:
+			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
+			switch_update_all( direction );
+			switch_all( event.args[0] );
+			delay( 180 );
 			break;
 		case TRAIN_LAST_SENSOR:
-			// send to SENSOR uart
+			reply.result = last_sensor;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
-			// send and receive all sensor data
+			status = Putc( COM_1, (char)133 );
+			assert( status == ERR_NONE );
+			reply.result = 0;
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+			last_sensor = sensor_last( sensor_tid );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
@@ -156,29 +218,16 @@ void train_module() {
 			}
 			tr( 22, 0 );
 			break;
-		case TRAIN_SWITCH_ALL:
-			switch_all( event.args[0] );
-			delay( 180 );
-			break;
 		default:
 			// should not get to here
-			// TODO: change to uart
 			assert(0);
 		}
-	}
-	
-/*
-	// wait to sell sensor and clock task to exit
-	int i = 0;
-	for ( i = 0; i < 2; i++ ) {
-		status = Receive( &tid, (char*)&event, sizeof(event) );
-		assert( status == sizeof(event) );
-		reply.result = -1;
-		status = Reply( tid, (char*)&reply, sizeof( reply ) );
-		assert( status == 0 );
-	}
-*/
 
+	}
+
+	Kill( clock_tid );
+	Kill( sensor_tid );
+	Kill( switch_tid );
 	// tell anything produced by this to exit
 	Exit();
 }
