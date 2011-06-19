@@ -20,12 +20,63 @@
 * Userland
 ----------
 
-- Added train controller application
+- Added train controller application as per a0
 - Added UART driver
 - Added Display server for UI abstraction
+- Added a courier-ish abstration
 - Time server and clock driver no longer deadlocks
 
 
 2. Kernel Component Change Details
 ==================================
 
+* New Syscalls
+--------------
+
+- Create_drv
+
+Syntax: int Create_drv( int priority, void (*entry)() )
+
+Create a task as a driver.  At the moment the only different of a driver from
+other tasks is that a driver has the interrupt disabled.
+
+The motivation for this syscall is simply to ensure that the device drivers can
+behave correctly and will not be affected by other devices.
+
+It is implemented by skipping the instruction of clearing the user cpsr
+interrupt disable bit.
+
+
+- Kill
+
+Syntax: int Kill( int tid )
+
+Kill task identified by tid.
+
+The motivation for this syscall is that at shutdown, there is no natural way to
+kill a notifier when the notifier is waiting for an event.  This could happen on
+UART driver with fifo on on UART 2.  To Getc the UART driver on UART 2 might
+need 2 notifiers: one on rxrdy, one on the OR interrupt because we also want to
+wait for the time out interrupt.  However only one interrupt will be satisfied
+before we take the character away, leaving the other event notifier still
+waiting.
+
+This syscall also provides an easy way to ensure a task is killed.
+
+It is implemented by modifier the pc (or supervisor lr) of the task to the Exit
+syscall, and force the task to be added into scheduler.  Once the task is
+scheduled again it will call Exit on itself.  Given the way the scheduler is
+implemented, this is safer than simpler approaches.
+
+
+- PreShutdown
+
+Syntax: int PreShutdown()
+
+Ask kernel to prepare for shutdown.  At the moment the kernel simple disables
+all the interrupts.
+
+The motivation for this syscall is to ensure correct shutdown sequence.
+
+
+* 
