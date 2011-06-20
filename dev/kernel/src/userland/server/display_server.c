@@ -147,6 +147,8 @@ static inline void display_modify( uint col, uint row, char ch, const char* curr
 {
 	if( current[ row * DISPLAY_WIDTH + col ] != ch ){
 		target[ row * DISPLAY_WIDTH + col ] = ch;
+	} else {
+		target[ row * DISPLAY_WIDTH + col ] = 0;
 	}
 }
 

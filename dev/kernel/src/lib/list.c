@@ -71,7 +71,10 @@ int list_rotate_head( List** lst )
 }
 
 int list_add_head( List** lst, List* elem ){
-	int state = list_add_tail( lst, elem );
+#ifdef DEBUG
+	int state =
+#endif
+		list_add_tail( lst, elem );
 	ASSERT( state == ERR_NONE );
 
 	(*lst) = elem;

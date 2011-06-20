@@ -2,7 +2,7 @@
 #define _CONFIG_H_
 
 #define USE_BWIO
-#define DEBUG
+// #define DEBUG
 
 /* Kernel parameters */
 #define KERNEL_NUM_CONSOLES           2

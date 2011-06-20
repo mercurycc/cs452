@@ -55,15 +55,15 @@ int ack( Region* r, char* str, Screen* screen ) {
 
 int ack_st( Region* r, int id, char state, Screen* screen ) {
 	char str[64];
-	int status = sprintf( str, "switch %d is in state %c", id, state );
-	//assert( status < 64 );
+
+	sprintf( str, "switch %d is in state %c", id, state );
 
 	return ack( r, str, screen);
 }
 
 int ack_wh( Region* r, int id, Screen* screen ) {
 	char str[64];
-	int status = sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
+	sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
 	//assert( status < 64 );
 
 	return ack( r, str, screen );
@@ -248,7 +248,7 @@ void train_control() {
 					cmd.args[0] = arg0;
 				}
 			}
-			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i-1] == 'S' )||( buf[buf_i-1] == 'C' ))){
+			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i-1] == 'S' )||( buf[buf_i-1] == 'C' )||( buf[buf_i-1] == 's' )||( buf[buf_i-1] == 'c' ))){
 				/* SW: shift switch */
 				arg0 = parse_int( buf, 3, buf_i, &start );
 
@@ -258,7 +258,7 @@ void train_control() {
 				else {
 					cmd.command = SW;
 					cmd.args[0] = arg0;
-					if ( buf[buf_i-1] == 'S' ){
+					if ( buf[buf_i-1] == 'S' || buf[buf_i-1] == 's' ){
 						cmd.args[1] = 33;
 					}
 					else {
