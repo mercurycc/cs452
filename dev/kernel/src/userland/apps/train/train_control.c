@@ -40,15 +40,16 @@ typedef struct Screen_s {
 
 int ack( Region* r, char* str, Screen* screen ) {
 	// give the str to the print server
-	int status = region_clear( r );
-	assert( status == ERR_NONE );
+	int status;
+	// = region_clear( r );
+	// assert( status == ERR_NONE );
 
 	screen->head = (screen->head + 4) % 5;
 	int head = screen->head;
 	status = sprintf( screen->line[head], "%s: %s", screen->nextline, str );
 	assert( status );
 
-	status = region_printf( r, "%s\n%s\n%s\n%s\n%s\n > ", screen->line[(head+4)%5], screen->line[(head+3)%5], screen->line[(head+2)%5], screen->line[(head+1)%5], screen->line[head] );
+	status = region_printf( r, "%s\n%s\n%s\n%s\n%s\n > \n", screen->line[(head+4)%5], screen->line[(head+3)%5], screen->line[(head+2)%5], screen->line[(head+1)%5], screen->line[head] );
 	assert( status == ERR_NONE );
 	return 0;
 }

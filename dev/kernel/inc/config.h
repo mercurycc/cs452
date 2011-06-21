@@ -23,6 +23,7 @@
 #define SLOW_DRIVER_PRIORITY          0
 #define FAST_DRIVER_PRIORITY          1
 #define SERVICE_PRIORITY              2
+#define IDLE_SERVICE_PRIORITY         15
 #define UART_TXBUF_SIZE               1024       /* How many bytes will the UART tx software buffer hold.  This number (2048) should be able to hold a whole screen */
 #define DISPLAY_REFRESH_RATE          3          /* In ticks */
 

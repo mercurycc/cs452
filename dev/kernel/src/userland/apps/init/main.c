@@ -61,7 +61,7 @@ void user_init()
 	assert( tid > 0 );
 	DEBUG_NOTICE( DBG_USER, "console server created\n" );
 
-	tid = Create( SERVICE_PRIORITY, display_server );
+	tid = Create( IDLE_SERVICE_PRIORITY, display_server );
 	assert( tid > 0 );
 	DEBUG_PRINT( DBG_USER, "display_server created with tid %d\n", tid );
 
