@@ -10,7 +10,7 @@
 #include "inc/config.h"
 #include "inc/train.h"
 
-#define SWITCH_XMIT_DELAY 13
+#define SWITCH_XMIT_DELAY 15
 #define SWITCH_OFF_DELAY 20
 #define TRAIN_XMIT_DELAY 20
 
@@ -105,21 +105,18 @@ void train_module() {
 	int last_speed = 5;
 	char direction;
 	int last_sensor = 0;
-	
 	char switch_table[22];
-	
-	for ( i = 0; i < 22; i++ ) {
-		switch_table[i] = 'C';
-	}
-
-	// switch_all( (char)34 );
-
 	Train_event event;
 	Train_reply reply;
 
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
+	for ( i = 0; i < 22; i++ ) {
+		switch_table[i] = 'C';
+	}
+
+	/* Sync for switch update */
 	sync_responde( ptid );
 
 	while ( !quit ) {
@@ -174,7 +171,6 @@ void train_module() {
 			break;
 		case TRAIN_SWITCH_ALL:
 			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
-			switch_update_all( direction );
 			switch_all( event.args[0] );
 			delay( 180 );
 			break;
