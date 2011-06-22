@@ -21,4 +21,6 @@ typedef struct Interrupt_mgr_s Interrupt_mgr;
 
 typedef int (*Interrupt_handler)( Context* ctx );
 
+#define BITS_IN_BYTE     8
+
 #endif /* _TYPES_H_ */

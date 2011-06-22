@@ -4,6 +4,10 @@
 #include <types.h>
 #include <lib/valist.h>
 
+#define isalpha( ch )            ( ( ( ch >= 'a' ) && ( ch <= 'z' ) ) || ( ( ch >= 'A' ) && ( ch <= 'a' ) ) )
+#define isdigit( ch )            ( ( ch >= '0' ) && ( ch <= '9' ) )
+#define isspace( ch )            ( ( ch == '\n' ) || ( ch == '\r' ) || ( ch == ' ' ) || ( ch == '\t' ) )
+
 /* Number-string conversion */
 uint utos( uint num, char* str );
 /* Fill the prefix with fill to form a string of length length */

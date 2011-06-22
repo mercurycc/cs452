@@ -4,10 +4,15 @@
 #include <user/assert.h>
 #include <user/display.h>
 #include <user/syscall.h>
-#include <user/train.h>
 #include <user/uart.h>
 #include <user/name_server.h>
 #include <user/lib/sync.h>
+#include "inc/config.h"
+#include "inc/train.h"
+
+#define SWITCH_XMIT_DELAY 13
+#define SWITCH_OFF_DELAY 20
+#define TRAIN_XMIT_DELAY 20
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
@@ -33,10 +38,6 @@ struct Train_event_s {
 struct Train_reply_s {
 	int result;
 };
-
-void train_delay(){
-	
-}
 
 static inline void tr( int train, int speed ){
 	int status = Putc( COM_1, (char)speed );
@@ -103,9 +104,6 @@ void train_module() {
 	int i;
 	int last_speed = 5;
 	char direction;
-	int clock_tid;
-	int sensor_tid;
-	int switch_tid;
 	int last_sensor = 0;
 	
 	char switch_table[22];
@@ -114,22 +112,13 @@ void train_module() {
 		switch_table[i] = 'C';
 	}
 
-	switch_all( (char)34 );
+	// switch_all( (char)34 );
 
 	Train_event event;
 	Train_reply reply;
 
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
-
-	switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switches );
-	assert( switch_tid > 0 );
-
-	clock_tid = Create( TRAIN_CLOCK_PRIORITY, train_clock );
-	assert( clock_tid > 0 );
-
-	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
-	assert( sensor_tid > 0 );
 
 	sync_responde( ptid );
 
@@ -165,8 +154,7 @@ void train_module() {
 			direction = (event.args[1] % 2) * 'S' + ((event.args[1]+1) % 2) * 'C';
 			if ( event.args[0] < 19 ) {
 				i = event.args[0]-1;
-			}
-			else {
+			} else {
 				i = event.args[0]-135;
 			}
 			status = switch_update_id( i, direction );
@@ -177,8 +165,7 @@ void train_module() {
 		case TRAIN_CHECK_SWITCH:
 			if ( event.args[0] < 19 ) {
 				i = event.args[0] - 1;
-			}
-			else {
+			} else {
 				i = event.args[0] - 135;
 			}
 			reply.result = switch_check_id( i );
@@ -202,7 +189,7 @@ void train_module() {
 			reply.result = 0;
 			status = Reply( tid, (char*)&reply, sizeof( reply ) );
 			assert( status == 0 );
-			last_sensor = sensor_last( sensor_tid );
+			// last_sensor = sensor_last( sensor_tid );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
@@ -225,14 +212,11 @@ void train_module() {
 
 	}
 
-	Kill( clock_tid );
-	Kill( sensor_tid );
-	Kill( switch_tid );
 	// tell anything produced by this to exit
 	Exit();
 }
 
-int train_event( uint type, int arg0, int arg1 ) {
+int train_event( int tid, uint type, int arg0, int arg1 ) {
 	Train_event event;
 	Train_reply reply;
 
@@ -240,51 +224,59 @@ int train_event( uint type, int arg0, int arg1 ) {
 	event.args[0] = arg0;
 	event.args[1] = arg1;
 
-	int module_tid = WhoIs( TRAIN_MODULE_NAME );
-
-	int status = Send( module_tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
+	int status = Send( tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
 	
 	return reply.result;
 }
 
 
-int train_update_time( int ticks ){
-	return train_event( TRAIN_UPDATE_TIME, ticks, 0 );
+int train_update_time( int tid, int ticks )
+{
+	return train_event( tid, TRAIN_UPDATE_TIME, ticks, 0 );
 }
 
-int train_set_speed( int train, int speed ){
-	return train_event( TRAIN_SET_SPEED, train, speed );
+int train_set_speed( int tid, int train, int speed )
+{
+	return train_event( tid, TRAIN_SET_SPEED, train, speed );
 }
 
-int train_reverse( int train ){
-	return train_event( TRAIN_REVERSE, train, 0 );
+int train_reverse( int tid, int train )
+{
+	return train_event( tid, TRAIN_REVERSE, train, 0 );
 }
 
-int train_switch( int switch_id, int direction ){
-	return train_event( TRAIN_SWITCH, switch_id, direction );
+int train_switch( int tid, int switch_id, int direction )
+{
+	return train_event( tid, TRAIN_SWITCH, switch_id, direction );
 }
 
-int train_check_switch( int switch_id ){
-	return train_event( TRAIN_CHECK_SWITCH, switch_id, 0 );
+int train_check_switch( int tid, int switch_id )
+{
+	return train_event( tid, TRAIN_CHECK_SWITCH, switch_id, 0 );
 }
 
-int train_last_sensor(){
-	return train_event( TRAIN_LAST_SENSOR, 0, 0 );
+int train_last_sensor( int tid )
+{
+	return train_event( tid, TRAIN_LAST_SENSOR, 0, 0 );
 }
 
-int train_all_sensor(){
-	return train_event( TRAIN_ALL_SENSORS, 0, 0 );
+int train_all_sensor( int tid )
+{
+	return train_event( tid, TRAIN_ALL_SENSORS, 0, 0 );
 }
 
-int train_module_suicide(){
-	return train_event( TRAIN_MODULE_SUICIDE, 0, 0 );
+int train_module_suicide( int tid )
+{
+	return train_event( tid, TRAIN_MODULE_SUICIDE, 0, 0 );
 }
 
-int train_pressure_test(){
-	return train_event( TRAIN_PRESSURE_TEST, 0, 0 );
+int train_pressure_test( int tid )
+{
+	return train_event( tid, TRAIN_PRESSURE_TEST, 0, 0 );
 }
 
-int train_switch_all( int d ){
-	return train_event( TRAIN_SWITCH_ALL, d, 0 );
+int train_switch_all( int tid, int d )
+{
+	return train_event( tid, TRAIN_SWITCH_ALL, d, 0 );
 }

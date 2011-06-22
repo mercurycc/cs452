@@ -17,9 +17,5 @@ void lazy_dog();
 
 /* A0 train program */
 void train_control();
-void train_module();
-void train_clock();
-void train_sensor();
-void train_switches();
 
 #endif /* _USER_APPS_ENTRY_H_ */

@@ -14,9 +14,10 @@
 #define DISPLAY_SERVER_TID      6
 #define DISPLAY_SIZE            ( DISPLAY_WIDTH * DISPLAY_HEIGHT )
 #define DISPLAY_PORT            COM_2
-#define DISPLAY_BACKGROUND      '*'
+#define DISPLAY_BACKGROUND      '~'
 #define DISPLAY_BOUNDRY_HORIZ   '-'
-#define DISPLAY_BOUNDRY_CORN    'o'
+#define DISPLAY_BOUNDRY_CORN_TOP  '.'
+#define DISPLAY_BOUNDRY_CORN_BOT  '\''
 #define DISPLAY_BOUNDRY_VERT    '|'
 
 enum Display_request_type {
@@ -121,7 +122,6 @@ static void display_drawer()
 				if( ch ){
 					if( reloc ){
 						display_drawer_cursor_request( DRAWER_SETPOSN, col + 1, row + 1 );
-						DEBUG_NOTICE( DBG_DISP, "cursor reset\n" );
 					}
 					reloc = 0;
 					status = Putc( DISPLAY_PORT, ch );
@@ -161,7 +161,11 @@ static inline void display_region_clear( Region* reg, const char* current, char*
 			if( reg->boundary ){
 				if( row == 0 || row == reg->height - 1 ){
 					if( col == 0 || col == reg->width - 1 ){
-						display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_CORN, current, target );
+						if( row == 0 ){
+							display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_CORN_TOP, current, target );
+						} else {
+							display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_CORN_BOT, current, target );
+						}
 					} else {
 						display_modify( col + reg->col, row + reg->row, DISPLAY_BOUNDRY_HORIZ, current, target );
 					}
@@ -196,6 +200,7 @@ static inline void display_fill( Region* reg, const char* msg, const char* curre
 				ch = *(msg++);
 				if( ch == '\n' ){
 					clear_line = 1;
+					col -= 1;
 				} else if( ch ) {
 					display_modify( col + reg->col, row + reg->row, ch, current, target );
 				} else {
@@ -250,6 +255,20 @@ void display_server()
 		DEBUG_PRINT( DBG_DISP, "received request %d from %d\n", request.metadata.type, tid );
 		
 		reply.screen = 0;
+
+		/* Immediately reply client request */
+		switch( request.metadata.type ){
+		case DISPLAY_INIT:
+		case DISPLAY_REGION_INIT:
+		case DISPLAY_REGION_CLEAR:
+		case DISPLAY_REGION_DRAW:
+		case DISPLAY_QUIT:
+			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
+		default:
+			break;
+		}
+
 		
 		switch( request.metadata.type ){
 		case DISPLAY_INIT:
@@ -295,11 +314,6 @@ void display_server()
 			can_draw = 0;
 
 			status = Reply( drawer_tid, ( char* )&reply, sizeof( reply ) );
-			assert( status == SYSCALL_SUCCESS );
-		}
-
-		if( tid != drawer_tid ){
-			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		}
 	}

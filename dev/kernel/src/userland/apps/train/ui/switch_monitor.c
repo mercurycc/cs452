@@ -5,12 +5,10 @@
 #include <user/clock_server.h>
 #include <user/name_server.h>
 #include <user/devices/clock.h>
-#include <user/train.h>
 #include <user/uart.h>
 #include <user/display.h>
 #include <user/lib/sync.h>
-
-#define TRAIN_SWITCH_NAME "train switch"
+#include "../inc/train.h"
 
 typedef struct Switch_event_s Switch_event;
 typedef struct Switch_reply_s Switch_reply;

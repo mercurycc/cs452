@@ -10,7 +10,6 @@
 #include <user/uart.h>
 #include <user/display.h>
 #include <user/lib/sync.h>
-#include <user/train.h>
 #include <bwio.h>
 #include <err.h>
 /*
@@ -44,7 +43,7 @@ void user_init()
 	  4, 5   console servers  (servers for each UART are created by the main console server)
 	  6      display server
 	*/
-	tid = Create( 2, name_server_start );
+	tid = Create( SERVICE_PRIORITY, name_server_start );
 	assert( tid > 0 );
 	DEBUG_NOTICE( DBG_USER, "name server created\n" );
 
@@ -77,7 +76,7 @@ void user_init()
 	status = display_init();
 	assert( status == ERR_NONE );
 
-	tid = Create( TRAIN_CONTROL_PRIORITY, train_control );
+	tid = Create( 5, train_control );
 	
 	sync_wait();
 

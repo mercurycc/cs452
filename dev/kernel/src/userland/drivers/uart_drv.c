@@ -49,8 +49,6 @@ enum Uart_request_type {
 	UART_QUIT
 };
 
-static int uart_txrdy( int tid );
-static int uart_rxrdy( int tid );
 static int uart_general( int tid );
 
 static inline ptr uart_getbase( uint port )
@@ -155,10 +153,6 @@ void uart_driver()
 	Uart_reply reply;
 	int tid;
 	int status;
-	int txrdy_waiting = 0;
-	int txrdy_handler_tid;
-	int rxrdy_waiting = 0;
-	int rxrdy_handler_tid;
 	int general_waiting = 0;
 	int general_handler_tid;
 	int read_tid = 0;
@@ -184,16 +178,6 @@ void uart_driver()
 	ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
 
 	/* Initialized interrupt handler */
-	txrdy_handler_tid = Create( 0, event_handler );
-	assert( txrdy_handler_tid > 0 );
-	status = event_init( txrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1TXINTR1 : EVENT_SRC_UART2TXINTR2, uart_txrdy );
-	assert( status == ERR_NONE );
-	
-	rxrdy_handler_tid = Create( 0, event_handler );
-	assert( rxrdy_handler_tid > 0 );
-	status = event_init( rxrdy_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_UART1RXINTR1 : EVENT_SRC_UART2RXINTR2, uart_rxrdy );
-	assert( status == ERR_NONE );
-	
 	general_handler_tid = Create( 0, event_handler );
 	assert( general_handler_tid > 0 );
 	status = event_init( general_handler_tid, ( config.port == UART_1 ) ? EVENT_SRC_INT_UART1 : EVENT_SRC_INT_UART2, uart_general );
@@ -219,12 +203,6 @@ void uart_driver()
 		/* Immediately reply if received interrupt notification to release event handler,
 		   or if received put request */
 		switch( request.type ){
-		case UART_RXRDY:
-			rxrdy_waiting = 0;
-			break;
-		case UART_TXRDY:
-			txrdy_waiting = 0;
-			break;
 		case UART_GENERAL_INT:
 			general_waiting = 0;
 			break;
@@ -233,8 +211,6 @@ void uart_driver()
 		}
 
 		switch( request.type ){
-		case UART_RXRDY:
-		case UART_TXRDY:
 		case UART_GENERAL_INT:
 		case UART_PUT:
 		case UART_QUIT:
@@ -283,33 +259,21 @@ void uart_driver()
 				DEBUG_NOTICE( DBG_UART, "read ready\n" );
 				/* Disable interrupt */
 				uart_config_interrupt( &config, ctrl, UART_RXRDY, 0 );
-				if( read_tid ){
-					reply.data = *data;
-					tid = read_tid;
-					read_tid = 0;
-					can_reply = 1;
-				}
+				reply.data = *data;
+				tid = read_tid;
+				read_tid = 0;
+				can_reply = 1;
 			} else {
 				DEBUG_NOTICE( DBG_UART, "read NOT ready\n" );
 				/* Enable interrupt */
 				uart_config_interrupt( &config, ctrl, UART_RXRDY, 1 );
-				if( ! rxrdy_waiting ){
-					DEBUG_NOTICE( DBG_UART, "waiting for rx interrupt\n" );
-					uart_set_interrupt( ctrl, RIEN_MASK, 1 );
-					event_start( rxrdy_handler_tid );
-					rxrdy_waiting = 1;
-				}
 			}
 			break;
 		case UART_TXRDY:
 			while( ! rbuf_empty( txbuf ) ){
 				if( ! uart_ready_write( flags ) ){
 					/* Enable txrdy interrupt */
-					if( ! txrdy_waiting ){
-						uart_set_interrupt( ctrl, TIEN_MASK, 1 );
-						event_start( txrdy_handler_tid );
-						txrdy_waiting = 1;
-					}
+					uart_set_interrupt( ctrl, TIEN_MASK, 1 );
 					break;
 				} else {
 					/* txrdy has to be disabled otherwise it could be triggered many times
@@ -354,10 +318,6 @@ void uart_driver()
 		}
 	}
 
-	Kill( rxrdy_handler_tid );
-	DEBUG_NOTICE( DBG_USER, "rxrdy!\n" );
-	Kill( txrdy_handler_tid );
-	DEBUG_NOTICE( DBG_USER, "txrdy!\n" );
 	Kill( general_handler_tid );
 	DEBUG_NOTICE( DBG_USER, "general!\n" );
 
@@ -452,19 +412,6 @@ int uart_quit( int tid )
 {
 	uint data;
 	return uart_request( tid, UART_QUIT, &data );
-}
-
-/* Interrupt notifiers */
-static int uart_txrdy( int tid )
-{
-	uint data;
-	return uart_request( tid, UART_TXRDY, &data );
-}
-
-static int uart_rxrdy( int tid )
-{
-	uint data;
-	return uart_request( tid, UART_RXRDY, &data );
 }
 
 static int uart_general( int tid )

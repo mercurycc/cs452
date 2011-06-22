@@ -93,7 +93,7 @@ void clock_main()
 	assert( status == ERR_NONE );
 
 	/* Courier for communicating with time */
-	courier_tid = Create( 1, courier );
+	courier_tid = Create( SERVICE_PRIORITY, courier );
 	assert( status == ERR_NONE );
 
 	status = courier_init( courier_tid, clock_signal_time );

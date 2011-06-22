@@ -35,17 +35,18 @@ KERNELSRC += lib/strprintf.c
 
 # Applications
 KERNELSRC += userland/apps/init/main.c
-KERNELSRC += userland/apps/init_user/main.c
-KERNELSRC += userland/apps/noise/main.c
-KERNELSRC += userland/apps/rps_client/main.c
-KERNELSRC += userland/apps/RPSServer/main.c
-KERNELSRC += userland/apps/rps_game/main.c
-KERNELSRC += userland/apps/lazy_dog/main.c
+# KERNELSRC += userland/apps/init_user/main.c
+# KERNELSRC += userland/apps/noise/main.c
+# KERNELSRC += userland/apps/rps_client/main.c
+# KERNELSRC += userland/apps/RPSServer/main.c
+# KERNELSRC += userland/apps/rps_game/main.c
+# KERNELSRC += userland/apps/lazy_dog/main.c
 KERNELSRC += userland/apps/train/train_control.c
 KERNELSRC += userland/apps/train/train_module.c
-KERNELSRC += userland/apps/train/train_clock.c
-KERNELSRC += userland/apps/train/train_sensor.c
-KERNELSRC += userland/apps/train/train_switches.c
+KERNELSRC += userland/apps/train/sensor.c
+KERNELSRC += userland/apps/train/ui/clock.c
+KERNELSRC += userland/apps/train/ui/sensor_monitor.c
+KERNELSRC += userland/apps/train/ui/switch_monitor.c
 
 # Libraries
 KERNELSRC += userland/lib/syscall.c
@@ -57,6 +58,7 @@ KERNELSRC += userland/lib/event.c
 KERNELSRC += userland/lib/uart.c
 KERNELSRC += userland/lib/cursor_control.c
 KERNELSRC += userland/lib/courier.c
+KERNELSRC += userland/lib/parser.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock_drv.c

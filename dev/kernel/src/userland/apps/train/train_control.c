@@ -5,32 +5,16 @@
 #include <user/assert.h>
 #include <user/display.h>
 #include <user/syscall.h>
-#include <user/train.h>
 #include <user/uart.h>
 #include <user/lib/sync.h>
+#include <user/lib/parser.h>
+#include "inc/train.h"
+#include "inc/config.h"
+#include "inc/sensor_data.h"
 
 #define MAX_BUFFER_SIZE 128
 #define MAX_SCREEN_SIZE 1024
 #define PARSE_INT_FAIL -1
-
-enum Command_type {
-	TR,
-	RV,
-	SW,
-	WH,
-	ST,
-	Q,
-	PT,		// pressure test
-	SA,		// switch all
-	N,		// empty line
-	X		// unrecognized input
-};
-
-struct Command {
-	uint command;
-	int args[2];
-};
-
 
 typedef struct Screen_s {
 	char line[5][MAX_BUFFER_SIZE];
@@ -38,7 +22,15 @@ typedef struct Screen_s {
 	char nextline[MAX_BUFFER_SIZE];
 } Screen;
 
-int ack( Region* r, char* str, Screen* screen ) {
+enum Command_status {
+	CMD_SUCCESS,
+	CMD_UNKNOWN,
+	CMD_ERROR,
+	CMD_HELP
+};
+
+int ack( Region* r, char* str, Screen* screen )
+{
 	// give the str to the print server
 	int status;
 	// = region_clear( r );
@@ -54,7 +46,8 @@ int ack( Region* r, char* str, Screen* screen ) {
 	return 0;
 }
 
-int ack_st( Region* r, int id, char state, Screen* screen ) {
+int ack_st( Region* r, int id, char state, Screen* screen )
+{
 	char str[64];
 
 	sprintf( str, "switch %d is in state %c", id, state );
@@ -62,14 +55,14 @@ int ack_st( Region* r, int id, char state, Screen* screen ) {
 	return ack( r, str, screen);
 }
 
-int ack_wh( Region* r, int id, Screen* screen ) {
+int ack_wh( Region* r, int id, Screen* screen )
+{
 	char str[64];
 	sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
 	//assert( status < 64 );
 
 	return ack( r, str, screen );
 }
-
 
 int echo( Region* r, char* str ) {
 	// give the str to the print server
@@ -78,97 +71,120 @@ int echo( Region* r, char* str ) {
 	return 0;
 }
 
-int parse_int( char* str, int start, int end, int* stop ){
-	// parse the first int from str[start] to str[end-1]
-	if ( start >= end )
-		return PARSE_INT_FAIL;
-	
-	if ( str[start] == '0' ){
-		if (( start+1 == end )||( str[start+1] > '9' )||( str[start+1] < '0' )) {
-			*stop = start+1;
-			return 0;
-		}
-		else {
-			return PARSE_INT_FAIL;
-		}
-	}
-	
-	int ret = 0;
-	
-	while ( start < end ) {
-		if (( str[start] > '9' )||( str[start] < '0' )) {
-			break;
-		}
-		
-		ret = ret*10+str[start]-'0';
-		start++;
-	}
-	
-	*stop = start;
-	return ret;
-}
-
-void train_control() {
-
-	int module_id;
+/* Train control holds the prompt UI */
+void train_control()
+{
+	int clock_tid;
+	int sensor_tid;
+	int sensor_ui_tid;
+	int switch_tid;
+	int module_tid;
 	int quit = 0;
-	int status;
 	char data;
-	char buf[MAX_BUFFER_SIZE];
-	Screen screen_data;
-	Screen* screen = &screen_data;
+	char buf[MAX_BUFFER_SIZE] = {0};
+	char* token_buf[ TRAIN_COMMAND_MAX_TOKEN ] = {0};
 	int buf_i = 0;
+	int token_filled;
+	int command_status;
 	int i;
-	for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
-		buf[i] = 0;
-	}
-	for ( i = 0; i < 5; i++ ){
-		screen->line[i][0] = 0;
-	}
-	screen->head = 0;
-	screen->nextline[0] = 0;
+	Sensor_data sensor_data;
+	/* Prompt UI */
+	Region prompt_titles = { 2, 20, 1, 11 - 2, 1, 0 };
+	Region prompt_reg = { 2, 21, 1, 78 - 2, 1, 0 };
+	Region result_reg = { 14, 22, 1, 78 - 14, 1, 0 };
+	int prompt_width = prompt_reg.width - prompt_reg.margin - prompt_reg.margin;
 	
-	Region ack_rect = {5, 15, 8, 70, 0, 1};
-	Region *ack_region = &ack_rect;
-	status = region_init( ack_region );
-	assert( status == ERR_NONE );
-	status = region_clear( ack_region );
-	assert( status == ERR_NONE );	
-	
-	Region echo_rect = {6, 21, 1, 68, 0, 0};
-	Region *echo_region = &echo_rect;
-	status = region_init( echo_region );
-	assert( status == ERR_NONE );
-	status = region_clear( echo_region );
-	assert( status == ERR_NONE );
-	
+	int status;
 
-	status = region_printf( echo_region, "Please wait for the track to initialize" );
+	status = region_init( &prompt_reg );
+	assert( status == ERR_NONE );
+	status = region_init( &result_reg );
 	assert( status == ERR_NONE );
 
-	module_id = Create( TRAIN_MODULE_PRIORITY, train_module );
-	struct Command cmd;	
+	/* Print title */
+	/* Console */
+	status = region_init( &prompt_titles );
+	assert( status == ERR_NONE );
+	region_printf( &prompt_titles, "Console" );
+	/* Result */
+	prompt_titles.row = 22;
+	status = region_init( &prompt_titles );
+	assert( status == ERR_NONE );
+	region_printf( &prompt_titles, "Result" );
+	
+	status = region_printf( &result_reg, "Please wait for the track to initialize\n" );
+	assert( status == ERR_NONE );
+
+	module_tid = Create( TRAIN_MODULE_PRIORITY, train_module );
+	assert( module_tid > 0 );
 
 	sync_wait();
-	status = region_clear( echo_region );
-	assert( status == ERR_NONE );
-	status = region_printf( echo_region, " > " );
-	assert( status == ERR_NONE );
-	
 
+	region_clear( &result_reg );
+
+	// switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switches );
+	// assert( switch_tid > 0 );
+
+	clock_tid = Create( TRAIN_UI_PRIORITY, clock_ui );
+	assert( clock_tid > 0 );
+
+	sensor_ui_tid = Create( TRAIN_UI_PRIORITY, sensor_ui );
+	assert( sensor_ui_tid > 0 );
+
+	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
+	assert( sensor_tid > 0 );
+	
 	while ( !quit ) {
 		// await input
-		data = Getc( COM_2 );
+		while( 1 ){
+			data = Getc( COM_2 );
+			if( data == '\r' || data == '\n' ){
+				buf[ buf_i ] = '\0';
+				break;
+			}
+			
+			if( isalpha( data ) || isdigit( data ) ){
+				buf[ buf_i ] = data;
+			} else if( isspace( data ) ) {
+				buf[ buf_i ] = ' ';
+			} else {
+				buf_i -= 1;
+			}
 
-/*
-		if ( !buf_i ) {
-			status = region_clear( echo_region );
-			assert( status == ERR_NONE );
-			status = region_printf( echo_region, "" );
-			assert( status == ERR_NONE );
+			buf_i += 1;
 		}
-*/
 
+		status = parse_fill( buf, ' ', token_buf, TRAIN_COMMAND_MAX_TOKEN, &token_filled );
+		assert( status == ERR_NONE );
+
+		command_status = CMD_SUCCESS;
+
+		if( ! strcmp( token_buf[ 0 ], "q" ) ){
+			quit = 1;
+			region_printf( &result_reg, "Terminating...\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "wh" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "sall" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "call" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "tr" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "rv" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "st" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		} else if( ! strcmp( token_buf[ 0 ], "sw" ) ){
+			region_printf( &result_reg, "Not implemented\n" );
+		}
+
+		switch( command_status ){
+		case CMD_SUCCESS:
+		default:
+			break;
+		}
+			
+#if 0
 		// parse input
 		int start;
 		int arg0;
@@ -333,7 +349,7 @@ void train_control() {
 			break;
 		case SA:
 			ack( ack_region, "Shift all switches", screen );
-			status = train_switch_all( cmd. args[0] );
+			status = train_switch_all( cmd.args[0] );
 			assert( status == ERR_NONE );
 			break;
 		case PT:
@@ -343,11 +359,17 @@ void train_control() {
 			ack( ack_region, "Invalid command", screen );
 			break;
 		}
+#endif /* if 0 */
 	}
 
 	// tell children to suicide
-	status = train_module_suicide();
+	status = train_module_suicide( module_tid );
 	assert( status == 0 );
+
+	Kill( clock_tid );
+	Kill( sensor_tid );
+	Kill( sensor_ui_tid );
+	// Kill( switch_tid );
 
 	sync_responde( MyParentTid() );
 
