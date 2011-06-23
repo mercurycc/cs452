@@ -29,68 +29,87 @@ struct Switch_reply_s {
 	int result;
 };
 
-void train_switches() {
+void switches_ui()
+{
 	int quit = 0;
 	int status;
 	int tid;
 	int i;
-	
-	char table[22];
-	for ( i = 0; i < 22; i++ ){
-		table[i] = 'C';
-	}
-
+	int temp;
+	char table[ NUM_SWITCHES ];
+	char modified[ NUM_SWITCHES ];
 	Switch_event event;
 	Switch_reply reply;
+	Region switch_title = { 2, 12, 1, 18 - 2, 1, 0 };
+	Region switch_reg = { 2, 13, 20 - 13, 27 - 2, 0, 1 };
+	Region switch_single = { 0, 0, 1, 1, 0, 0 };
 
 	status = RegisterAs( TRAIN_SWITCH_NAME );
 	assert( status == ERR_NONE );
-	
-	Region switch_rect = { 5, 1, 14, 54, 2, 1 };
-	Region *switch_region = &switch_rect;
-	status = region_init( switch_region );
+
+	status = region_init( &switch_title );
 	assert( status == ERR_NONE );
-	status = region_clear( switch_region );
+	status = region_init( &switch_reg );
 	assert( status == ERR_NONE );
+
+	region_printf( &switch_title, "Switch Monitor" );
+
+	region_printf( &switch_reg,
+		       " [0]1:  2:  3:  4:  5:\n"
+		       "    6:  7:  8:  9:\n"
+		       " [1]0:  1:  2:  3:  4:\n"
+		       "    5:  6:  7:  8:\n"
+		       "[15]3:  4:  5:  6:\n" );
+
+	for ( i = 0; i < 22; i++ ){
+		modified[ i ] = 0;
+	}
 
 	while ( !quit ) {
-		int status = region_printf( switch_region,
-			"Switch Table:\n\n   1: %c    2: %c    3: %c    4: %c    5: %c    6: %c\n\n   7: %c    8: %c    9: %c   10: %c   11: %c   12: %c\n\n  13: %c   14: %c   15: %c   16: %c   17: %c   18: %c\n\n 153: %c  154: %c  155: %c  156: %c",
-			table[0], table[1], table[2], table[3], table[4], table[5],
-			table[6], table[7], table[8], table[9], table[10], table[11],
-			table[12], table[13], table[14], table[15], table[16], table[17],
-			table[18], table[19], table[20], table[21] );
-		assert( status == ERR_NONE );
-
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
-		
-		switch ( event.event_type ){
-		case SWITCH_CHECK_ID:
-			break;
-		default:
-			reply.result = 0;
-			status = Reply( tid, (char*)&reply, sizeof(reply) );
-			assert( status == 0 );
-		}
-		
+
+		reply.result = 0;
+
 		switch ( event.event_type ){
 		case SWITCH_UPDATE_ID:
-			table[event.id] = event.direction;
-			assert( (event.id >= 0 )&&(event.id < 22) );
+			event.id = SWID_TO_ARRAYID( event.id );
+			table[ event.id ] = event.direction;
+			modified[ event.id ] = 1;
+			assert( ( event.id >= 0 ) && ( event.id < 22 ) );
 			break;
 		case SWITCH_UPDATE_ALL:
 			for ( i = 0; i < 22; i++ ){
-				table[i] = event.direction;
+				table[ i ] = event.direction;
+				modified[ i ] = 1;
 			}
 			break;
-		case SWITCH_CHECK_ID:
-			reply.result = table[event.id];
-			status = Reply( tid, (char*)&reply, sizeof(reply) );
-			assert( status == 0 );
-			continue;
 		default:
 			assert(0);
+		}
+
+		status = Reply( tid, (char*)&reply, sizeof(reply) );
+		assert( status == 0 );
+
+		/* Update UI */
+		/* Constants are UI specific, see UIDesign */
+		for( i = 0; i < NUM_SWITCHES; i += 1 ){
+			if( modified[ i ] ){
+				if( i < 9 ){
+					temp = i;
+				} else if( i < 18 ){
+					temp = i + 1;   /* To compensate the empty space on row 15 */
+				} else {
+					temp = i + 2;   /* To compensate the empty space on row 15 and 16 */
+				}
+
+				switch_single.row = 14 + temp / 5;
+				switch_single.col = 9 + ( temp % 5 ) * 4;
+
+				region_printf( &switch_single, "%c", table[ i ] );
+
+				modified[ i ] = 0;
+			}
 		}
 
 	}
@@ -99,7 +118,8 @@ void train_switches() {
 }
 
 
-int switch_event( uint type, int id, char direction ) {
+static int switch_ui_event( int tid, uint type, int id, char direction )
+{
 	Switch_event event;
 	Switch_reply reply;
 
@@ -107,23 +127,16 @@ int switch_event( uint type, int id, char direction ) {
 	event.id = id;
 	event.direction = direction;
 
-	int module_tid = WhoIs( TRAIN_SWITCH_NAME );
-
-	int status = Send( module_tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
+	int status = Send( tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
 	
 	return reply.result;
 }
 
-int switch_update_id( int id, char direction ){
-	return switch_event( SWITCH_UPDATE_ID, id, direction );
+int switch_ui_update_id( int tid, int id, char direction ){
+	return switch_ui_event( tid, SWITCH_UPDATE_ID, id, direction );
 }
 
-int switch_update_all( char direction ){
-	return switch_event( SWITCH_UPDATE_ALL, 0, direction );
+int switch_ui_update_all( int tid, char direction ){
+	return switch_ui_event( tid, SWITCH_UPDATE_ALL, 0, direction );
 }
-
-int switch_check_id( int id ){
-	return switch_event( SWITCH_CHECK_ID, id, 0 );
-}
-

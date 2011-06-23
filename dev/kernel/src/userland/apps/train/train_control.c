@@ -22,61 +22,13 @@ typedef struct Screen_s {
 	char nextline[MAX_BUFFER_SIZE];
 } Screen;
 
-enum Command_status {
-	CMD_SUCCESS,
-	CMD_UNKNOWN,
-	CMD_ERROR,
-	CMD_HELP
-};
-
-int ack( Region* r, char* str, Screen* screen )
-{
-	// give the str to the print server
-	int status;
-	// = region_clear( r );
-	// assert( status == ERR_NONE );
-
-	screen->head = (screen->head + 4) % 5;
-	int head = screen->head;
-	status = sprintf( screen->line[head], "%s: %s", screen->nextline, str );
-	assert( status );
-
-	status = region_printf( r, "%s\n%s\n%s\n%s\n%s\n > \n", screen->line[(head+4)%5], screen->line[(head+3)%5], screen->line[(head+2)%5], screen->line[(head+1)%5], screen->line[head] );
-	assert( status == ERR_NONE );
-	return 0;
-}
-
-int ack_st( Region* r, int id, char state, Screen* screen )
-{
-	char str[64];
-
-	sprintf( str, "switch %d is in state %c", id, state );
-
-	return ack( r, str, screen);
-}
-
-int ack_wh( Region* r, int id, Screen* screen )
-{
-	char str[64];
-	sprintf( str, "the last sensor triggered is %c%d", (id / 32 + 'A'), (id % 32));
-	//assert( status < 64 );
-
-	return ack( r, str, screen );
-}
-
-int echo( Region* r, char* str ) {
-	// give the str to the print server
-	int status = region_printf( r, " > %s ", str);
-	assert( status == ERR_NONE );
-	return 0;
-}
-
 /* Train control holds the prompt UI */
 void train_control()
 {
 	int clock_tid;
 	int sensor_tid;
 	int sensor_ui_tid;
+	int sensor_query_tid;
 	int switch_tid;
 	int module_tid;
 	int quit = 0;
@@ -92,13 +44,17 @@ void train_control()
 	Region prompt_titles = { 2, 20, 1, 11 - 2, 1, 0 };
 	Region prompt_reg = { 2, 21, 1, 78 - 2, 1, 0 };
 	Region result_reg = { 14, 22, 1, 78 - 14, 1, 0 };
-	int prompt_width = prompt_reg.width - prompt_reg.margin - prompt_reg.margin;
+	Region warning_reg = WARNING_REGION;
+	// int prompt_width = prompt_reg.width - prompt_reg.margin - prompt_reg.margin;
+	int fail;
 	
 	int status;
 
 	status = region_init( &prompt_reg );
 	assert( status == ERR_NONE );
 	status = region_init( &result_reg );
+	assert( status == ERR_NONE );
+	status = region_init( &warning_reg );
 	assert( status == ERR_NONE );
 
 	/* Print title */
@@ -111,19 +67,24 @@ void train_control()
 	status = region_init( &prompt_titles );
 	assert( status == ERR_NONE );
 	region_printf( &prompt_titles, "Result" );
-	
+	/* Warning */
+	prompt_titles.row = 23;
+	status = region_init( &prompt_titles );
+	assert( status == ERR_NONE );
+	region_printf( &prompt_titles, "Warning" );
+
 	status = region_printf( &result_reg, "Please wait for the track to initialize\n" );
 	assert( status == ERR_NONE );
 
 	module_tid = Create( TRAIN_MODULE_PRIORITY, train_module );
 	assert( module_tid > 0 );
 
-	sync_wait();
+	/* Prompt */
+	region_printf( &prompt_reg, "$" );
+	prompt_reg.col += 3;
 
-	region_clear( &result_reg );
-
-	// switch_tid = Create( TRAIN_SWITCH_PRIORITY, train_switches );
-	// assert( switch_tid > 0 );
+	switch_tid = Create( TRAIN_UI_PRIORITY, switches_ui );
+	assert( switch_tid > 0 );
 
 	clock_tid = Create( TRAIN_UI_PRIORITY, clock_ui );
 	assert( clock_tid > 0 );
@@ -133,11 +94,23 @@ void train_control()
 
 	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
 	assert( sensor_tid > 0 );
+
+	sensor_query_tid = WhoIs( SENSOR_QUERY_NAME );
+	assert( sensor_query_tid > 0 );
+
+	sync_wait();
+	region_clear( &result_reg );
 	
 	while ( !quit ) {
+		/* Single character echo */
+		prompt_reg.margin = 0;
+		prompt_reg.width = 1;
+
 		// await input
+		buf_i = 0;
 		while( 1 ){
 			data = Getc( COM_2 );
+
 			if( data == '\r' || data == '\n' ){
 				buf[ buf_i ] = '\0';
 				break;
@@ -147,43 +120,117 @@ void train_control()
 				buf[ buf_i ] = data;
 			} else if( isspace( data ) ) {
 				buf[ buf_i ] = ' ';
-			} else {
-				buf_i -= 1;
 			}
 
-			buf_i += 1;
+			if( isalpha( data ) || isdigit( data ) || isspace( data ) ){
+				region_printf( &prompt_reg, "%c", data );
+				prompt_reg.col += 1;
+				buf_i += 1;
+			} else if( data == '\b' ) {
+				buf_i -= 1;
+				prompt_reg.col -= 1;
+				region_printf( &prompt_reg, " " );
+			}
 		}
 
+		/* Clear echo'ed command */
+		prompt_reg.col -= buf_i;
+		prompt_reg.width = buf_i;
+		region_clear( &prompt_reg );
+		
 		status = parse_fill( buf, ' ', token_buf, TRAIN_COMMAND_MAX_TOKEN, &token_filled );
 		assert( status == ERR_NONE );
 
-		command_status = CMD_SUCCESS;
+		fail = 0;
 
-		if( ! strcmp( token_buf[ 0 ], "q" ) ){
+		if( token_filled == 0 ){
+			region_clear( &result_reg );
+		} else if( ! strcmp( token_buf[ 0 ], "q" ) ){
 			quit = 1;
 			region_printf( &result_reg, "Terminating...\n" );
 		} else if( ! strcmp( token_buf[ 0 ], "wh" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			int group;
+			int id;
+			char name[ SENSOR_NAME_LENGTH + 1 ];
+			status = sensor_query_recent( sensor_query_tid, &group, &id );
+			assert( status == ERR_NONE );
+
+			sensor_id2name( name, group, id );
+			if( group < 0 ){
+				region_printf( &result_reg, "No sensor has been triggered yet\n" );
+			} else {
+				region_printf( &result_reg, "Most recent sensor: %s\n", name );
+			}
 		} else if( ! strcmp( token_buf[ 0 ], "sall" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			train_switch_all( module_tid, 'S' );
+			region_printf( &result_reg, "Swap all switches to straight\n" );
 		} else if( ! strcmp( token_buf[ 0 ], "call" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			train_switch_all( module_tid, 'C' );
+			region_printf( &result_reg, "Swap all switches to curve\n" );
 		} else if( ! strcmp( token_buf[ 0 ], "tr" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			int args[ 2 ];
+			if( token_filled == 3 ){
+				args[ 0 ] = ( int )stou( token_buf[ 1 ] );
+				args[ 1 ] = ( int )stou( token_buf[ 2 ] );
+				train_set_speed( module_tid, args[ 0 ], args[ 1 ] );
+				region_printf( &result_reg, "Set train %d to speed level %d\n", args[ 0 ], args[ 1 ] );
+			} else {
+				region_printf( &result_reg, "tr <train id> <speed level (0 - 14)>\n" );
+			}
 		} else if( ! strcmp( token_buf[ 0 ], "rv" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			int arg;
+			if( token_filled == 2 ){
+				arg = ( int )stou( token_buf[ 1 ] );
+				train_reverse( module_tid, arg );
+				region_printf( &result_reg, "Reverse train %d\n", arg );
+			} else {
+				region_printf( &result_reg, "rv <train id>\n" );
+			}
 		} else if( ! strcmp( token_buf[ 0 ], "st" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			int switch_id;
+			char direction;
+
+			if( token_filled == 2 ){
+				switch_id = ( int )stou( token_buf[ 1 ] );
+				if( switch_id <= 0 || ( switch_id > 18 && switch_id < 153 ) || switch_id > 156 ){
+					region_printf( &result_reg, "Switch %d is invalid\n", switch_id );
+					fail = 1;
+				}
+				if( ! fail ){
+					direction = train_check_switch( module_tid, switch_id );
+					region_printf( &result_reg, "Switch %d is %s\n", switch_id, direction == 'C' ? "curve" : "straight" );
+				}
+			} else {
+				region_printf( &result_reg, "st <switch id (1-18, 153-156)>\n" );
+			}
 		} else if( ! strcmp( token_buf[ 0 ], "sw" ) ){
-			region_printf( &result_reg, "Not implemented\n" );
+			int switch_id;
+			char direction;
+			if( token_filled == 3 ){
+				switch_id = ( int )stou( token_buf[ 1 ] );
+				direction = token_buf[ 2 ][ 0 ];
+				if( direction == 'c' || direction == 's' ){
+					direction -= ( int )'a' - ( int )'A';
+				} else if( ! ( direction == 'C' || direction == 'S' ) ){
+					region_printf( &result_reg, "Direction can only be C or S\n" );
+					fail = 1;
+				}
+				if( switch_id <= 0 || ( switch_id > 18 && switch_id < 153 ) || switch_id > 156 ){
+					region_printf( &result_reg, "Switch %d is invalid\n", switch_id );
+					fail = 1;
+				}
+				if( ! fail ){
+					assert( direction == 'C' || direction == 'S' );
+					train_switch( module_tid, switch_id, direction );
+					region_printf( &result_reg, "Set switch %d to %c\n", switch_id, direction );
+				}
+			} else {
+				region_printf( &result_reg, "sw <switch id> <direction [C|S]>\n" );
+			}
+		} else {
+			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}
 
-		switch( command_status ){
-		case CMD_SUCCESS:
-		default:
-			break;
-		}
-			
 #if 0
 		// parse input
 		int start;
@@ -369,7 +416,7 @@ void train_control()
 	Kill( clock_tid );
 	Kill( sensor_tid );
 	Kill( sensor_ui_tid );
-	// Kill( switch_tid );
+	Kill( switch_tid );
 
 	sync_responde( MyParentTid() );
 

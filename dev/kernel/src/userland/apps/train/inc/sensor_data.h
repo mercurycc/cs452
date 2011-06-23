@@ -10,6 +10,4 @@ struct Sensor_data_s {
 	char last_sensor_id;
 };
 
-int sensor_id2name( char* str, uchar group, uchar id );
-
 #endif /* _TRAIN_SENSOR_DATA_H_ */

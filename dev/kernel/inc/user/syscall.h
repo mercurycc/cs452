@@ -49,5 +49,6 @@ int KernelContext( void** target );       /* Obtain the kernel context.  This is
 int Kill( int tid );                      /* Kill the task whose tid is tid */
 int Create_drv( int priority, void(*code)() );   /* Create a driver task, which has interrupt disabled */
 int PreShutdown();                        /* Prepare for shutdown */
+int Shutdown();
 
 #endif /* _USER_SYSCALL_H_ */

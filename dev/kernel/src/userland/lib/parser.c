@@ -44,10 +44,12 @@ int parse_token( Parse* parse )
 	}
 
 	/* Set the next delimiter to null */
-	while( parse->str[0] && parse->str[0] == parse->delim ){
+	while( parse->str[0] && parse->str[0] != parse->delim ){
 		parse->str += 1;
 	}
 	parse->str[0] = 0;
+
+	parse->str += 1;
 
 	return ERR_NONE;
 }

@@ -10,9 +10,10 @@
 #include "inc/config.h"
 #include "inc/train.h"
 
-#define SWITCH_XMIT_DELAY 15
+#define SWITCH_XMIT_DELAY 16
 #define SWITCH_OFF_DELAY 20
 #define TRAIN_XMIT_DELAY 20
+#define SWITCH_ALL_DELAY 180
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
@@ -39,7 +40,7 @@ struct Train_reply_s {
 	int result;
 };
 
-static inline void tr( int train, int speed ){
+static inline void setspeed( int train, int speed ){
 	int status = Putc( COM_1, (char)speed );
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)train );
@@ -48,7 +49,7 @@ static inline void tr( int train, int speed ){
 	assert( status == ERR_NONE );
 }
 
-static inline void rv( int train ){
+static inline void reverse( int train ){
 	int status = Putc( COM_1, (char)15 );
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)train );
@@ -57,16 +58,27 @@ static inline void rv( int train ){
 	assert( status == ERR_NONE );
 }
 
-static inline void sw( int n, char d ){
-	int status = Putc( COM_1, d );
+static inline void track_switch( int ui_tid, int track_id, char direction ){
+	int status;
+	status = switch_ui_update_id( ui_tid, track_id, direction );
 	assert( status == ERR_NONE );
-	status = Putc( COM_1, (char)n );
+	if( direction == 'C' ){
+		direction = 34;
+	} else if( direction == 'S' ){
+		direction = 33;
+	} else {
+		assert( 0 );
+	}
+
+	status = Putc( COM_1, direction );
+	assert( status == ERR_NONE );
+	status = Putc( COM_1, (char)track_id );
 	assert( status == ERR_NONE );
 	status = Delay( SWITCH_XMIT_DELAY );
 	assert( status == ERR_NONE );
 }
 
-static inline void sw_off() {
+static inline void track_switch_off() {
 	int status = Delay( SWITCH_OFF_DELAY );
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)32 );
@@ -75,59 +87,59 @@ static inline void sw_off() {
 	assert( status == ERR_NONE );
 }
 
-static inline void switch_all( char d ){
+static inline void track_switch_all( int ui_tid, char direction ){
 	int i;
 	// reset all switches
 	for ( i = 1; i < 19; i++ ) {
-		sw( i, d );
+		track_switch( ui_tid, i, direction );
 	}
 	for ( i = 153; i < 157; i++ ) {
-		sw( i, d );
+		track_switch( ui_tid, i, direction );
 	}
-	sw_off();
+	track_switch_off();
 }
 
 static inline void delay( int ticks ) {
 	int status = Delay( ticks );
 	assert( status == ERR_NONE );
-
 }
 
 
-
-void train_module() {
-
+void train_module()
+{
 	int tid;
 	int ptid = MyParentTid();
 	int quit = 0;
 	int status;
 	int i;
-	int last_speed = 5;
+	int switch_ui_tid;
 	char direction;
-	int last_sensor = 0;
-	char switch_table[22];
+	char switch_table[ NUM_SWITCHES ];
 	Train_event event;
 	Train_reply reply;
 
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
 
-	for ( i = 0; i < 22; i++ ) {
-		switch_table[i] = 'C';
+	for( i = 0; i < NUM_SWITCHES; i += 1 ){
+		switch_table[ i ] = 'C';
 	}
+
+	switch_ui_tid = WhoIs( TRAIN_SWITCH_NAME );
+	assert( switch_ui_tid > 0 );
+
+	track_switch_all( switch_ui_tid, 'C' );
 
 	/* Sync for switch update */
 	sync_responde( ptid );
 
-	while ( !quit ) {
+	while ( ! quit ) {
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 
 		// early reply
 		switch ( event.event_type ){
 		case TRAIN_CHECK_SWITCH:
-		case TRAIN_LAST_SENSOR:
-		case TRAIN_ALL_SENSORS:
 			break;
 		default:
 			reply.result = 0;
@@ -137,82 +149,62 @@ void train_module() {
 		}
 
 		switch (event.event_type) {
-		case TRAIN_UPDATE_TIME:
+		case TRAIN_CHECK_SWITCH:
+			reply.result = switch_table[ SWID_TO_ARRAYID( event.args[ 0 ] ) ];
 			break;
 		case TRAIN_SET_SPEED:
-			last_speed = event.args[1];
-			tr( event.args[0], event.args[1] );
+			setspeed( event.args[0], event.args[1] );
 			break;
 		case TRAIN_REVERSE:
-			rv( event.args[0] );
-			tr( event.args[0], last_speed );
-			break;
-		case TRAIN_SWITCH:
-			direction = (event.args[1] % 2) * 'S' + ((event.args[1]+1) % 2) * 'C';
-			if ( event.args[0] < 19 ) {
-				i = event.args[0]-1;
-			} else {
-				i = event.args[0]-135;
-			}
-			status = switch_update_id( i, direction );
-			assert( status == 0 );
-			sw( event.args[0], event.args[1] );
-			sw_off();
-			break;
-		case TRAIN_CHECK_SWITCH:
-			if ( event.args[0] < 19 ) {
-				i = event.args[0] - 1;
-			} else {
-				i = event.args[0] - 135;
-			}
-			reply.result = switch_check_id( i );
-			status = Reply( tid, (char*)&reply, sizeof( reply ) );
-			assert( status == 0 );
-			break;
-		case TRAIN_SWITCH_ALL:
-			direction = (event.args[0] % 2) * 'S' + ((event.args[0]+1) % 2) * 'C';
-			switch_all( event.args[0] );
-			delay( 180 );
-			break;
-		case TRAIN_LAST_SENSOR:
-			reply.result = last_sensor;
-			status = Reply( tid, (char*)&reply, sizeof( reply ) );
-			assert( status == 0 );
+			reverse( event.args[0] );
 			break;
 		case TRAIN_ALL_SENSORS:
 			status = Putc( COM_1, (char)133 );
+			Delay( SWITCH_XMIT_DELAY );
 			assert( status == ERR_NONE );
-			reply.result = 0;
-			status = Reply( tid, (char*)&reply, sizeof( reply ) );
-			assert( status == 0 );
-			// last_sensor = sensor_last( sensor_tid );
+			break;
+		case TRAIN_SWITCH:
+			i = SWID_TO_ARRAYID( event.args[0] );
+			switch_table[ i ] = event.args[ 1 ];
+			track_switch( switch_ui_tid, event.args[0], event.args[1] );
+			track_switch_off();
+			break;
+		case TRAIN_SWITCH_ALL:
+			track_switch_all( switch_ui_tid, event.args[0] );
+			for( i = 0; i < NUM_SWITCHES; i += 1 ){
+				switch_table[ i ] = event.args[0];
+			}
+			delay( SWITCH_ALL_DELAY );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
 				quit = 1;
 				break;
 			}
-			// warning message
 			break;
 		case TRAIN_PRESSURE_TEST:
-			for ( i = 0; i < 10; i++ ) {
-				tr( 22, i+4 );
-				rv( 22 );
-			}
-			tr( 22, 0 );
 			break;
 		default:
 			// should not get to here
 			assert(0);
 		}
 
+		switch ( event.event_type ){
+		case TRAIN_CHECK_SWITCH:
+			status = Reply( tid, (char*)&reply, sizeof( reply ) );
+			assert( status == 0 );
+			break;
+		default:
+			break;
+		}
 	}
 
 	// tell anything produced by this to exit
 	Exit();
 }
 
-int train_event( int tid, uint type, int arg0, int arg1 ) {
+int train_event( int tid, uint type, int arg0, int arg1 )
+{
 	Train_event event;
 	Train_reply reply;
 
@@ -227,9 +219,9 @@ int train_event( int tid, uint type, int arg0, int arg1 ) {
 }
 
 
-int train_update_time( int tid, int ticks )
+int train_check_switch( int tid, int switch_id )
 {
-	return train_event( tid, TRAIN_UPDATE_TIME, ticks, 0 );
+	return train_event( tid, TRAIN_CHECK_SWITCH, switch_id, 0 );
 }
 
 int train_set_speed( int tid, int train, int speed )
@@ -245,16 +237,6 @@ int train_reverse( int tid, int train )
 int train_switch( int tid, int switch_id, int direction )
 {
 	return train_event( tid, TRAIN_SWITCH, switch_id, direction );
-}
-
-int train_check_switch( int tid, int switch_id )
-{
-	return train_event( tid, TRAIN_CHECK_SWITCH, switch_id, 0 );
-}
-
-int train_last_sensor( int tid )
-{
-	return train_event( tid, TRAIN_LAST_SENSOR, 0, 0 );
 }
 
 int train_all_sensor( int tid )

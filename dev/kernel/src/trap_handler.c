@@ -45,7 +45,7 @@ int trap_init( Context* ctx )
 	return 0;
 }
 
-static void syscall_handler( Context* ctx, Syscall* reason )
+static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 {
 	Task* temp;
 	Task* sender_task;
@@ -214,6 +214,9 @@ static void syscall_handler( Context* ctx, Syscall* reason )
 		status = interrupt_deinit( ctx );
 		ASSERT( status == ERR_NONE );
 		break;
+	case TRAP_SHUTDOWN:
+		kernel_shutdown( kernelsp );
+		break;
 	default:
 		DEBUG_PRINT( DBG_TMP, "%u not implemented\n", reason->code );
 	}
@@ -250,14 +253,12 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			ASSERT( status == ERR_NONE );
 		}
 	} else if ( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_USER ){
-		syscall_handler( ctx, reason );
+		syscall_handler( ctx, reason, kernelsp );
 	}
 
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );
 	status = sched_schedule( ctx, &(ctx->current_task) );
 	ASSERT( status == ERR_NONE );
-	DEBUG_PRINT( DBG_TRAP, "new task addr: 0x%x, tid: 0x%x, priority: %d, state: %d\n",
-		     ctx->current_task, ctx->current_task->tid, ctx->current_task->priority, ctx->current_task->state );
 
 	/* Shutdown kernel if no ready task can be scheduled */
 	if (!(ctx->current_task)){

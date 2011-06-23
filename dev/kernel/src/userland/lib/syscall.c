@@ -98,3 +98,8 @@ int PreShutdown()
 {
 	return syscall_make( TRAP_PRESHUTDOWN, 0, 0, 0, 0, 0 );
 }
+
+int Shutdown()
+{
+	return syscall_make( TRAP_SHUTDOWN, 0, 0, 0, 0, 0 );
+}
