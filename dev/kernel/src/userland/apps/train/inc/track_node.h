@@ -10,10 +10,25 @@ typedef enum {
 	NODE_EXIT
 } node_type;
 
+enum Graph_node_group {
+	GROUPA = 0,
+	GROUPB,
+	GROUPC,
+	GROUPD,
+	GROUPE,
+	GROUPMR,
+	GROUPBR,
+	GROUPEX,
+	GROUPEN,
+	GROUP_COUNT
+};
+
+#define TRACK_GRAPH_NODES_PER_GROUP   16
+
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
 #define DIR_CURVED 1
-#define TRACK_NUM_NODES   150
+#define TRACK_NUM_NODES   144
 
 struct track_node;
 typedef struct track_node track_node;

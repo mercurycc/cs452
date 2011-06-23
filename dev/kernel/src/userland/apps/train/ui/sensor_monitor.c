@@ -115,11 +115,11 @@ void sensor_ui()
 
 		/* Update real time sensor display */
 		region_printf( &sensor_reg,
-			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
-			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
-			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
-			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
-			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n",
+			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
+			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
+			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
+			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
+			       "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
 			       SENSOR_PRINTS( sensor_buffer ) );
 		
 		/* Update recent triggered sensor list */

@@ -6,9 +6,14 @@
 #include <types.h>
 #include <err.h>
 #include <lib/str.h>
+#include <user/syscall.h>
+#include <user/lib/assert.h>
+#include <user/time.h>
+#include <user/name_server.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
+#include "inc/track_data.h"
 #include "inc/track_node.h"
 
 typedef struct Train_stat_s {
@@ -18,40 +23,69 @@ typedef struct Train_stat_s {
 } Train_stat;
 
 typedef struct Train_data_s {
-	uint distance;
-	uint speed;
-	uint direction;                  /* Traveling with pick up at the front is forward, backward o/w */
+	uint id;
+	uint state;
+	uint pickup;                     /* Traveling with pick up at the front is forward, backward o/w */
+	uint distance;                   /* Distance from last check point, in mm */
+	uint speed;                      /* Speed currently at, in mm/10ms */
+	uint speed_level;
+	uint old_speed_level;
 	uint time_stamp;
 	track_node* check_point;
 } Train_data;
+
+enum Train_state {
+	TRAIN_STATE_INIT,             /* Init */
+	TRAIN_STATE_TRACKING,         /* Normal state */
+	TRAIN_STATE_REVERSE,          /* Just reversed direction */
+	TRAIN_STATE_SPEED_CHANGE,     /* Just changed speed */
+	TRAIN_STATE_SPEED_ERROR,      /* Speed prediction out of bound error */
+	TRAIN_STATE_SWITCH_ERROR,     /* Switch prediction error */
+	TRAIN_STATE_UNKNOW            /* Unknown state */
+};
+
+enum Train_pickup {
+	TRAIN_PICKUP_FRONT,
+	TRAIN_PICKUP_BACK,
+	TRAIN_PICKUP_UNKONWN
+};
 
 enum Train_auto_request_type {
 	TRAIN_AUTO_INIT,
 	TRAIN_AUTO_NEW_SENSOR_DATA,
 	TRAIN_AUTO_NEW_TRAIN,
 	TRAIN_AUTO_SET_TRAIN_SPEED,
+	TRAIN_AUTO_SET_TRAIN_REVERSE,
 	TRAIN_AUTO_SET_SWITCH_DIR,
 	TRAIN_AUTO_QUERY_SWITCH_DIR,
 	TRAIN_AUTO_QUERY_LAST_SENSOR
+};
+
+enum Track_id {
+	TRACK_A,
+	TRACK_B
 };
 
 typedef struct Train_auto_request_s {
 	uint type;
 	union {
 		struct {
-			uint track_id;                 /* 0 for track a, 1 for track b */
+			uint track_id;
 		} init;
 		Sensor_data sensor_data;
 		struct {
 			uint train_id;
-			uint direction;
-			uint previous_group;
+			uint pickup;
+			uint previous_group;  /* The sensor the pickup is heading towards */
 			uint previous_id;
 		} new_train;
 		struct {
 			uint train_id;
 			uint speed_level;
 		} set_speed;
+		struct {
+			uint train_id;
+		} set_reverse;
 		struct {
 			uint switch_id;
 			char direction;
@@ -63,16 +97,157 @@ typedef struct Train_auto_request_s {
 			uint dummy;
 		} query_sensor;
 	} data;
-};
+} Train_auto_request;
+
+typedef struct Train_auto_reply_s {
+	int group;
+	int id;
+} Train_auto_reply;
 
 void train_auto()
 {
+	Train_auto_request request;
+	Train_auto_reply reply;
 	Sensor_data sensor_data;
 	uint last_sensor_group;
 	uint last_sensor_id;
 	int tid;
+	int temp;
 	track_node track_graph[ TRACK_NUM_NODES ];
+	int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ];
 	Train_data trains[ MAX_NUM_TRAINS ] = { { 0 } };
+	int train_map[ MAX_TRAIN_ID ] = { 0 };
+	int available_train = 1;     /* Record 0 is not used, to distinguish non-registered car */
+	Train_data* current_train;
+	int switch_table[ NUM_SWITCHES ] = { 0 };
+	int module_tid;
+	int status;
 
-	
+	/* Receive initialization data */
+	status = Receive( &tid, ( char* )&request, sizeof( request ) );
+	assert( status == sizeof( int ) + sizeof( request.init ) );
+	status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+	assert( status == SYSCALL_SUCCESS );
+
+	switch( request.init.track_id ){
+	case TRACK_A:
+		init_tracka( track_graph, node_map );
+		break;
+	case TRACK_B:
+		init_trackb( track_graph, node_map );
+		break;
+	default:
+		assert( 0 );
+	}
+
+	status = RegisterAs( TRAIN_AUTO_NAME );
+	assert( status == REGISTER_AS_SUCCESS );
+
+	module_tid = WhoIs( TRAIN_MODULE_NAME );
+	assert( module_tid > 0 );
+
+	while( 1 ){
+		status = Receive( &tid, ( char* )&request, sizeof( request ) );
+
+		status -= sizeof( uint );
+		/* Size check */
+		switch( request.type ){
+		case TRAIN_AUTO_INIT:
+			/* No more init should be received */
+			assert( 0 );
+			break;
+		case TRAIN_AUTO_NEW_SENSOR_DATA:
+			assert( status == sizeof( request.sensor_data ) );
+			break;
+		case TRAIN_AUTO_NEW_TRAIN:
+			assert( status == sizeof( request.new_train ) );
+			break;
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+			assert( status == sizeof( request.set_speed ) );
+			break;
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+			assert( status == sizeof( request.set_reverse ) );
+			break;
+		case TRAIN_AUTO_SET_SWITCH_DIR:
+			assert( status == sizeof( request.set_switch ) );
+			break;
+		case TRAIN_AUTO_QUERY_SWITCH_DIR:
+			assert( status == sizeof( request.query_switch ) );
+			break;
+		case TRAIN_AUTO_QUERY_LAST_SENSOR:
+			assert( status == sizeof( request.query_sensor ) );
+			break;
+		}
+
+		/* Quick reply */
+		switch( request.type ){
+		case TRAIN_AUTO_NEW_SENSOR_DATA:
+		case TRAIN_AUTO_NEW_TRAIN:
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+		case TRAIN_AUTO_SET_SWITCH_DIR:
+			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
+		default:
+			break;
+		}
+
+		/* Process request */
+		switch( request.type ){
+		case TRAIN_AUTO_NEW_SENSOR_DATA:
+			/* Unfortuate memcpy */
+			memcpy( ( uchar* )&sensor_data, ( uchar* )&request.sensor_data, sizeof( sensor_data ) );
+			/* Need to process new sensor data */
+			assert( 0 );
+			break;
+		case TRAIN_AUTO_NEW_TRAIN:
+			current_train = trains + available_train;
+			train_map[ request.new_train.train_id ] = available_train;
+			available_train += 1;
+			current_train->id = request.new_train.train_id;
+			current_train->state = TRAIN_STATE_INIT;
+			current_train->pickup = request.new_train.pickup;
+			current_train->distance = 0;
+			current_train->speed = 0;
+			current_train->speed_level = 0;
+			current_train->old_speed_level = 0;
+			current_train->time_stamp = 0;
+			current_train->check_point = track_graph + node_map[ request.new_train.previous_group ][ request.new_train.previous_id ];
+			break;
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+			current_train = trains + train_map[ request.set_speed.train_id ];
+			current_train->old_speed_level = current_train->speed_level;
+			current_train->state = TRAIN_STATE_SPEED_CHANGE;
+			break;
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+			current_train = trains + train_map[ request.set_speed.train_id ];
+			if( current_train->pickup == TRAIN_PICKUP_FRONT ){
+				current_train->pickup = TRAIN_PICKUP_BACK;
+			} else if( current_train->pickup == TRAIN_PICKUP_BACK ){
+				current_train->pickup = TRAIN_PICKUP_FRONT;
+			}
+			current_train->state = TRAIN_STATE_REVERSE;
+			break;
+		case TRAIN_AUTO_SET_SWITCH_DIR:
+			switch_table[ SWID_TO_ARRAYID( request.set_switch.switch_id ) ] = request.set_switch.direction;
+			break;
+		case TRAIN_AUTO_QUERY_SWITCH_DIR:
+			reply.group = switch_table[ SWID_TO_ARRAYID( request.set_switch.switch_id ) ];
+			break;
+		case TRAIN_AUTO_QUERY_LAST_SENSOR:
+			reply.group = last_sensor_group;
+			reply.id = last_sensor_id;
+			break;
+		}
+
+		/* Late reply */
+		switch( request.type ){
+		case TRAIN_AUTO_QUERY_SWITCH_DIR:
+		case TRAIN_AUTO_QUERY_LAST_SENSOR:
+			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
+		default:
+			break;
+		}
+	}
 }

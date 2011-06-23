@@ -14,7 +14,7 @@
 
 #define MAX_BUFFER_SIZE 128
 #define MAX_SCREEN_SIZE 1024
-#define PARSE_INT_FAIL -1
+#define PARSE_INT_FAIL  -1
 
 typedef struct Screen_s {
 	char line[5][MAX_BUFFER_SIZE];
@@ -227,186 +227,26 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "sw <switch id> <direction [C|S]>\n" );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "register" ) ){
+			int train_id;
+			int pickup_sensor_group;
+			int pickup_sensor_id;
+			if( token_filled == 3 ){
+				train_id = ( int )stou( token_buf[ 1 ] );
+				status = sensor_name2id( token_buf[ 2 ], &pickup_sensor_group, &pickup_sensor_id );
+				if( status != ERR_NONE ){
+					region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] );
+					fail = 1;
+				}
+				if( ! fail ){
+					region_printf( &result_reg, "NIY, got train %d, group %d, id %d\n", train_id, pickup_sensor_group, pickup_sensor_id );
+				}
+			} else {
+				region_printf( &result_reg, "register <train id> <sensor pickup heading towards>\n" );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}
-
-#if 0
-		// parse input
-		int start;
-		int arg0;
-		int arg1;
-		
-		switch (data) {
-		case '\r':
-			// trigger
-			if ( buf_i == 0 ) {
-				/* empty line */
-				cmd.command = N;
-			}
-			else if ( buf_i == 1 ) {
-				if ( buf[0] == 'q' ) {
-					/* q: quit */
-					cmd.command = Q;
-				}
-				else {
-					cmd.command = X;
-				}
-			}
-			else if ( buf_i == 2 ) {
-				if (( buf[0] == 'w' )&&( buf[1] == 'h' )) {
-					/* wh: the last sensor */
-					cmd.command = WH;
-				}
-				else if (( buf[0] == 'p' )&&( buf[1] == 't' )) {
-					/* PR: the last sensor */
-					cmd.command = PT;
-				}
-				else {
-					cmd.command = X;
-				}
-			}
-			else if (( buf_i == 4 )&&( buf[0] == 's' )&&( buf[1] == 'a' )&&( buf[2] == 'l' )&&( buf[3] == 'l' )){
-				cmd.command = SA;
-				cmd.args[0] = 33;
-			}
-			else if (( buf_i == 4 )&&( buf[0] == 'c' )&&( buf[1] == 'a' )&&( buf[2] == 'l' )&&( buf[3] == 'l' )){
-				cmd.command = SA;
-				cmd.args[0] = 34;
-			}
-			else if (( buf[0] == 't' )&&( buf[1] == 'r' )) {
-				/* TR: set train speed */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-				arg1 = parse_int( buf, start+1, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_FAIL )||( arg1 == PARSE_INT_FAIL )||( start != buf_i )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = TR;
-					cmd.args[0] = arg0;
-					cmd.args[1] = arg1;
-				}
-			}
-			else if (( buf[0] == 'r' )&&( buf[1] == 'v' )){
-				/* RV: rv train movement */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = RV;
-					cmd.args[0] = arg0;
-				}
-			}
-			else if (( buf[0] == 's' )&&( buf[1] == 't' )){
-				/* RV: rv train movement */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = ST;
-					cmd.args[0] = arg0;
-				}
-			}
-			else if (( buf[0] == 's' )&&( buf[1] == 'w' )&&(( buf[buf_i-1] == 'S' )||( buf[buf_i-1] == 'C' )||( buf[buf_i-1] == 's' )||( buf[buf_i-1] == 'c' ))){
-				/* SW: shift switch */
-				arg0 = parse_int( buf, 3, buf_i, &start );
-
-				if (( arg0 == PARSE_INT_FAIL )||( start != buf_i-2 )) {
-					cmd.command = X;
-				}
-				else {
-					cmd.command = SW;
-					cmd.args[0] = arg0;
-					if ( buf[buf_i-1] == 'S' || buf[buf_i-1] == 's' ){
-						cmd.args[1] = 33;
-					}
-					else {
-						cmd.args[1] = 34;
-					}
-				}
-			}
-			else {
-				cmd.command = X;
-			}
-			echo( echo_region, " \n" );
-			for ( i = 0; i < MAX_BUFFER_SIZE; i++ ){
-				screen->nextline[i] = buf[i];
-				if ( buf[i] == 0 ) break;
-				buf[i] = 0;
-			}
-			buf_i = 0;
-			break;
-		case '\b':
-			// undo
-			if ( buf_i > 0 ){
-				buf_i--;
-				buf[buf_i] = 0;
-				echo( echo_region, buf );
-			}
-			else {
-				echo( echo_region, " \n" );
-			}
-			continue;
-		default: 
-			// echo
-			buf[buf_i] = data;
-			buf_i++;
-			assert( buf_i < MAX_BUFFER_SIZE );
-			echo( echo_region, buf );
-			continue;
-		}
-		
-		// do action
-		switch ( cmd.command ) {
-		case N:
-			break;
-		case Q:
-			quit = 1;
-			ack( ack_region, "Goodbye!", screen );
-			break;
-		case TR:
-			ack( ack_region, "Train speed changes", screen );
-			status = train_set_speed( cmd.args[0], cmd.args[1] );
-			assert( status == ERR_NONE );
-			break;
-		case RV:
-			ack( ack_region, "Train reverses", screen );
-			status = train_reverse( cmd.args[0] );
-			assert( status == ERR_NONE );
-			break;
-		case SW:
-			ack( ack_region, "Switch shifts", screen );
-			status = train_switch( cmd.args[0], cmd.args[1] );
-			assert( status == ERR_NONE );
-			break;
-		case ST:
-			status = train_check_switch( cmd.args[0] );
-			ack_st( ack_region, cmd.args[0], (char)status, screen );
-			break;
-		case WH:
-			status = train_last_sensor();
-			if ( status ) {
-				ack_wh( ack_region, status, screen );
-			}
-			break;
-		case SA:
-			ack( ack_region, "Shift all switches", screen );
-			status = train_switch_all( cmd.args[0] );
-			assert( status == ERR_NONE );
-			break;
-		case PT:
-			ack( ack_region, "pressure test", screen );
-			break;
-		default:
-			ack( ack_region, "Invalid command", screen );
-			break;
-		}
-#endif /* if 0 */
 	}
 
 	// tell children to suicide

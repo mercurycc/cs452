@@ -42,6 +42,27 @@ int sensor_id2name( char* str, uchar group, uchar id )
 	return ERR_NONE;
 }
 
+int sensor_name2id( char* str, int* group, int* id )
+{
+	*group = ( str[ 0 ] - 'A' ) * 2;
+	*id = stou( str + 1 ) - 1;
+
+	if( *id > 15 || *id < 0 ){
+		return ERR_INVALID_ARGUMENT;
+	}
+
+	if( *id > 7 ){
+		*group += 1;
+		*id %= 8;
+	}
+
+	if( *group >= SENSOR_BYTE_COUNT ){
+		return ERR_INVALID_ARGUMENT;
+	}
+
+	return ERR_NONE;
+}
+
 static void sensor_query_server()
 {
 	Sensor_query query = {0};

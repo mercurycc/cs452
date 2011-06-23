@@ -1,15 +1,8 @@
 /* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
-#include "config.h"
-#include "track_data.h"
+#include "inc/config.h"
+#include "inc/track_data.h"
 
-static void *memset(void *s, int c, unsigned int n) {
-	unsigned char *p = s;
-	while(n --> 0) { *p++ = (unsigned char)c; }
-	return s;
-}
-
-void init_tracka(track_node *track) {
-	memset(track, 0, TRACK_MAX*sizeof(track_node));
+void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
 	track[0].name = "A1";
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
 	track[0].group = GROUPA;
@@ -1559,8 +1552,7 @@ void init_tracka(track_node *track) {
 	track[143].reverse = &track[142];
 }
 
-void init_trackb(track_node *track) {
-	memset(track, 0, TRACK_MAX*sizeof(track_node));
+void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
 	track[0].name = "A1";
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
 	track[0].group = GROUPA;

@@ -32,6 +32,7 @@ void train_sensor();
 /* group < 0 if no sensor has been triggered yet */
 int sensor_query_recent( int tid, int* group, int* id );
 int sensor_id2name( char* str, uchar group, uchar id );
+int sensor_name2id( char* str, int* group, int* id );
 
 /* ui components */
 void sensor_ui();

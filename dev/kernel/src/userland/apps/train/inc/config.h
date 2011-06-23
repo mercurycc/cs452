@@ -5,6 +5,7 @@
 #define SENSOR_NAME_LENGTH    3
 #define NUM_SWITCHES         22
 #define MAX_NUM_TRAINS       10
+#define MAX_TRAIN_ID         128
 
 /* UI */
 #define SENSOR_UI_NAME      "sensor_ui"
@@ -19,20 +20,5 @@
 
 #define WARNING_REGION       { 14, 23, 1, 78 - 14, 1, 0 }
 #define SWID_TO_ARRAYID( i ) ( i < 19 ? i - 1 : i - 135 )
-
-/* Track graph */
-enum Graph_node_group {
-	GROUPA,
-	GROUPB,
-	GROUPC,
-	GROUPD,
-	GROUPE,
-	GROUPMR,
-	GROUPBR,
-	GROUPEX,
-	GROUPEN
-};
-
-#define TRACK_GRAPH_NODES_PER_GROUP   16
 
 #endif /* _TRAIN_CONFIG_H_ */
