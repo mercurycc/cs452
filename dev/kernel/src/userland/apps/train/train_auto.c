@@ -30,7 +30,8 @@ typedef struct Train_data_s {
 	uint speed;                      /* Speed currently at, in mm/10ms */
 	uint speed_level;
 	uint old_speed_level;
-	uint time_stamp;
+	uint last_sensor_time;
+	track_node* last_sensor;
 	track_node* check_point;
 } Train_data;
 
@@ -76,8 +77,8 @@ typedef struct Train_auto_request_s {
 		struct {
 			uint train_id;
 			uint pickup;
-			uint previous_group;  /* The sensor the pickup is heading towards */
-			uint previous_id;
+			uint next_group;  /* The sensor the pickup is heading towards */
+			uint next_id;
 		} new_train;
 		struct {
 			uint train_id;
@@ -211,7 +212,8 @@ void train_auto()
 			current_train->speed = 0;
 			current_train->speed_level = 0;
 			current_train->old_speed_level = 0;
-			current_train->time_stamp = 0;
+			current_train->last_sensor_time = 0;
+			current_train->last_sensor = track_graph + node_map[ request.new_train.previous_group ][ request.new_train.previous_id ];
 			current_train->check_point = track_graph + node_map[ request.new_train.previous_group ][ request.new_train.previous_id ];
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
@@ -226,6 +228,8 @@ void train_auto()
 			} else if( current_train->pickup == TRAIN_PICKUP_BACK ){
 				current_train->pickup = TRAIN_PICKUP_FRONT;
 			}
+			/* TODO: This will lose precision */
+			current_train->check_point = current_train->check_point->reverse;
 			current_train->state = TRAIN_STATE_REVERSE;
 			break;
 		case TRAIN_AUTO_SET_SWITCH_DIR:
@@ -249,5 +253,126 @@ void train_auto()
 		default:
 			break;
 		}
+
+		/* Process train states */
+		for( temp = 0; temp < available_train; temp += 1 ){
+			current_train = trains + temp;
+			switch( current_train->state ){
+			case TRAIN_STATE_INIT:
+				current_train->state = TRAIN_STATE_TRACKING;
+				break;
+			case TRAIN_STATE_TRACKING:
+				break;
+			case TRAIN_STATE_REVERSE:
+				break;
+			case TRAIN_STATE_SPEED_CHANGE:
+				break;
+			case TRAIN_STATE_SPEED_ERROR:
+				break;
+			case TRAIN_STATE_SWITCH_ERROR:
+				break;
+			case TRAIN_STATE_UNKNOW:
+				break;
+			}
+		}
 	}
 }
+
+static int train_auto_request( int tid, Train_auto_request* data, uint size, int* group, int* id )
+{
+	int status;
+	Train_auto_reply reply;	
+
+	status = Send( tid, ( char* )data, size, ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+
+	if( group ){
+		*group = reply.group;
+	}
+	if( id ){
+		*id = reply.id;
+	}
+
+	return ERR_NONE;
+}
+
+int train_auto_new_sensor_data( int tid, Sensor_data* data )
+{
+	Train_auto_request request;
+
+	/* Very unfortunate */
+	memcpy( ( uchar* )&request.data.sensor_data, ( uchar* )data, sizeof( Sensor_data ) );
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.sensor_data ), 0, 0 );
+}
+
+int train_auto_init( int tid, uint track )
+{
+	Train_auto_request request;
+
+	request.data.init.track_id = track;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.init ), 0, 0 );
+}
+
+int train_auto_new_train( int tid, uint id, uint pickup, uint pre_grp, uint pre_id )
+{
+	Train_auto_request request;
+
+	request.data.new_train.train_id = id;
+	request.data.new_train.pickup = pickup;
+	request.data.new_train.next_group = pre_grp;
+	request.data.new_train.next_id = pre_id;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.new_train ), 0, 0 );
+}
+
+int train_auto_set_speed( int tid, uint id, uint speed_level )
+{
+	Train_auto_request request;
+
+	request.data.set_speed.train_id = id;
+	request.data.set_speed.speed_level = speed_level;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_speed ), 0, 0 );
+}
+
+int train_auto_set_reverse( int tid, uint id )
+{
+	Train_auto_request request;
+
+	request.data.set_reverse.train_id = id;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_reverse ), 0, 0 );
+}
+
+int train_auto_set_switch( int tid, uint id, char direction )
+{
+	Train_auto_request request;
+
+	request.data.set_switch.switch_id = id;
+	request.data.set_switch.direction = direction;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_switch ), 0, 0 );
+}
+
+int train_auto_query_switch( int tid, uint id, int* direction )
+{
+	Train_auto_request request;
+
+	request.data.query_switch.switch_id = id;
+	request.data.query_switch.direction = direction;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.query_switch ), direction, 0 );
+}
+
+int train_auto_query_sensor( int tid, int* group, int* id )
+{
+	Train_auto_request request;
+
+	request.data.query_sensor.switch_id = id;
+	request.data.query_sensor.direction = direction;
+
+	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
+}
+

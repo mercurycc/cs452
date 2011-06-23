@@ -227,7 +227,7 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "sw <switch id> <direction [C|S]>\n" );
 			}
-		} else if( ! strcmp( token_buf[ 0 ], "register" ) ){
+		} else if( ! strcmp( token_buf[ 0 ], "reg" ) ){
 			int train_id;
 			int pickup_sensor_group;
 			int pickup_sensor_id;
@@ -242,7 +242,7 @@ void train_control()
 					region_printf( &result_reg, "NIY, got train %d, group %d, id %d\n", train_id, pickup_sensor_group, pickup_sensor_id );
 				}
 			} else {
-				region_printf( &result_reg, "register <train id> <sensor pickup heading towards>\n" );
+				region_printf( &result_reg, "%s <train id> <sensor pickup heading towards>\n", token_buf[ 0 ] );
 			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );

@@ -21,6 +21,17 @@ int train_module_suicide( int tid );
 int train_pressure_test( int tid );
 int train_switch_all( int tid, int d );
 
+/* Automation */
+int train_auto_new_sensor_data( int tid, Sensor_data* data );
+int train_auto_init( int tid, uint track );
+int train_auto_new_train( int tid, uint id, uint pickup, uint pre_grp, uint pre_id );
+int train_auto_set_reverse( int tid, uint id, uint speed_level );
+int train_auto_set_speed( int tid, uint id );
+int train_auto_set_switch( int tid, uint id, char direction );
+int train_auto_query_switch( int tid, uint id, int* direction );
+int train_auto_query_sensor( int tid, int* group, int* id );
+
+
 /* switch event api */
 int switch_ui_update_id( int tid, int id, char direction );
 int switch_ui_update_all( int tid, char direction );
