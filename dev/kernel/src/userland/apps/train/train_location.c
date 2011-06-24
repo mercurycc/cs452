@@ -41,7 +41,11 @@ int update_train_speed( Train_data* train, track_node* new_sensor ) {
 	uint distance = last_path->dist;
 	uint time = cur_time - train->last_sensor_time;
 
-	// calculate new speed
+	// store old speed
+	// TODO
+
+	// calculate new speed with avg
+	// TODO
 	train->speed_n = distance;
 	train->speed_d = time;
 
@@ -53,9 +57,6 @@ int update_train_speed( Train_data* train, track_node* new_sensor ) {
 	
 	return ERR_NONE;
 }
-
-
-
 
 
 
