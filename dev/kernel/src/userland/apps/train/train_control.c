@@ -6,11 +6,13 @@
 #include <user/display.h>
 #include <user/syscall.h>
 #include <user/uart.h>
+#include <user/name_server.h>
 #include <user/lib/sync.h>
 #include <user/lib/parser.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
+#include "inc/warning.h"
 
 #define MAX_BUFFER_SIZE 128
 #define MAX_SCREEN_SIZE 1024
@@ -31,6 +33,7 @@ void train_control()
 	int sensor_query_tid;
 	int switch_tid;
 	int module_tid;
+	int auto_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -73,18 +76,18 @@ void train_control()
 	assert( status == ERR_NONE );
 	region_printf( &prompt_titles, "Warning" );
 
-	status = region_printf( &result_reg, "Please wait for the track to initialize\n" );
-	assert( status == ERR_NONE );
-
-	module_tid = Create( TRAIN_MODULE_PRIORITY, train_module );
-	assert( module_tid > 0 );
-
 	/* Prompt */
 	region_printf( &prompt_reg, "$" );
 	prompt_reg.col += 3;
 
+	status = region_printf( &result_reg, "Please wait for the track to initialize\n" );
+	assert( status == ERR_NONE );
+
 	switch_tid = Create( TRAIN_UI_PRIORITY, switches_ui );
 	assert( switch_tid > 0 );
+
+	module_tid = Create( TRAIN_MODULE_PRIORITY, train_module );
+	assert( module_tid > 0 );
 
 	clock_tid = Create( TRAIN_UI_PRIORITY, clock_ui );
 	assert( clock_tid > 0 );
@@ -95,12 +98,16 @@ void train_control()
 	sensor_tid = Create( TRAIN_SENSOR_PRIORITY, train_sensor );
 	assert( sensor_tid > 0 );
 
-	sensor_query_tid = WhoIs( SENSOR_QUERY_NAME );
-	assert( sensor_query_tid > 0 );
+	auto_tid = Create( TRAIN_AUTO_PRIROTY, train_auto );
+	assert( auto_tid > 0 );
+
+	train_auto_init( auto_tid, TRACK_A );
 
 	sync_wait();
 	region_clear( &result_reg );
-	
+
+	train_auto_set_switch_all( auto_tid, 'C' );
+
 	while ( !quit ) {
 		/* Single character echo */
 		prompt_reg.margin = 0;
@@ -152,7 +159,7 @@ void train_control()
 			int group;
 			int id;
 			char name[ SENSOR_NAME_LENGTH + 1 ];
-			status = sensor_query_recent( sensor_query_tid, &group, &id );
+			status = train_auto_query_sensor( auto_tid, &group, &id );
 			assert( status == ERR_NONE );
 
 			sensor_id2name( name, group, id );
@@ -163,9 +170,11 @@ void train_control()
 			}
 		} else if( ! strcmp( token_buf[ 0 ], "sall" ) ){
 			train_switch_all( module_tid, 'S' );
+			train_auto_set_switch_all( auto_tid, 'S' );
 			region_printf( &result_reg, "Swap all switches to straight\n" );
 		} else if( ! strcmp( token_buf[ 0 ], "call" ) ){
 			train_switch_all( module_tid, 'C' );
+			train_auto_set_switch_all( auto_tid, 'C' );
 			region_printf( &result_reg, "Swap all switches to curve\n" );
 		} else if( ! strcmp( token_buf[ 0 ], "tr" ) ){
 			int args[ 2 ];
@@ -173,6 +182,7 @@ void train_control()
 				args[ 0 ] = ( int )stou( token_buf[ 1 ] );
 				args[ 1 ] = ( int )stou( token_buf[ 2 ] );
 				train_set_speed( module_tid, args[ 0 ], args[ 1 ] );
+				train_auto_set_speed( auto_tid, args[ 0 ], args[ 1 ] );
 				region_printf( &result_reg, "Set train %d to speed level %d\n", args[ 0 ], args[ 1 ] );
 			} else {
 				region_printf( &result_reg, "tr <train id> <speed level (0 - 14)>\n" );
@@ -182,6 +192,7 @@ void train_control()
 			if( token_filled == 2 ){
 				arg = ( int )stou( token_buf[ 1 ] );
 				train_reverse( module_tid, arg );
+				train_auto_set_reverse( auto_tid, arg );
 				region_printf( &result_reg, "Reverse train %d\n", arg );
 			} else {
 				region_printf( &result_reg, "rv <train id>\n" );
@@ -197,7 +208,8 @@ void train_control()
 					fail = 1;
 				}
 				if( ! fail ){
-					direction = train_check_switch( module_tid, switch_id );
+					train_auto_query_switch( auto_tid, switch_id, &i );
+					direction = ( char )i;
 					region_printf( &result_reg, "Switch %d is %s\n", switch_id, direction == 'C' ? "curve" : "straight" );
 				}
 			} else {
@@ -222,6 +234,7 @@ void train_control()
 				if( ! fail ){
 					assert( direction == 'C' || direction == 'S' );
 					train_switch( module_tid, switch_id, direction );
+					train_auto_set_switch( auto_tid, switch_id, direction );
 					region_printf( &result_reg, "Set switch %d to %c\n", switch_id, direction );
 				}
 			} else {

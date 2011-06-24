@@ -72,7 +72,6 @@ void sensor_ui()
 	Region sensor_title = { 2, 3, 1, 18 - 2, 1, 0 };
 	Region sensor_reg = { 2, 4, 12 - 4, 27 - 2, 1, 1 };
 	Region sensor_list_reg = { 22, 6, 1, 3, 0, 0 };
-	Region warning_reg = WARNING_REGION;
 
 	status = RegisterAs( SENSOR_UI_NAME );
 	assert( status == REGISTER_AS_SUCCESS );

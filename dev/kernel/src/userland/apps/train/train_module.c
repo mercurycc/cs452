@@ -9,6 +9,7 @@
 #include <user/lib/sync.h>
 #include "inc/config.h"
 #include "inc/train.h"
+#include "inc/warning.h"
 
 #define SWITCH_XMIT_DELAY 16
 #define SWITCH_OFF_DELAY 20

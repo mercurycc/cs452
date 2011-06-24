@@ -141,7 +141,7 @@ int sensor_query_recent( int tid, int* group, int* id )
 
 void train_sensor()
 {
-	Sensor_data data_buffer[ 2 ] = {0};
+	Sensor_data data_buffer[ 2 ] = {{0}};
 	Sensor_data* sensor_data_old = data_buffer;
 	Sensor_data* sensor_data = data_buffer + 1;
 	Sensor_data* temp = 0;
@@ -158,7 +158,7 @@ void train_sensor()
 		
 	*sensor_ui_tid = WhoIs( SENSOR_UI_NAME );
 	*train_mod_tid = WhoIs( TRAIN_MODULE_NAME );
-	// *train_auto_tid = WhoIs( TRAIN_AUTO_NAME );
+	*train_auto_tid = WhoIs( TRAIN_AUTO_NAME );
 	*notified = 1;
 	*query_tid = Create( TRAIN_SENSOR_PRIORITY, sensor_query_server );
 
@@ -215,6 +215,9 @@ static int sensor_new_data( int tid, int data )
 	int* query_tid = sensor_notifiee + 4;
 	Sensor_data* sensor_data = ( Sensor_data* )data;
 	int status;
+
+	status = train_auto_new_sensor_data( *train_auto_tid, sensor_data );
+	assert( status == ERR_NONE );
 
 	status = sensor_ui_update( *sensor_ui_tid, sensor_data );
 	assert( status == ERR_NONE );

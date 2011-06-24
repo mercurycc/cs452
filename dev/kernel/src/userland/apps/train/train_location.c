@@ -41,8 +41,8 @@ int update_train_speed( Train_data* train, track_node* new_sensor, track_node* t
 	uint time = cur_time - train->last_sensor_time;
 
 	// calculate new speed
-	train->speed_n = distance;
-	train->speed_d = time;
+	train->speed_numerator = distance;
+	train->speed_denominator = time;
 
 	// update location
 	assert( status == 0 );

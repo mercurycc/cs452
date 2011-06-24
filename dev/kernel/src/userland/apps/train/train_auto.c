@@ -7,14 +7,16 @@
 #include <err.h>
 #include <lib/str.h>
 #include <user/syscall.h>
-#include <user/lib/assert.h>
+#include <user/assert.h>
 #include <user/time.h>
 #include <user/name_server.h>
+#include <config.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
 #include "inc/track_data.h"
 #include "inc/track_node.h"
+#include "inc/warning.h"
 
 typedef struct Train_stat_s {
 	uint total_dist;
@@ -27,8 +29,8 @@ typedef struct Train_data_s {
 	uint state;
 	uint pickup;                     /* Traveling with pick up at the front is forward, backward o/w */
 	uint distance;                   /* Distance from last check point, in mm */
-	uint speed_n;
-	uint speed_d;                    /* Speed currently at, in mm/10ms */
+	uint speed_numerator;
+	uint speed_denominator;          /* Speed currently at, in mm/10ms */
 	uint speed_level;
 	uint old_speed_level;
 	uint last_sensor_time;
@@ -59,13 +61,9 @@ enum Train_auto_request_type {
 	TRAIN_AUTO_SET_TRAIN_SPEED,
 	TRAIN_AUTO_SET_TRAIN_REVERSE,
 	TRAIN_AUTO_SET_SWITCH_DIR,
+	TRAIN_AUTO_SET_ALL_SWITCH,
 	TRAIN_AUTO_QUERY_SWITCH_DIR,
 	TRAIN_AUTO_QUERY_LAST_SENSOR
-};
-
-enum Track_id {
-	TRACK_A,
-	TRACK_B
 };
 
 typedef struct Train_auto_request_s {
@@ -93,7 +91,10 @@ typedef struct Train_auto_request_s {
 			char direction;
 		} set_switch;
 		struct {
-			uint switch_id
+			char direction;
+		} set_switch_all;
+		struct {
+			uint switch_id;
 		} query_switch;
 		struct {
 			uint dummy;
@@ -111,9 +112,10 @@ void train_auto()
 	Train_auto_request request;
 	Train_auto_reply reply;
 	Sensor_data sensor_data;
-	uint last_sensor_group;
-	uint last_sensor_id;
+	int last_sensor_group = -1;
+	int last_sensor_id = -1;
 	int tid;
+	int i;
 	int temp;
 	track_node track_graph[ TRACK_NUM_NODES ];
 	int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ];
@@ -127,11 +129,11 @@ void train_auto()
 
 	/* Receive initialization data */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
-	assert( status == sizeof( int ) + sizeof( request.init ) );
+	assert( status == sizeof( int ) + sizeof( request.data.init ) );
 	status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 	assert( status == SYSCALL_SUCCESS );
 
-	switch( request.init.track_id ){
+	switch( request.data.init.track_id ){
 	case TRACK_A:
 		init_tracka( track_graph, node_map );
 		break;
@@ -147,7 +149,7 @@ void train_auto()
 
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
-
+	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 
@@ -159,25 +161,28 @@ void train_auto()
 			assert( 0 );
 			break;
 		case TRAIN_AUTO_NEW_SENSOR_DATA:
-			assert( status == sizeof( request.sensor_data ) );
+			assert( status == sizeof( request.data.sensor_data ) );
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
-			assert( status == sizeof( request.new_train ) );
+			assert( status == sizeof( request.data.new_train ) );
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
-			assert( status == sizeof( request.set_speed ) );
+			assert( status == sizeof( request.data.set_speed ) );
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
-			assert( status == sizeof( request.set_reverse ) );
+			assert( status == sizeof( request.data.set_reverse ) );
 			break;
 		case TRAIN_AUTO_SET_SWITCH_DIR:
-			assert( status == sizeof( request.set_switch ) );
+			assert( status == sizeof( request.data.set_switch ) );
+			break;
+		case TRAIN_AUTO_SET_ALL_SWITCH:
+			assert( status == sizeof( request.data.set_switch_all ) );
 			break;
 		case TRAIN_AUTO_QUERY_SWITCH_DIR:
-			assert( status == sizeof( request.query_switch ) );
+			assert( status == sizeof( request.data.query_switch ) );
 			break;
 		case TRAIN_AUTO_QUERY_LAST_SENSOR:
-			assert( status == sizeof( request.query_sensor ) );
+			assert( status == sizeof( request.data.query_sensor ) );
 			break;
 		}
 
@@ -188,6 +193,7 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 		case TRAIN_AUTO_SET_SWITCH_DIR:
+		case TRAIN_AUTO_SET_ALL_SWITCH:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		default:
@@ -198,32 +204,44 @@ void train_auto()
 		switch( request.type ){
 		case TRAIN_AUTO_NEW_SENSOR_DATA:
 			/* Unfortuate memcpy */
-			memcpy( ( uchar* )&sensor_data, ( uchar* )&request.sensor_data, sizeof( sensor_data ) );
-			/* Need to process new sensor data */
-			assert( 0 );
+			memcpy( ( uchar* )&sensor_data, ( uchar* )&request.data.sensor_data, sizeof( sensor_data ) );
+			/* Update last triggered sensor */
+			for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
+				if( sensor_data.sensor_raw[ temp ] ){
+					last_sensor_group = temp;
+					for( i = 0; i < BITS_IN_BYTE; i += 1 ){
+						if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
+							last_sensor_id = i;
+						}
+					}
+				}
+			}
+			/* TODO: Need to process new sensor data */
+			
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
 			current_train = trains + available_train;
-			train_map[ request.new_train.train_id ] = available_train;
+			train_map[ request.data.new_train.train_id ] = available_train;
 			available_train += 1;
-			current_train->id = request.new_train.train_id;
+			current_train->id = request.data.new_train.train_id;
 			current_train->state = TRAIN_STATE_INIT;
-			current_train->pickup = request.new_train.pickup;
+			current_train->pickup = request.data.new_train.pickup;
 			current_train->distance = 0;
-			current_train->speed = 0;
+			current_train->speed_numerator = 0;
+			current_train->speed_denominator = 1;
 			current_train->speed_level = 0;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
-			current_train->last_sensor = track_graph + node_map[ request.new_train.previous_group ][ request.new_train.previous_id ];
-			current_train->check_point = track_graph + node_map[ request.new_train.previous_group ][ request.new_train.previous_id ];
+			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
+			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
-			current_train = trains + train_map[ request.set_speed.train_id ];
+			current_train = trains + train_map[ request.data.set_speed.train_id ];
 			current_train->old_speed_level = current_train->speed_level;
 			current_train->state = TRAIN_STATE_SPEED_CHANGE;
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
-			current_train = trains + train_map[ request.set_speed.train_id ];
+			current_train = trains + train_map[ request.data.set_speed.train_id ];
 			if( current_train->pickup == TRAIN_PICKUP_FRONT ){
 				current_train->pickup = TRAIN_PICKUP_BACK;
 			} else if( current_train->pickup == TRAIN_PICKUP_BACK ){
@@ -234,10 +252,14 @@ void train_auto()
 			current_train->state = TRAIN_STATE_REVERSE;
 			break;
 		case TRAIN_AUTO_SET_SWITCH_DIR:
-			switch_table[ SWID_TO_ARRAYID( request.set_switch.switch_id ) ] = request.set_switch.direction;
+			switch_table[ SWID_TO_ARRAYID( request.data.set_switch.switch_id ) ] = request.data.set_switch.direction;
 			break;
+		case TRAIN_AUTO_SET_ALL_SWITCH:
+			for( i = 0; i < NUM_SWITCHES; i += 1 ){
+				switch_table[ i ] = request.data.set_switch_all.direction;
+			}
 		case TRAIN_AUTO_QUERY_SWITCH_DIR:
-			reply.group = switch_table[ SWID_TO_ARRAYID( request.set_switch.switch_id ) ];
+			reply.group = switch_table[ SWID_TO_ARRAYID( request.data.set_switch.switch_id ) ];
 			break;
 		case TRAIN_AUTO_QUERY_LAST_SENSOR:
 			reply.group = last_sensor_group;
@@ -282,7 +304,7 @@ void train_auto()
 static int train_auto_request( int tid, Train_auto_request* data, uint size, int* group, int* id )
 {
 	int status;
-	Train_auto_reply reply;	
+	Train_auto_reply reply;
 
 	status = Send( tid, ( char* )data, size, ( char* )&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
@@ -301,79 +323,96 @@ int train_auto_new_sensor_data( int tid, Sensor_data* data )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_NEW_SENSOR_DATA;
+
 	/* Very unfortunate */
 	memcpy( ( uchar* )&request.data.sensor_data, ( uchar* )data, sizeof( Sensor_data ) );
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.sensor_data ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.sensor_data ), 0, 0 );
 }
 
 int train_auto_init( int tid, uint track )
 {
 	Train_auto_request request;
-
+	
+	request.type = TRAIN_AUTO_INIT;
 	request.data.init.track_id = track;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.init ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.init ), 0, 0 );
 }
 
 int train_auto_new_train( int tid, uint id, uint pickup, uint pre_grp, uint pre_id )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_NEW_TRAIN;
 	request.data.new_train.train_id = id;
 	request.data.new_train.pickup = pickup;
 	request.data.new_train.next_group = pre_grp;
 	request.data.new_train.next_id = pre_id;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.new_train ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.new_train ), 0, 0 );
 }
 
 int train_auto_set_speed( int tid, uint id, uint speed_level )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_SET_TRAIN_SPEED;
 	request.data.set_speed.train_id = id;
 	request.data.set_speed.speed_level = speed_level;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_speed ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_speed ), 0, 0 );
 }
 
 int train_auto_set_reverse( int tid, uint id )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_QUERY_SWITCH_DIR;
+
 	request.data.set_reverse.train_id = id;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_reverse ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_reverse ), 0, 0 );
 }
 
 int train_auto_set_switch( int tid, uint id, char direction )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_SET_SWITCH_DIR;
 	request.data.set_switch.switch_id = id;
 	request.data.set_switch.direction = direction;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.set_switch ), 0, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_switch ), 0, 0 );
+}
+
+int train_auto_set_switch_all( int tid, char direction )
+{
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_SET_ALL_SWITCH;
+	request.data.set_switch_all.direction = direction;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_switch_all ), 0, 0 );
 }
 
 int train_auto_query_switch( int tid, uint id, int* direction )
 {
 	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_QUERY_SWITCH_DIR;
 	request.data.query_switch.switch_id = id;
-	request.data.query_switch.direction = direction;
 
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.query_switch ), direction, 0 );
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.query_switch ), direction, 0 );
 }
 
 int train_auto_query_sensor( int tid, int* group, int* id )
 {
 	Train_auto_request request;
 
-	request.data.query_sensor.switch_id = id;
-	request.data.query_sensor.direction = direction;
-
-	return train_auto_request( tid, request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
+	request.type = TRAIN_AUTO_QUERY_LAST_SENSOR;
+	
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
 }
 
