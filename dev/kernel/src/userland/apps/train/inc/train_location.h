@@ -6,6 +6,3 @@ int update_train_location( Train_data *train );
 int update_train_speed( Train_data* train, track_node* new_sensor, track_node* track );
 
 
-/* find edge between track_nodes */
-int find_edge( track_node* src, track_node* dst );
-

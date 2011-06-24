@@ -54,6 +54,8 @@ int update_train_speed( Train_data* train, track_node* new_sensor ) {
 	return ERR_NONE;
 }
 
-int find_edge( track_node* src, track_node* dst ){
-	// TODO: edges sorted in some way?
-}
+
+
+
+
+
