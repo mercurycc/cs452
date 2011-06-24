@@ -27,7 +27,8 @@ typedef struct Train_data_s {
 	uint state;
 	uint pickup;                     /* Traveling with pick up at the front is forward, backward o/w */
 	uint distance;                   /* Distance from last check point, in mm */
-	uint speed;                      /* Speed currently at, in mm/10ms */
+	uint speed_n;
+	uint speed_d;                    /* Speed currently at, in mm/10ms */
 	uint speed_level;
 	uint old_speed_level;
 	uint last_sensor_time;
