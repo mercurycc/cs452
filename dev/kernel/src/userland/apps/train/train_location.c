@@ -28,7 +28,7 @@ int update_train_location( Train_data *train ) {
 	return ERR_NONE;
 }
 
-int update_train_speed( Train_data* train, track_node* new_sensor, track_node* track ) {
+int update_train_speed( Train_data* train, track_node* new_sensor, track_edge* edges ) {
 
 	// TODO: check?
 
@@ -36,7 +36,7 @@ int update_train_speed( Train_data* train, track_node* new_sensor, track_node* t
 	uint cur_time = Time();
 	
 	// get distance and time
-	track_edge* last_path = find_edge( train->last_sensor, new_sensor );
+	track_edge* last_path = find_edge( edges, train->last_sensor, new_sensor );
 	uint distance = last_path->dist;
 	uint time = cur_time - train->last_sensor_time;
 
@@ -53,4 +53,6 @@ int update_train_speed( Train_data* train, track_node* new_sensor, track_node* t
 	return ERR_NONE;
 }
 
-
+int find_edge( track_edge* edges, track_node* src, track_node* dst ){
+	// TODO: edges sorted in some way?
+}
