@@ -176,6 +176,9 @@ void train_sensor()
 			sensor_data->sensor_raw[ group ] = Getc( COM_1 );
 		}
 		
+		/* sensor data incoming time */
+		sensor_data->last_sensor_time = Time();
+		
 		for( group = 0; group < SENSOR_BYTE_COUNT; group += 1 ){
 			if( sensor_data->sensor_raw[ group ] != sensor_data_old->sensor_raw[ group ] ){
 				need_update = 1;

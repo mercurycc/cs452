@@ -17,26 +17,9 @@
 #include "inc/track_data.h"
 #include "inc/track_node.h"
 #include "inc/warning.h"
+#include "inc/train_location.h"
+#include "inc/train_types.h"
 
-typedef struct Train_stat_s {
-	uint total_dist;
-	uint total_time;
-	uint avg_speed;
-} Train_stat;
-
-typedef struct Train_data_s {
-	uint id;
-	uint state;
-	uint pickup;                     /* Traveling with pick up at the front is forward, backward o/w */
-	uint distance;                   /* Distance from last check point, in mm */
-	uint speed_numerator;
-	uint speed_denominator;          /* Speed currently at, in mm/10ms */
-	uint speed_level;
-	uint old_speed_level;
-	uint last_sensor_time;
-	track_node* last_sensor;
-	track_node* check_point;
-} Train_data;
 
 enum Train_state {
 	TRAIN_STATE_INIT,             /* Init */
@@ -150,6 +133,20 @@ void train_auto()
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
 	
+	/*
+	// test
+	train_map[ request.data.new_train.train_id ] = 1;
+	current_train = trains + 1;
+	current_train->distance = 0;
+	current_train->speed_numerator = 0;
+	current_train->speed_denominator = 1;
+	current_train->speed_level = 0;
+	current_train->old_speed_level = 0;
+	current_train->last_sensor_time = 0;
+	current_train->last_sensor = track_graph + node_map[ 6 ][ 4 ];
+	current_train->check_point = track_graph + node_map[ 6 ][ 4 ];
+	*/
+	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 
@@ -205,6 +202,7 @@ void train_auto()
 		case TRAIN_AUTO_NEW_SENSOR_DATA:
 			/* Unfortuate memcpy */
 			memcpy( ( uchar* )&sensor_data, ( uchar* )&request.data.sensor_data, sizeof( sensor_data ) );
+			
 			/* Update last triggered sensor */
 			for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
 				if( sensor_data.sensor_raw[ temp ] ){
@@ -218,8 +216,17 @@ void train_auto()
 			}
 			/* TODO: Need to process new sensor data */
 			
+			/*// test version: only one train
+			current_train = trains+train_map[23];
+			status == update_train_speed( current_train, &sensor_data );
+			assert( status == 0 );
+			
+			WAR_PRINT( "new sensor: train speed %d / %d", current_train->speed_numerator, current_train->speed_denominator );
+			*/
+			
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
+			WAR_NOTICE( "new train registered" );
 			current_train = trains + available_train;
 			train_map[ request.data.new_train.train_id ] = available_train;
 			available_train += 1;
@@ -415,4 +422,5 @@ int train_auto_query_sensor( int tid, int* group, int* id )
 	
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
 }
+
 
