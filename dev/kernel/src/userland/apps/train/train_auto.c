@@ -119,9 +119,11 @@ void train_auto()
 	switch( request.data.init.track_id ){
 	case TRACK_A:
 		init_tracka( track_graph, node_map );
+		WAR_NOTICE( "init track A" );
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
+		WAR_NOTICE( "init track B" );
 		break;
 	default:
 		assert( 0 );
@@ -133,19 +135,21 @@ void train_auto()
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
 	
-	/*
+	
+
 	// test
-	train_map[ request.data.new_train.train_id ] = 1;
-	current_train = trains + 1;
-	current_train->distance = 0;
-	current_train->speed_numerator = 0;
-	current_train->speed_denominator = 1;
-	current_train->speed_level = 0;
-	current_train->old_speed_level = 0;
-	current_train->last_sensor_time = 0;
-	current_train->last_sensor = track_graph + node_map[ 6 ][ 4 ];
-	current_train->check_point = track_graph + node_map[ 6 ][ 4 ];
-	*/
+	Train_data test_train_data;
+	Train_data* test_train = &test_train_data;
+	test_train->distance = 0;
+	test_train->speed_numerator = 0;
+	test_train->speed_denominator = 1;
+	test_train->speed_level = 0;
+	test_train->old_speed_level = 0;
+	test_train->last_sensor_time = 0;
+	test_train->last_sensor = track_graph + node_map[ 6 ][ 4 ];
+	assert( test_train->last_sensor );
+	//test_train->check_point = track_graph + node_map[ 6 ][ 4 ];
+	
 	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -216,13 +220,12 @@ void train_auto()
 			}
 			/* TODO: Need to process new sensor data */
 			
-			/*// test version: only one train
-			current_train = trains+train_map[23];
-			status == update_train_speed( current_train, &sensor_data );
+			// test version: only one train
+			status == update_train_speed( test_train, track_graph + node_map[ sensor_data.last_sensor_group ][ sensor_data.last_sensor_id ], sensor_data.last_sensor_time );
 			assert( status == 0 );
 			
-			WAR_PRINT( "new sensor: train speed %d / %d", current_train->speed_numerator, current_train->speed_denominator );
-			*/
+			WAR_PRINT( "new sensor: train speed %d / %d    ", test_train->speed_numerator, test_train->speed_denominator );
+			
 			
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:

@@ -12,6 +12,7 @@ typedef enum {
 #define DIR_CURVED 1
 
 struct track_node;
+struct track_edge;
 typedef struct track_node track_node;
 typedef struct track_edge track_edge;
 

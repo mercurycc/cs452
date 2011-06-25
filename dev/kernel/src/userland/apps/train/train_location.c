@@ -30,49 +30,42 @@ int update_train_location( Train_data* train ) {
 	return ERR_NONE;
 }
 
-int update_train_speed( Train_data* train, Sensor_data* sensor_data ) {
+int update_train_speed( Train_data* train, track_node* next_sensor, uint time_stamp ) {
 	
 	int status;
 
-	// TODO: check?
-	//WAR_PRINT( "sensor: %c %c; train: %s", sensor_data->last_sensor_group, sensor_data->last_sensor_id, train->last_sensor->edge[DIR_AHEAD].dest->name );
-	WAR_PRINT( "sensor: %d %d, train: %s", sensor_data->last_sensor_group, sensor_data->last_sensor_id, train->last_sensor->edge[DIR_AHEAD].dest->name );
-	
-	if ( train == 0 ) {
-		return 0;
-	}
-
-	// get current time
-	uint time_stamp = sensor_data->last_sensor_time;
-	
 	// get distance and time
-	track_node* last_node = train->last_sensor;
-	track_node* next_node = last_node;
-	uint distance = 0;
-	do {
-		distance += next_node->edge[DIR_AHEAD].dist;
-		next_node = last_node->edge[DIR_AHEAD].dest;
-	} while ( next_node->type == NODE_SENSOR );
+	track_node* last_sensor = train->last_sensor;
+	uint distance = track_distance( last_sensor, next_sensor );
 	
-	uint time = time_stamp - train->last_sensor_time;
-
 	// store old speed
 	// TODO
 
 	// calculate new speed with avg
 	// TODO
+	uint time = time_stamp - train->last_sensor_time;
 	train->speed_numerator = distance;
 	train->speed_denominator = time;
 
 	// update location
-	assert( status == 0 );
+	// assert( status == 0 );
 	
-	train->last_sensor = next_node;
+	train->last_sensor = next_sensor;
 	train->last_sensor_time = time_stamp;
 	train->distance = 0;
 	
-	return ERR_NONE;
+	return 0;
 }
 
 
+int track_distance( track_node* src, track_node* dst ){
+	
+	return 0;
+}
+
+/* find the expected target to hit by a train */
+int train_detective( Train_data* train, track_node** next_sensor_ahead, track_node** next_sensor_skipped, track_node** next_sensor_curved ){
+	// TODO
+	return 0;
+}
 
