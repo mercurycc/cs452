@@ -119,11 +119,10 @@ void train_auto()
 	switch( request.data.init.track_id ){
 	case TRACK_A:
 		init_tracka( track_graph, node_map );
-		WAR_NOTICE( "init track A" );
+		//init_trackb( track_graph, node_map );// for test
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
-		WAR_NOTICE( "init track B" );
 		break;
 	default:
 		assert( 0 );
@@ -146,9 +145,10 @@ void train_auto()
 	test_train->speed_level = 0;
 	test_train->old_speed_level = 0;
 	test_train->last_sensor_time = 0;
-	test_train->last_sensor = track_graph + node_map[ 6 ][ 4 ];
+	test_train->last_sensor = track_graph + node_map[ 1 ][ 4 ];
 	assert( test_train->last_sensor );
 	//test_train->check_point = track_graph + node_map[ 6 ][ 4 ];
+	track_node* test_sensor = 0;
 	
 	
 	while( 1 ){
@@ -221,7 +221,12 @@ void train_auto()
 			/* TODO: Need to process new sensor data */
 			
 			// test version: only one train
-			status == update_train_speed( test_train, track_graph + node_map[ sensor_data.last_sensor_group ][ sensor_data.last_sensor_id ], sensor_data.last_sensor_time );
+			//WAR_PRINT( "new sensor: G%d-%d    ", sensor_data.last_sensor_group, sensor_data.last_sensor_id );
+
+			test_sensor = track_graph + node_map[ sensor_data.last_sensor_group/2 ][ sensor_data.last_sensor_id+(last_sensor_group%2*8) ];
+			if ( test_sensor == test_train->last_sensor ) break;
+			
+			status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
 			assert( status == 0 );
 			
 			WAR_PRINT( "new sensor: train speed %d / %d    ", test_train->speed_numerator, test_train->speed_denominator );
