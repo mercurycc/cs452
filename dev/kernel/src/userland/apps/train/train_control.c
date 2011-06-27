@@ -101,10 +101,25 @@ void train_control()
 	auto_tid = Create( TRAIN_AUTO_PRIROTY, train_auto );
 	assert( auto_tid > 0 );
 
-	train_auto_init( auto_tid, TRACK_A );
-
 	sync_wait();
-	region_clear( &result_reg );
+
+	region_printf( &result_reg, "Which track am I using? (a/b)\n" );
+	
+	while( 1 ){
+		data = Getc( COM_2 );
+
+		if( data == 'a' || data == 'A' ){
+			region_printf( &result_reg, "Track A selected\n" );
+			train_auto_init( auto_tid, TRACK_A );
+		} else if( data == 'b' || data == 'B' ){
+			region_printf( &result_reg, "Track B selected\n" );
+			train_auto_init( auto_tid, TRACK_B );
+		} else {
+			continue;
+		}
+		
+		break;
+	}
 
 	train_auto_set_switch_all( auto_tid, 'C' );
 
@@ -191,8 +206,18 @@ void train_control()
 			int arg;
 			if( token_filled == 2 ){
 				arg = ( int )stou( token_buf[ 1 ] );
+				/* Set train to stop */
+				train_set_speed( module_tid, arg, 0 );
+				train_auto_set_speed( auto_tid, arg, 0 );
+
+				/* Reverse direction */
 				train_reverse( module_tid, arg );
 				train_auto_set_reverse( auto_tid, arg );
+
+				/* FIXME: debug lines, remove me */
+				train_set_speed( module_tid, arg, 10 );
+				train_auto_set_speed( auto_tid, arg, 10 );
+				
 				region_printf( &result_reg, "Reverse train %d\n", arg );
 			} else {
 				region_printf( &result_reg, "rv <train id>\n" );
