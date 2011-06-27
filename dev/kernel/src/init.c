@@ -45,7 +45,7 @@ int kernel_init( Context* ctx )
 	/* Initialize perf clock */
 	status = perf_init();
 	ASSERT( status == ERR_NONE );
-	status = perf_clear();
+	status = perf_timer_clear();
 	ASSERT( status == ERR_NONE );
 	
 	/* Initialize interrupt */
