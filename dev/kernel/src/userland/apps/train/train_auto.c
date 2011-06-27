@@ -39,6 +39,7 @@ enum Train_pickup {
 
 enum Train_auto_request_type {
 	TRAIN_AUTO_INIT,
+	TRAIN_AUTO_WAKEUP,
 	TRAIN_AUTO_NEW_SENSOR_DATA,
 	TRAIN_AUTO_NEW_TRAIN,
 	TRAIN_AUTO_SET_TRAIN_SPEED,
@@ -90,6 +91,19 @@ typedef struct Train_auto_reply_s {
 	int id;
 } Train_auto_reply;
 
+static int train_auto_wakeup( int tid );
+
+static void train_auto_alarm()
+{
+	int ptid = MyParentTid();
+
+	while( 1 ){
+		Delay( 1 );
+
+		train_auto_wakeup( ptid );
+	}
+}
+
 void train_auto()
 {
 	Train_auto_request request;
@@ -97,6 +111,7 @@ void train_auto()
 	Sensor_data sensor_data;
 	int last_sensor_group = -1;
 	int last_sensor_id = -1;
+	int alarm_tid;
 	int tid;
 	int i;
 	int j;
@@ -135,7 +150,9 @@ void train_auto()
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
 	
-	
+	/* Start alarm */
+	alarm_tid = Create( TRAIN_AUTO_PRIROTY, train_auto_alarm );
+	assert( alarm_tid > 0 );
 
 	// test
 	Train_data test_train_data;
@@ -172,6 +189,9 @@ void train_auto()
 		case TRAIN_AUTO_INIT:
 			/* No more init should be received */
 			assert( 0 );
+			break;
+		case TRAIN_AUTO_WAKEUP:
+			assert( status == 0 );
 			break;
 		case TRAIN_AUTO_NEW_SENSOR_DATA:
 			assert( status == sizeof( request.data.sensor_data ) );
@@ -309,7 +329,7 @@ void train_auto()
 		}
 
 		/* Process train states */
-		if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
+		if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA || request.type == TRAIN_AUTO_WAKEUP ){
 			for( temp = 0; temp < available_train; temp += 1 ){
 				current_train = trains + temp;
 				switch( current_train->state ){
@@ -331,6 +351,15 @@ void train_auto()
 				}
 			}
 		}
+
+		/* Really late reply */
+		switch( request.type ){
+		case TRAIN_AUTO_WAKEUP:
+			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
+			assert( status == SYSCALL_SUCCESS );
+		default:
+			break;
+		}			
 	}
 }
 
@@ -364,6 +393,15 @@ int train_auto_new_sensor_data( int tid, Sensor_data* data )
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.sensor_data ), 0, 0 );
 }
 
+static int train_auto_wakeup( int tid )
+{
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_WAKEUP;
+
+	return train_auto_request( tid, &request, sizeof( uint ), 0, 0 );
+}
+
 int train_auto_init( int tid, uint track )
 {
 	Train_auto_request request;
@@ -374,13 +412,13 @@ int train_auto_init( int tid, uint track )
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.init ), 0, 0 );
 }
 
-int train_auto_new_train( int tid, uint id, uint pickup, uint pre_grp, uint pre_id )
+int train_auto_new_train( int tid, uint id, uint pre_grp, uint pre_id )
 {
 	Train_auto_request request;
 
 	request.type = TRAIN_AUTO_NEW_TRAIN;
 	request.data.new_train.train_id = id;
-	request.data.new_train.pickup = pickup;
+	request.data.new_train.pickup = TRAIN_PICKUP_FRONT;
 	request.data.new_train.next_group = pre_grp;
 	request.data.new_train.next_id = pre_id;
 

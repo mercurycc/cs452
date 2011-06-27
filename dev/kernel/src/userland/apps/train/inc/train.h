@@ -32,7 +32,7 @@ enum Track_id {
 
 int train_auto_new_sensor_data( int tid, Sensor_data* data );
 int train_auto_init( int tid, uint track );
-int train_auto_new_train( int tid, uint id, uint pickup, uint pre_grp, uint pre_id );
+int train_auto_new_train( int tid, uint id, uint pre_grp, uint pre_id );
 int train_auto_set_speed( int tid, uint id, uint speed_level );
 int train_auto_set_reverse( int tid, uint id );
 int train_auto_set_switch( int tid, uint id, char direction );
