@@ -39,30 +39,30 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 	int distance = sensor_distance( last_sensor, next_sensor );
 	uint time = time_stamp - train->last_sensor_time;
 	
-	if (distance == -1) distance = 0;
+	if (distance != -1) {
 
-	// calculate new speed with avg
-	uint level = train->speed_level - 1;
-	
-	unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
-	unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
-	
-	while (( bottom > 10000 )&&( top > 10000 )) {
-		top = top / 10;
-		bottom = bottom / 10;
+		// calculate new speed with avg
+		uint level = train->speed_level - 1;
+		
+		unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
+		unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
+		
+		while (( bottom > 10000 )&&( top > 10000 )) {
+			top = top / 10;
+			bottom = bottom / 10;
+		}
+		
+		train->speed_table[level].numerator = top;
+		train->speed_table[level].denominator = bottom;
+		if ( train->speed_count[level] < NUM_SPEED_HISTORY ) {
+			train->speed_count[level] += 1;
+		}
+
+		train->speed.numerator = train->speed_table[level].numerator;
+		train->speed.denominator = train->speed_table[level].denominator;
+
 	}
-	
-	train->speed_table[level].numerator = top;
-	train->speed_table[level].denominator = bottom;
-	if ( train->speed_count[level] < NUM_SPEED_HISTORY ) {
-		train->speed_count[level] += 1;
-	}
-
-	train->speed.numerator = train->speed_table[level].numerator;
-	train->speed.denominator = train->speed_table[level].denominator;
-
-	// update location
-	// assert( status == 0 );
+	// if distance == 1 no update of speed
 	
 	train->last_sensor = next_sensor;
 	train->last_sensor_time = time_stamp;
@@ -158,19 +158,64 @@ int sensor_distance( track_node* src, track_node* dst ){
 	return 0;
 }
 
-int track_route( track_node* src, track_node* dst, Map_route* route ){
+int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route ){
 	// TODO
 	/*
 	assert( route->node_count == 0 );
 	
-	int i;
-	int found = 0;
+	if (src == dst) {
+		route->node[route->node_count] = src;
+		route->node_count++;
+		return 0;
+	}
 	
-	while ( !found ) {
+	int i;
+	int index;
+	track_node* current_node;
+	int dist[144]; // distance
+	int prev[144]; // previous node visited ( shortest path calculated from )
+	int queue[144]; // smallest to the end;
+	int size;
+	int max_dist;
+	
+	for ( i = 0; i < 144; i++ ) {
+		dist[144] = INFINITY;
+		prev[v] = -1;
+		queue[i] = i;
+	}
+	size = 144;
+	
+	current_node = src;
+	i = src->num;
+	dist[i] = 0;
+	// sort queue;
+	
+	while (1) {
+		if (size == 0) return -1; // ERROR, should not happen
+		
+		index = queue[size-1];
+		max_dist = dist[ index ];
+		
+		assert( max_dist != INFINITY );
+		size--;
+		
+		// for each neighbour update the distance
+		
 		
 	}
-	*/
 	
+	index = dst->num;
+	route->node[route->node_count] = track_graph + index;
+	route->node_count++;
+	
+	
+	while ( index != src->num ) {
+		route->node[route->node_count] = track_graph + prev[index];
+		route->node_count++;
+		index = prev[index];
+	}
+	
+	*/
 	return 0;
 }
 
