@@ -119,8 +119,8 @@ void train_auto()
 
 	switch( request.data.init.track_id ){
 	case TRACK_A:
-		//init_tracka( track_graph, node_map );
-		init_trackb( track_graph, node_map );// for test
+		init_tracka( track_graph, node_map );
+		//init_trackb( track_graph, node_map );// for test
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
@@ -236,6 +236,8 @@ void train_auto()
 			if ( test_sensor == test_train->last_sensor ) break;
 			
 			status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
+			assert( status == 0 );
+			status == train_next_sensor( test_train, switch_table );
 			assert( status == 0 );
 			
 			sensor_test_count += 1;

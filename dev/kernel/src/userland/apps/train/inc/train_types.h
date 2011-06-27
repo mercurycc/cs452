@@ -24,6 +24,7 @@ typedef struct Train_data_s {
 	uint last_sensor_time;
 	track_node* last_sensor;
 	track_node* check_point;
+	track_node* next_sensor;
 	Speed speed_table[14];
 	uint speed_count[14];
 	
