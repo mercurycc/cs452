@@ -148,7 +148,7 @@ void train_control()
 				region_printf( &prompt_reg, "%c", data );
 				prompt_reg.col += 1;
 				buf_i += 1;
-			} else if( data == '\b' ) {
+			} else if( data == '\b' && buf_i ) {
 				buf_i -= 1;
 				prompt_reg.col -= 1;
 				region_printf( &prompt_reg, " " );
@@ -206,18 +206,10 @@ void train_control()
 			int arg;
 			if( token_filled == 2 ){
 				arg = ( int )stou( token_buf[ 1 ] );
-				/* Set train to stop */
-				train_set_speed( module_tid, arg, 0 );
-				train_auto_set_speed( auto_tid, arg, 0 );
-
 				/* Reverse direction */
 				train_reverse( module_tid, arg );
 				train_auto_set_reverse( auto_tid, arg );
 
-				/* FIXME: debug lines, remove me */
-				train_set_speed( module_tid, arg, 10 );
-				train_auto_set_speed( auto_tid, arg, 10 );
-				
 				region_printf( &result_reg, "Reverse train %d\n", arg );
 			} else {
 				region_printf( &result_reg, "rv <train id>\n" );
