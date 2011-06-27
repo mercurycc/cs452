@@ -22,7 +22,7 @@ int update_train_location( Train_data* train ) {
 	
 	// calculate distance
 	uint time = cur_time - (train->last_sensor_time);
-	uint distance = time * (train->speed_numerator) / (train->speed_denominator);
+	uint distance = time * (train->speed.numerator) / (train->speed.denominator);
 	
 	// update train's distance
 	train->distance = distance;
@@ -36,17 +36,30 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 
 	// get distance and time
 	track_node* last_sensor = train->last_sensor;
-	uint distance = sensor_distance( last_sensor, next_sensor );
-
+	int distance = sensor_distance( last_sensor, next_sensor );
+	uint time = time_stamp - train->last_sensor_time;
 	
-	// store old speed
-	// TODO
+	if (distance == -1) distance = 0;
 
 	// calculate new speed with avg
-	// TODO
-	uint time = time_stamp - train->last_sensor_time;
-	train->speed_numerator = distance;
-	train->speed_denominator = time;
+	uint level = train->speed_level - 1;
+	
+	unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
+	unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
+	
+	while (( bottom > 10000 )&&( top > 10000 )) {
+		top = top / 10;
+		bottom = bottom / 10;
+	}
+	
+	train->speed_table[level].numerator = top;
+	train->speed_table[level].denominator = bottom;
+	if ( train->speed_count[level] < NUM_SPEED_HISTORY ) {
+		train->speed_count[level] += 1;
+	}
+
+	train->speed.numerator = train->speed_table[level].numerator;
+	train->speed.denominator = train->speed_table[level].denominator;
 
 	// update location
 	// assert( status == 0 );
@@ -81,33 +94,37 @@ static inline int ahead_to_sensor( track_node* src, track_node* dst ) {
 static inline int branch_to_sensor( track_node* src, track_node* dst ) {
 
 	track_node* next_straight = src->edge[DIR_STRAIGHT].dest;
-	track_node* next_curve = src->edge[DIR_CURVED].dest;
+	track_node* next_curved = src->edge[DIR_CURVED].dest;
 	
-	int dist[2];
+	int dist;
+	
+	//WAR_PRINT( "straight dist: %d    ", src->edge[DIR_STRAIGHT].dist );
 	
 	if ( next_straight == dst ) {
 		return src->edge[DIR_STRAIGHT].dist;
 	}
-	if ( next_curve == dst ) {
+	
+	if ( next_curved == dst ) {
 		return src->edge[DIR_CURVED].dist;
 	}
-	if (( next_straight->type == NODE_SENSOR )&&( next_curve->type == NODE_SENSOR )) {
+	
+	if (( next_straight->type == NODE_SENSOR )&&( next_curved->type == NODE_SENSOR )) {
 		return -1;
 	}
 	
 	if ( next_straight->type != NODE_SENSOR ) {
-		dist[DIR_STRAIGHT] = sensor_distance( next_straight, dst );
-	}
-	if ( next_curve->type != NODE_SENSOR ) {
-		dist[DIR_CURVED] = sensor_distance( next_curve, dst );
+		dist = sensor_distance( next_straight, dst );
+		if ( dist != -1 ) {
+			return dist + src->edge[DIR_STRAIGHT].dist;
+		}
 	}
 	
-	if ( dist[DIR_STRAIGHT] == -1 ) {
-		return src->edge[DIR_CURVED].dist + dist[DIR_CURVED];
+	dist = sensor_distance( next_curved, dst );
+	if ( dist != -1 ) {
+		return dist + src->edge[DIR_CURVED].dist;
 	}
-	else {
-		return src->edge[DIR_STRAIGHT].dist + dist[DIR_STRAIGHT];
-	}
+	
+	return -1;
 }
 
 int sensor_distance( track_node* src, track_node* dst ){
@@ -141,8 +158,19 @@ int sensor_distance( track_node* src, track_node* dst ){
 	return 0;
 }
 
-int track_route( track_node* src, track_node* dst, track_node* routine ){
+int track_route( track_node* src, track_node* dst, Map_route* route ){
 	// TODO
+	/*
+	assert( route->node_count == 0 );
+	
+	int i;
+	int found = 0;
+	
+	while ( !found ) {
+		
+	}
+	*/
+	
 	return 0;
 }
 

@@ -99,6 +99,7 @@ void train_auto()
 	int last_sensor_id = -1;
 	int tid;
 	int i;
+	int j;
 	int temp;
 	track_node track_graph[ TRACK_NUM_NODES ];
 	int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ];
@@ -118,8 +119,8 @@ void train_auto()
 
 	switch( request.data.init.track_id ){
 	case TRACK_A:
-		init_tracka( track_graph, node_map );
-		//init_trackb( track_graph, node_map );// for test
+		//init_tracka( track_graph, node_map );
+		init_trackb( track_graph, node_map );// for test
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
@@ -140,13 +141,21 @@ void train_auto()
 	Train_data test_train_data;
 	Train_data* test_train = &test_train_data;
 	test_train->distance = 0;
-	test_train->speed_numerator = 0;
-	test_train->speed_denominator = 1;
+	test_train->speed.numerator = 0;
+	test_train->speed.denominator = 1;
 	test_train->speed_level = 0;
 	test_train->old_speed_level = 0;
 	test_train->last_sensor_time = 0;
-	test_train->last_sensor = track_graph + node_map[ 1 ][ 4 ];
-	assert( test_train->last_sensor );
+	for ( i = 0; i < 14; i++ ) {
+		test_train->speed_table[i].numerator = 0;
+		test_train->speed_table[i].denominator = 1;
+		test_train->speed_count[i] = 0;
+	}
+	test_train->speed_level = 14;
+	test_train->last_sensor = track_graph + node_map[ 0 ][ 2 ];
+	
+	uint sensor_test_count = 0;
+	//assert( test_train->last_sensor );
 	//test_train->check_point = track_graph + node_map[ 6 ][ 4 ];
 	track_node* test_sensor = 0;
 	
@@ -229,7 +238,9 @@ void train_auto()
 			status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
 			assert( status == 0 );
 			
-			WAR_PRINT( "new sensor: train speed %d / %d    ", test_train->speed_numerator, test_train->speed_denominator );
+			sensor_test_count += 1;
+			WAR_PRINT( "%d sensor: train speed %d / %d = %d        ", sensor_test_count, test_train->speed.numerator, test_train->speed.denominator,
+					(test_train->speed.numerator) * 100 / test_train->speed.denominator );
 			
 			
 			break;
@@ -242,8 +253,8 @@ void train_auto()
 			current_train->state = TRAIN_STATE_INIT;
 			current_train->pickup = request.data.new_train.pickup;
 			current_train->distance = 0;
-			current_train->speed_numerator = 0;
-			current_train->speed_denominator = 1;
+			current_train->speed.numerator = 0;
+			current_train->speed.denominator = 1;
 			current_train->speed_level = 0;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
