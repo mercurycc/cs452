@@ -10,6 +10,7 @@
 #include <lib/str.h>
 #include <user/display.h>
 #include <user/name_server.h>
+#include <user/time.h>
 #include <perf.h>
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -80,7 +81,7 @@ void train_sensor()
 	int need_update = 0;
 	int courier_tid = Create( TRAIN_SENSOR_PRIORITY, courier );
 	int status;
-		
+
 	*sensor_ui_tid = WhoIs( SENSOR_UI_NAME );
 	*train_mod_tid = WhoIs( TRAIN_MODULE_NAME );
 	*train_auto_tid = WhoIs( TRAIN_AUTO_NAME );
@@ -96,7 +97,7 @@ void train_sensor()
 		for( group = 0; group < SENSOR_BYTE_COUNT; group += 1 ){
 			sensor_data->sensor_raw[ group ] = Getc( COM_1 );
 		}
-		
+
 		/* sensor data incoming time */
 		sensor_data->last_sensor_time = Time();
 		

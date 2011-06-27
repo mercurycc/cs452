@@ -18,7 +18,7 @@ uint perf_deinit()
 	return ERR_NONE;
 }	
 
-uint perf_time()
+uint perf_timer_time()
 {
 	return HW_READ( PERF_TIMER_BASE, PERF_TIMER_VALL_OFFSET );
 }

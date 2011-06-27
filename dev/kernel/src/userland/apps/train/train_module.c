@@ -148,7 +148,7 @@ void train_module()
 			assert( status == 0 );
 			break;
 		}
-
+		
 		switch (event.event_type) {
 		case TRAIN_CHECK_SWITCH:
 			reply.result = switch_table[ SWID_TO_ARRAYID( event.args[ 0 ] ) ];
@@ -161,7 +161,6 @@ void train_module()
 			break;
 		case TRAIN_ALL_SENSORS:
 			status = Putc( COM_1, (char)133 );
-			Delay( SWITCH_XMIT_DELAY );
 			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
@@ -215,7 +214,7 @@ int train_event( int tid, uint type, int arg0, int arg1 )
 
 	int status = Send( tid, (char*)&event, sizeof( event ), (char*)&reply, sizeof( reply ) );
 	assert( status == sizeof( reply ) );
-	
+
 	return reply.result;
 }
 

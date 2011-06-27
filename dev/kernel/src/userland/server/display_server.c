@@ -274,7 +274,7 @@ void display_server()
 		case DISPLAY_INIT:
 			/* Create drawer */
 
-			drawer_tid = Create( SERVICE_PRIORITY + 1, display_drawer );
+			drawer_tid = Create( IDLE_SERVICE_PRIORITY, display_drawer );
 			assert( drawer_tid > 0 );
 			break;
 		case DISPLAY_REGION_INIT:
