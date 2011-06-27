@@ -18,6 +18,9 @@
 /* Watchdog */
 #include <watchdog.h>
 
+/* CLK_4 */
+#include <perf.h>
+
 #include <config.h>
 
 int kernel_init( Context* ctx )
@@ -39,6 +42,12 @@ int kernel_init( Context* ctx )
 	status = console_init( ctx->train_set );
 	ASSERT( status == ERR_NONE );
 
+	/* Initialize perf clock */
+	status = perf_init();
+	ASSERT( status == ERR_NONE );
+	status = perf_clear();
+	ASSERT( status == ERR_NONE );
+	
 	/* Initialize interrupt */
 	interrupt_init( ctx );
 

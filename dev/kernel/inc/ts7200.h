@@ -20,6 +20,11 @@
         #define TIMER_CLKSEL_MASK       0x00000008
 #define TIMER_CLR_OFFSET        0x0000000c      // no data, WO
 
+/* Perf timer */
+#define PERF_TIMER_BASE            0x80810060
+#define PERF_TIMER_VALL_OFFSET     0x0
+#define PERF_TIMER_VALH_OFFSET     0x4
+#define PERF_TIMER_EN_MASK         0x100
 
 #define LED_ADDRESS     0x80840020
         #define LED_NONE        0x0

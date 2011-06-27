@@ -5,9 +5,9 @@
 
 /* task priorities : high - low */
 #define TRAIN_SENSOR_PRIORITY   6
-#define TRAIN_MODULE_PRIORITY   6
-#define TRAIN_AUTO_PRIROTY      6
-#define TRAIN_UI_PRIORITY       7
+#define TRAIN_MODULE_PRIORITY   7
+#define TRAIN_AUTO_PRIROTY      7
+#define TRAIN_UI_PRIORITY       8
 
 /* train event api */
 /* Server */

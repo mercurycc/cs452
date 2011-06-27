@@ -10,6 +10,7 @@
 #include <lib/str.h>
 #include <user/display.h>
 #include <user/name_server.h>
+#include <perf.h>
 #include "inc/config.h"
 #include "inc/sensor_data.h"
 #include "inc/train.h"
