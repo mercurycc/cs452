@@ -63,82 +63,6 @@ int sensor_name2id( char* str, int* group, int* id )
 	return ERR_NONE;
 }
 
-static void sensor_query_server()
-{
-	Sensor_query query = {0};
-	Sensor_reply reply = {0};
-	volatile Sensor_data volatile ** sensor_data = 0;
-	int tid;
-	int status;
-
-	status = RegisterAs( SENSOR_QUERY_NAME );
-	assert( status == REGISTER_AS_SUCCESS );
-
-	while( 1 ){
-		status = Receive( &tid, ( char* )&query, sizeof( query ) );
-		switch( query.type ){
-		case SENSOR_QUERY_RENEW:
-			assert( status == sizeof( query ) );
-			sensor_data = query.sensor_data;
-			break;
-		case SENSOR_QUERY_RECENT:
-			assert( status == sizeof( query.type ) );
-			if( sensor_data ){
-				reply.group = (*sensor_data)->last_sensor_group;
-				reply.id = (*sensor_data)->last_sensor_id;
-			} else {
-				reply.group = -1;
-				reply.id = -1;
-			}
-			break;
-		default:
-			assert( 0 );
-		}
-
-		status = Reply( tid, ( char* )&reply, sizeof( reply ) );
-		assert( status == SYSCALL_SUCCESS );
-	}
-	
-	Exit();
-}
-
-static int sensor_query_request( int tid, uint type, Sensor_data** data, int* id )
-{
-	Sensor_query query;
-	Sensor_reply reply;
-	int size;
-	int status;
-
-	if( type == SENSOR_QUERY_RENEW ){
-		size = sizeof( query );
-	} else if( type == SENSOR_QUERY_RECENT ){
-		size = sizeof( query.type );
-	}
-
-	query.type = type;
-	query.sensor_data = data;
-
-	status = Send( tid, ( char* )&query, size, ( char* )&reply, sizeof( reply ) );
-	assert( status == sizeof( reply ) );
-
-	if( id ){
-		*( ( int* )data ) = reply.group;
-		*id = reply.id;
-	}
-
-	return ERR_NONE;
-}
-
-static int sensor_query_renew( int tid, Sensor_data** data )
-{
-	return sensor_query_request( tid, SENSOR_QUERY_RENEW, data, 0 );
-}
-
-int sensor_query_recent( int tid, int* group, int* id )
-{
-	return sensor_query_request( tid, SENSOR_QUERY_RECENT, ( Sensor_data* )group, id );
-}
-
 void train_sensor()
 {
 	Sensor_data data_buffer[ 2 ] = {{0}};
@@ -182,12 +106,6 @@ void train_sensor()
 		for( group = 0; group < SENSOR_BYTE_COUNT; group += 1 ){
 			if( sensor_data->sensor_raw[ group ] != sensor_data_old->sensor_raw[ group ] ){
 				need_update = 1;
-			}
-			for( id = 0; id < 8; id += 1 ) {
-				if ( sensor_data->sensor_raw[ group ] & ( ( 0x1 << 7 ) >> id ) ){
-					sensor_data->last_sensor_group = group;
-					sensor_data->last_sensor_id = id;
-				}
 			}
 		}
 

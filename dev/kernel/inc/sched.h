@@ -16,14 +16,14 @@ struct Sched_s {
 };
 
 int sched_init( Context* ctx, Sched* scheduler );
-int sched_schedule( Context* ctx, Task** next );
-int sched_add( Context* ctx, Task* task );
-int sched_kill( Context* ctx, Task* task );
-int sched_pass( Context* ctx, Task* task );
+int sched_schedule( Context* ctx, Sched* sched, Task** next );
+int sched_add( Context* ctx, Sched* sched, Task* task );
+int sched_kill( Context* ctx, Sched* sched, Task* task );
+int sched_pass( Context* ctx, Sched* sched, Task* task );
 
-int sched_block( Context* ctx );
+int sched_block( Context* ctx, Sched* sched );
 
-int sched_signal( Context* ctx, Task* task );
+int sched_signal( Context* ctx, Sched* sched, Task* task );
 
 
 #endif /* _SCHED_H_ */

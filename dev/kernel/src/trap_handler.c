@@ -45,7 +45,7 @@ int trap_init( Context* ctx )
 	return 0;
 }
 
-static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
+static void syscall_handler( Context* ctx, Sched* sched, Syscall* reason, ptr kernelsp )
 {
 	Task* temp;
 	Task* sender_task;
@@ -81,7 +81,7 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 		}
 		break;
 	case TRAP_PASS:
-		status = sched_pass( ctx, ctx->current_task );
+		status = sched_pass( ctx, sched, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 
 		break;
@@ -89,14 +89,14 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 		receiver_task = task_get_by_tid( ctx, reason->target_tid );
 		if( receiver_task ){
 			if( receiver_task->state != TASK_READY && receiver_task->state != TASK_ACTIVE ){
-				sched_signal( ctx, receiver_task );
+				sched_signal( ctx, sched, receiver_task );
 			}
 			task_kill( receiver_task->stack, ( uint )Exit );
 		}
 		break;
 	case TRAP_EXIT:
 		DEBUG_PRINT( DBG_TEMP, "exit on %d\n", ctx->current_task->tid );
-		status = sched_kill( ctx, ctx->current_task );
+		status = sched_kill( ctx, sched, ctx->current_task );
 		ASSERT( status == ERR_NONE );
 
 		/* Release resources */
@@ -120,18 +120,18 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 			// pass sender tid to receiver
 			*(uint*)(receiver_task->reason->data) = sender_task->tid;
 			// reply block sender
-			status = sched_block( ctx );
+			status = sched_block( ctx, sched );
 			ASSERT( status == ERR_NONE );
 			sender_task->state = TASK_RPL_BLK;
 			// signal receiver
-			status = sched_signal( ctx, receiver_task );
+			status = sched_signal( ctx, sched, receiver_task );
 			ASSERT( status == ERR_NONE );
 			// copy message
 			status = msg_copy( sender_task, receiver_task );
 			receiver_task->reason->result = status;
 		} else {
 			// receive block sender
-			sched_block( ctx );
+			sched_block( ctx, sched );
 			ASSERT( status == ERR_NONE );
 			sender_task->state = TASK_RCV_BLK;
 			// add to send queue
@@ -156,7 +156,7 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 		}
 		else {
 			// send block receiver
-			status = sched_block( ctx );
+			status = sched_block( ctx, sched );
 			ASSERT( status == ERR_NONE );
 			receiver_task->state = TASK_SEND_BLK;
 		}
@@ -187,7 +187,7 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 		sender_task->reason->result = status;
 
 		// signal sender
-		status = sched_signal( ctx, sender_task );
+		status = sched_signal( ctx, sched, sender_task );
 		ASSERT( status == ERR_NONE );
 		
 		break;
@@ -199,14 +199,14 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 		*((Context**)(reason->buffer)) = ctx;
 		break;
 	case TRAP_AWAIT_EVENT:
-		status = interrupt_register( ctx, ctx->current_task, reason->target_tid );
+		status = interrupt_register( ctx, ctx->interrupt_mgr, ctx->current_task, reason->target_tid );
 		if( status == ERR_INTERRUPT_ALREADY_REGISTERED ){
 			reason->result = AWAIT_EVENT_ALREADY_REGISTERED;
 		} else if( status == ERR_INTERRUPT_INVALID_INTERRUPT ){
 			reason->result = AWAIT_EVENT_INVALID_EVENT;
 		} else {
 			ASSERT( status == ERR_NONE );
-			sched_block( ctx );
+			sched_block( ctx, sched );
 			reason->result = SYSCALL_SUCCESS;
 		}
 		break;
@@ -225,6 +225,7 @@ static void syscall_handler( Context* ctx, Syscall* reason, ptr kernelsp )
 void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 {
 	Context* ctx = (Context*)(*(uint*)kernelsp);
+	Sched* sched = ctx->scheduler;
 	int status = 0;
 	DEBUG_PRINT( DBG_TRAP, "Obtained context 0x%x\n", ctx );
 
@@ -245,19 +246,19 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 		{
 			Task* event_handler;
 			
-			status = interrupt_handle( ctx, &event_handler );
+			status = interrupt_handle( ctx, ctx->interrupt_mgr, &event_handler );
 			ASSERT( status == ERR_NONE );
 
 			// Add served event handler back to ready queue
-			status = sched_signal( ctx, event_handler );
+			status = sched_signal( ctx, sched, event_handler );
 			ASSERT( status == ERR_NONE );
 		}
 	} else if ( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_USER ){
-		syscall_handler( ctx, reason, kernelsp );
+		syscall_handler( ctx, sched, reason, kernelsp );
 	}
 
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );
-	status = sched_schedule( ctx, &(ctx->current_task) );
+	status = sched_schedule( ctx, sched, &(ctx->current_task) );
 	ASSERT( status == ERR_NONE );
 
 	/* Shutdown kernel if no ready task can be scheduled */

@@ -64,7 +64,7 @@ int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint pr
 	list_init( &newtask->queue );
 
 	DEBUG_PRINT( DBG_TASK, "task tid 0x%x priority %d\n", newtask->tid, newtask->priority );
-	status = sched_add( ctx, newtask );
+	status = sched_add( ctx, ctx->scheduler, newtask );
 	ASSERT( status == ERR_NONE );
 
 	/* Return task if asked */

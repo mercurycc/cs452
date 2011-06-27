@@ -13,11 +13,12 @@
 #define SELECTOR_MASK { 0, 0x1, 0x3, 0xF, 0xFF, 0xFFFF }
 #define BIT_MASK { 0, 1, 2, 4 ,8 ,16 }
 
-int sched_update_highest( Context* ctx ){
+int sched_update_highest( Context* ctx, Sched* sched )
+{
 	// find the highest priority queue
-	uint selector = ctx->scheduler->selector;
+	uint selector = sched->selector;
 	if ( !selector ) {
-		ctx->scheduler->highest_priority = 32;
+		sched->highest_priority = 32;
 		return ERR_NONE;
 	}
 	uint priority = 0;
@@ -27,7 +28,7 @@ int sched_update_highest( Context* ctx ){
 	while (i) {
 		uint low = selector & masks[i];
 		uint high = (selector >> bits[i]) & masks[i];
-		if (high)  {
+		if (high) {
 			selector = high;
 			priority += bits[i];
 		}
@@ -36,11 +37,12 @@ int sched_update_highest( Context* ctx ){
 		}
 		i -= 1;
 	}
-	ctx->scheduler->highest_priority = 31 - priority;
+	sched->highest_priority = 31 - priority;
 	return ERR_NONE;
 }
 
-int sched_init( Context* ctx, Sched* scheduler ){
+int sched_init( Context* ctx, Sched* scheduler )
+{
 	scheduler->selector = 0;
 	scheduler->highest_priority = 32;
 	scheduler->zombie = 0;
@@ -62,19 +64,20 @@ int sched_init( Context* ctx, Sched* scheduler ){
 	return 0;
 }
 
-int sched_schedule( Context* ctx, Task** next ){
-	uint selector = ctx->scheduler->selector;
+int sched_schedule( Context* ctx, Sched* sched, Task** next )
+{
+	uint selector = sched->selector;
 	if ( !selector ) {
-		if( ctx->scheduler->blocked_task ) {
-			DEBUG_PRINT( DBG_TEMP, "Currently blocked %d tasks\n", ctx->scheduler->blocked_task );
+		if( sched->blocked_task ) {
+			DEBUG_PRINT( DBG_TEMP, "Currently blocked %d tasks\n", sched->blocked_task );
 #ifdef DEBUG
 			uint reg_val =
 #endif
 			HW_READ( CPU_POWER_ADDR, CPU_HALT_OFFSET );
 			DEBUG_PRINT( DBG_SCHED,"reg val read 0x%x\n", reg_val );
 			// Wake up by an interrupt
-			interrupt_handle( ctx, next );
-			sched_signal( ctx, *next );
+			interrupt_handle( ctx, ctx->interrupt_mgr, next );
+			sched_signal( ctx, sched, *next );
 			return 0;
 		}
 		// no task in scheduler
@@ -82,12 +85,12 @@ int sched_schedule( Context* ctx, Task** next ){
 		return 0;
 	}
 
-	uint priority = ctx->scheduler->highest_priority;
+	uint priority = sched->highest_priority;
 
 	// get the corresponding element
-	List* elem = ctx->scheduler->task_queue[priority];
+	List* elem = sched->task_queue[priority];
 
-	*next = list_entry( Task, elem, queue);
+	*next = list_entry( Task, elem, queue );
 	(*next)->state = TASK_ACTIVE;
 
 	DEBUG_PRINT( DBG_SCHED,"selected task 0x%x at priority %d\n", (*next)->tid, priority );
@@ -95,13 +98,12 @@ int sched_schedule( Context* ctx, Task** next ){
 	return 0;
 }
 
-int sched_add( Context* ctx, Task* task ){
+int sched_add( Context* ctx, Sched* sched, Task* task ){
 	uint priority = task->priority;
 	DEBUG_PRINT( DBG_SCHED, "task tid 0x%x priority %d\n", task->tid, priority );
 	ASSERT_M( (0 <= priority) && (priority < 32), "wrong priority: %d\n", priority );
 
-	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
-	uint err = list_add_tail( target_queue_ptr, &(task->queue) );
+	uint err = list_add_tail( &(sched->task_queue[priority]), &(task->queue) );
 	if (err) {
 		return err;
 	}
@@ -109,21 +111,21 @@ int sched_add( Context* ctx, Task* task ){
 
 	// change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
-	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
+	sched->selector = sched->selector | selector_modifier;
 
-	if ( priority < ctx->scheduler->highest_priority ) {
-		ctx->scheduler->highest_priority = priority;
+	if ( priority < sched->highest_priority ) {
+		sched->highest_priority = priority;
 	}
-	//DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", ctx->scheduler->selector );
+	//DEBUG_PRINT( DBG_SCHED, "selector = 0x%x\n", sched->selector );
 	return 0;
 }
 
-int sched_kill( Context* ctx, Task* task){
+int sched_kill( Context* ctx, Sched* sched, Task* task)
+{
 	/* TODO: Combine the first portion with sched_block */
 	uint priority = task->priority;
 	ASSERT( (0 <= priority) && (priority < 32) );
-	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
-	List** zombie_queue_ptr = &(ctx->scheduler->zombie);
+	List** target_queue_ptr = &(sched->task_queue[priority]);
 
 	List* elem;
 	uint err = list_remove_head( target_queue_ptr, &elem );
@@ -137,13 +139,13 @@ int sched_kill( Context* ctx, Task* task){
 
 	if ( !(*target_queue_ptr) ){
 		uint selector_modifier = ~(0x80000000 >> priority);
-		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
-		err = sched_update_highest( ctx );
+		sched->selector = sched->selector & selector_modifier;
+		err = sched_update_highest( ctx, sched );
 		ASSERT( err == ERR_NONE );
-		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
+		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", sched->selector );
 	}
 
-	err = list_add_tail( zombie_queue_ptr, elem );
+	err = list_add_tail( &( sched->zombie ), elem );
 	if (err) {
 		return err;
 	}
@@ -153,28 +155,29 @@ int sched_kill( Context* ctx, Task* task){
 	return 0;
 }
 
-int sched_pass( Context* ctx, Task* task ){
+int sched_pass( Context* ctx, Sched* sched, Task* task )
+{
 	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current task is %d\n", task->tid );
 	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current priority is %d\n", task->priority );
 	
 	uint priority = task->priority;
-	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current ptr is %x\n", ctx->scheduler->task_queue[priority] );
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: current ptr is %x\n", sched->task_queue[priority] );
 
-	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
-	uint err = list_rotate_head( target_queue_ptr );
+	uint err = list_rotate_head( &(sched->task_queue[priority]) );
 	task->state = TASK_READY;
 
-	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: renewed ptr is %x\n", ctx->scheduler->task_queue[priority] );
+	DEBUG_PRINT( DBG_SCHED,"SCHED_PASS: renewed ptr is %x\n", sched->task_queue[priority] );
 
 	return err;
 }
 
-int sched_block( Context* ctx ) {
+int sched_block( Context* ctx, Sched* sched )
+{
 	// remove self from head of the queue
 	Task* task = ctx->current_task;
 	uint priority = task->priority;
-	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
 	List* elem;
+	List** target_queue_ptr = &( sched->task_queue[priority] );
 	uint err = list_remove_head( target_queue_ptr, &elem );
 	if ( err ){
 		return err;
@@ -183,26 +186,26 @@ int sched_block( Context* ctx ) {
 
 	if ( !(*target_queue_ptr) ){
 		uint selector_modifier = ~(0x80000000 >> priority);
-		ctx->scheduler->selector = ctx->scheduler->selector & selector_modifier;
-		err = sched_update_highest( ctx );
+		sched->selector = sched->selector & selector_modifier;
+		err = sched_update_highest( ctx, sched );
 		ASSERT( err == ERR_NONE );
-		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", ctx->scheduler->selector );
+		DEBUG_PRINT( DBG_SCHED,"selector modified to %x\n", sched->selector );
 	}
 
 	DEBUG_PRINT( DBG_SCHED, "task blocked: 0x%x\n", task->tid );
 	task->state = TASK_BLOCK;
 	// update number of blocked tasks
-	ctx->scheduler->blocked_task++;
-	ASSERT( ctx->scheduler->blocked_task > 0 );
+	sched->blocked_task++;
+	ASSERT( sched->blocked_task > 0 );
 	return ERR_NONE;
 }
 
-int sched_signal( Context* ctx, Task* task ){
+int sched_signal( Context* ctx, Sched* sched, Task* task )
+{
 	uint priority = task->priority;
 	ASSERT_M( (0 <= priority) && (priority < 32), "wrong priority: %d\n", priority );
 
-	List** target_queue_ptr = &(ctx->scheduler->task_queue[priority]);
-	uint err = list_add_head( target_queue_ptr, &(task->queue) );
+	uint err = list_add_head( &( sched->task_queue[priority] ), &(task->queue) );
 	if (err) {
 		return err;
 	}
@@ -223,13 +226,13 @@ int sched_signal( Context* ctx, Task* task ){
 
 	// change the bit in selector
 	uint selector_modifier = 0x80000000 >> priority;
-	ctx->scheduler->selector = ctx->scheduler->selector | selector_modifier;
+	sched->selector = sched->selector | selector_modifier;
 
-	if ( priority < ctx->scheduler->highest_priority ) {
-		ctx->scheduler->highest_priority = priority;
+	if ( priority < sched->highest_priority ) {
+		sched->highest_priority = priority;
 	}
 
-	ctx->scheduler->blocked_task--;
-	ASSERT_M( ctx->scheduler->blocked_task >= 0, "got %d\n", ctx->scheduler->blocked_task );
+	sched->blocked_task--;
+	ASSERT_M( sched->blocked_task >= 0, "got %d\n", sched->blocked_task );
 	return ERR_NONE;
 }

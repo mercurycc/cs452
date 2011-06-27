@@ -102,16 +102,17 @@ int interrupt_init( Context* ctx )
 	return ERR_NONE;
 }
 
-int interrupt_register( Context* ctx, Task* event_waiter, uint interrupt_id )
+int interrupt_register( Context* ctx, Interrupt_mgr* int_mgr, Task* event_waiter, uint interrupt_id )
 {
 	int status = 0;
+	Task** interrupt_handlers = int_mgr->interrupt_handlers;
 
 	if( interrupt_id >= INTERRUPT_COUNT ){
 		return ERR_INTERRUPT_INVALID_INTERRUPT;
-	} else if( ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] ){
+	} else if( interrupt_handlers[ interrupt_id ] ){
 		return ERR_INTERRUPT_ALREADY_REGISTERED;
 	} else {
-		ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] = event_waiter;
+		interrupt_handlers[ interrupt_id ] = event_waiter;
 		DEBUG_PRINT( DBG_INT, "task %d registerd as handler %d\n", event_waiter->tid, interrupt_id );
 	}
 
@@ -121,10 +122,11 @@ int interrupt_register( Context* ctx, Task* event_waiter, uint interrupt_id )
 	return ERR_NONE;
 }
 
-int interrupt_handle( Context* ctx, Task** event_delivered )
+int interrupt_handle( Context* ctx, Interrupt_mgr* int_mgr, Task** event_delivered )
 {
 	uint interrupt_id = 0;
 	int status = 0;
+	Task** interrupt_handlers = int_mgr->interrupt_handlers;
 
 	interrupt_id = HW_READ( VIC1_BASE, VIC_VECT_ADDR_OFFSET );
 	DEBUG_PRINT( DBG_INT, "handler read: %d\n", interrupt_id );
@@ -132,11 +134,11 @@ int interrupt_handle( Context* ctx, Task** event_delivered )
 	status = interrupt_disable( interrupt_id );
 	ASSERT( status == ERR_NONE );
 
-	*event_delivered = ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ];
+	*event_delivered = interrupt_handlers[ interrupt_id ];
 
 	ASSERT_M( event_delivered, "interrupt %d does not have a handler!\n", interrupt_id );
 	
-	ctx->interrupt_mgr->interrupt_handlers[ interrupt_id ] = 0;
+	interrupt_handlers[ interrupt_id ] = 0;
 
 	/* End vectored ISR */
 	HW_WRITE( VIC1_BASE, VIC_VECT_ADDR_OFFSET, 0 );
