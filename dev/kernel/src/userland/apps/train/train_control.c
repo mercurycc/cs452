@@ -269,7 +269,8 @@ void train_control()
 					fail = 1;
 				}
 				if( ! fail ){
-					region_printf( &result_reg, "NIY, got train %d, group %d, id %d\n", train_id, pickup_sensor_group, pickup_sensor_id );
+					train_auto_new_train( auto_tid, train_id, pickup_sensor_group, pickup_sensor_id );
+					region_printf( &result_reg, "Register train %d\n", train_id );
 				}
 			} else {
 				region_printf( &result_reg, "%s <train id> <sensor pickup heading towards>\n", token_buf[ 0 ] );

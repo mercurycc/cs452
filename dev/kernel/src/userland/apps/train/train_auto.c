@@ -227,10 +227,6 @@ void train_auto()
 					}
 				}
 			}
-			/* TODO: Need to process new sensor data */
-			
-			// test version: only one train
-			//WAR_PRINT( "new sensor: G%d-%d    ", sensor_data.last_sensor_group, sensor_data.last_sensor_id );
 
 			test_sensor = track_graph + node_map[ sensor_data.last_sensor_group/2 ][ sensor_data.last_sensor_id+(last_sensor_group%2*8) ];
 			if ( test_sensor == test_train->last_sensor ) break;
@@ -245,7 +241,6 @@ void train_auto()
 			
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
-			WAR_NOTICE( "new train registered" );
 			current_train = trains + available_train;
 			train_map[ request.data.new_train.train_id ] = available_train;
 			available_train += 1;
@@ -255,11 +250,14 @@ void train_auto()
 			current_train->distance = 0;
 			current_train->speed.numerator = 0;
 			current_train->speed.denominator = 1;
-			current_train->speed_level = 0;
+			current_train->speed_level = TRAIN_AUTO_REGISTER_SPEED;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
 			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
+
+			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
+			
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
@@ -304,24 +302,26 @@ void train_auto()
 		}
 
 		/* Process train states */
-		for( temp = 0; temp < available_train; temp += 1 ){
-			current_train = trains + temp;
-			switch( current_train->state ){
-			case TRAIN_STATE_INIT:
-				current_train->state = TRAIN_STATE_TRACKING;
-				break;
-			case TRAIN_STATE_TRACKING:
-				break;
-			case TRAIN_STATE_REVERSE:
-				break;
-			case TRAIN_STATE_SPEED_CHANGE:
-				break;
-			case TRAIN_STATE_SPEED_ERROR:
-				break;
-			case TRAIN_STATE_SWITCH_ERROR:
-				break;
-			case TRAIN_STATE_UNKNOW:
-				break;
+		if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
+			for( temp = 0; temp < available_train; temp += 1 ){
+				current_train = trains + temp;
+				switch( current_train->state ){
+				case TRAIN_STATE_INIT:
+					current_train->state = TRAIN_STATE_TRACKING;
+					break;
+				case TRAIN_STATE_TRACKING:
+					break;
+				case TRAIN_STATE_REVERSE:
+					break;
+				case TRAIN_STATE_SPEED_CHANGE:
+					break;
+				case TRAIN_STATE_SPEED_ERROR:
+					break;
+				case TRAIN_STATE_SWITCH_ERROR:
+					break;
+				case TRAIN_STATE_UNKNOW:
+					break;
+				}
 			}
 		}
 	}
