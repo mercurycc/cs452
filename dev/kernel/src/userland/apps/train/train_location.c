@@ -285,13 +285,21 @@ int train_next_sensor( Train_data* train, int* switch_table ){
 		case NODE_BRANCH:
 			id = ptr->id;
 			if ( switch_table[id] == 'S' ) {
-				ptr = ptr->edge[DIR_STRAIGHT]
+				ptr = ptr->edge[DIR_STRAIGHT].dest;
+			}
+			else {
+				ptr = ptr->edge[DIR_CURVED].dest;
 			}
 			break;
 		default:
+			train->next_sensor = 0;
+			return -1;
 			break;
 		}
 	} while ( ptr->type != NODE_SENSOR );
+
+	train->next_sensor = ptr;
+	return 0;
 }
 
 
