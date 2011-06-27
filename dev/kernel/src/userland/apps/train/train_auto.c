@@ -119,8 +119,8 @@ void train_auto()
 
 	switch( request.data.init.track_id ){
 	case TRACK_A:
-		//init_tracka( track_graph, node_map );
-		init_trackb( track_graph, node_map );// for test
+		init_tracka( track_graph, node_map );
+		//init_trackb( track_graph, node_map );// for test
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
@@ -153,6 +153,9 @@ void train_auto()
 	}
 	test_train->speed_level = 14;
 	test_train->last_sensor = track_graph + node_map[ 0 ][ 2 ];
+	status == train_next_sensor( test_train, switch_table );
+	assert( status == 0 );
+
 	
 	uint sensor_test_count = 0;
 	//assert( test_train->last_sensor );
@@ -222,21 +225,25 @@ void train_auto()
 					last_sensor_group = temp;
 					for( i = 0; i < BITS_IN_BYTE; i += 1 ){
 						if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
-							last_sensor_id = i;
+							last_sensor_group = temp / 2;
+							last_sensor_id = i + ( temp % 2 ) * 8;
 						}
 					}
 				}
 			}
-
-			test_sensor = track_graph + node_map[ sensor_data.last_sensor_group/2 ][ sensor_data.last_sensor_id+(last_sensor_group%2*8) ];
-			if ( test_sensor == test_train->last_sensor ) break;
+			/* TODO: Need to process new sensor data */
+			
+			// test version: only one train
+			//WAR_PRINT( "new sensor: G%d-%d    ", last_sensor_group, last_sensor_id );
+			test_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
 			
 			status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
 			assert( status == 0 );
-			
+			status == train_next_sensor( test_train, switch_table );
+						
+			test_sensor = test_train->next_sensor;
 			sensor_test_count += 1;
-			WAR_PRINT( "%d sensor: train speed %d / %d = %d        ", sensor_test_count, test_train->speed.numerator, test_train->speed.denominator,
-					(test_train->speed.numerator) * 100 / test_train->speed.denominator );
+			WAR_PRINT( "%d sensor: last %c-%d, next %c-%d, speed %d\n", sensor_test_count, last_sensor_group+'A', last_sensor_id+1, test_sensor->group+'A', test_sensor->id+1, test_train->speed.numerator * 100 / test_train->speed.denominator );
 			
 			
 			break;

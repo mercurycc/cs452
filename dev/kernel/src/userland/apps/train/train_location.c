@@ -270,3 +270,40 @@ int train_detective( Train_data* train, track_node** next_sensor_ahead, track_no
 	return 0;
 }
 
+int train_next_sensor( Train_data* train, int* switch_table ){
+
+	track_node* ptr = train->last_sensor;
+	int id;
+
+	do {
+		switch ( ptr->type ) {
+		case NODE_SENSOR:
+		case NODE_MERGE:
+		case NODE_ENTER:
+			ptr = ptr->edge[DIR_AHEAD].dest;
+			break;
+		case NODE_BRANCH:
+			id = ptr->id;
+			if ( switch_table[id] == 'S' ) {
+				ptr = ptr->edge[DIR_STRAIGHT].dest;
+			}
+			else {
+				ptr = ptr->edge[DIR_CURVED].dest;
+			}
+			break;
+		default:
+			train->next_sensor = 0;
+			return -1;
+			break;
+		}
+	} while ( ptr->type != NODE_SENSOR );
+
+	train->next_sensor = ptr;
+	return 0;
+}
+
+
+
+
+
+
