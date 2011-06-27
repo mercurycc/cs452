@@ -160,7 +160,6 @@ int sensor_distance( track_node* src, track_node* dst ){
 
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route ){
 	// TODO
-	/*
 	assert( route->node_count == 0 );
 	
 	if (src == dst) {
@@ -174,13 +173,15 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 	track_node* current_node;
 	int dist[144]; // distance
 	int prev[144]; // previous node visited ( shortest path calculated from )
+	int out[144];
 	int queue[144]; // smallest to the end;
 	int size;
 	int max_dist;
 	
 	for ( i = 0; i < 144; i++ ) {
-		dist[144] = INFINITY;
-		prev[v] = -1;
+		dist[i] = INFINITY;
+		prev[i] = -1;
+		out[i] = 0;
 		queue[i] = i;
 	}
 	size = 144;
@@ -189,18 +190,62 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 	i = src->num;
 	dist[i] = 0;
 	// sort queue;
+	for ( i = 1; i < size; i++ ) {
+		if ( dist[queue[i]] > dist[queue[i-1]] ) {
+			int temp = queue[i];
+			queue[i] = queue[i-1];
+			queue[i-1] = temp;
+		}
+	}
 	
 	while (1) {
 		if (size == 0) return -1; // ERROR, should not happen
 		
 		index = queue[size-1];
 		max_dist = dist[ index ];
+		if ( index == dst->num ) {
+			break;
+		}
 		
 		assert( max_dist != INFINITY );
 		size--;
 		
 		// for each neighbour update the distance
+		int next;
 		
+		switch ( (track_graph + index)->type ) {
+		case NODE_BRANCH:
+			next = (track_graph + index)->edge[1].dest->num;
+			if ( dist[next] < dist[index] + (track_graph + index)->edge[1].dist ) {
+				dist[next] = dist[index] + (track_graph + index)->edge[1].dist;
+				prev[next] = index;
+				for ( i = 1; i < size; i++ ) {
+					if ( dist[queue[i]] > dist[queue[i-1]] ) {
+						int temp = queue[i];
+						queue[i] = queue[i-1];
+						queue[i-1] = temp;
+					}
+				}
+			}
+		case NODE_SENSOR:
+		case NODE_MERGE:
+		case NODE_ENTER:
+			next = (track_graph + index)->edge[0].dest->num;
+			if ( dist[next] < dist[index] + (track_graph + index)->edge[0].dist ) {
+				dist[next] = dist[index] + (track_graph + index)->edge[0].dist;
+				prev[next] = index;
+				for ( i = 1; i < size; i++ ) {
+					if ( dist[queue[i]] > dist[queue[i-1]] ) {
+						int temp = queue[i];
+						queue[i] = queue[i-1];
+						queue[i-1] = temp;
+					}
+				}
+			}
+			break;
+		default:
+			break;
+		}
 		
 	}
 	
@@ -215,7 +260,6 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 		index = prev[index];
 	}
 	
-	*/
 	return 0;
 }
 
