@@ -208,6 +208,7 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 		}
 		
 		assert( max_dist != INFINITY );
+		out[index] = 1;
 		size--;
 		
 		// for each neighbour update the distance
@@ -216,7 +217,7 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 		switch ( (track_graph + index)->type ) {
 		case NODE_BRANCH:
 			next = (track_graph + index)->edge[1].dest->num;
-			if ( dist[next] < dist[index] + (track_graph + index)->edge[1].dist ) {
+			if (( !out[next] )&&( dist[next] < dist[index] + (track_graph + index)->edge[1].dist )) {
 				dist[next] = dist[index] + (track_graph + index)->edge[1].dist;
 				prev[next] = index;
 				for ( i = 1; i < size; i++ ) {
@@ -231,7 +232,7 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 		case NODE_MERGE:
 		case NODE_ENTER:
 			next = (track_graph + index)->edge[0].dest->num;
-			if ( dist[next] < dist[index] + (track_graph + index)->edge[0].dist ) {
+			if (( !out[next] )&&( dist[next] < dist[index] + (track_graph + index)->edge[0].dist )) {
 				dist[next] = dist[index] + (track_graph + index)->edge[0].dist;
 				prev[next] = index;
 				for ( i = 1; i < size; i++ ) {
@@ -242,8 +243,8 @@ int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_
 					}
 				}
 			}
-			break;
 		default:
+			// checking reverse comes to here
 			break;
 		}
 		
