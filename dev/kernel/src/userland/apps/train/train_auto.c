@@ -120,7 +120,6 @@ void train_auto()
 	switch( request.data.init.track_id ){
 	case TRACK_A:
 		init_tracka( track_graph, node_map );
-		//init_trackb( track_graph, node_map );// for test
 		break;
 	case TRACK_B:
 		init_trackb( track_graph, node_map );
@@ -152,9 +151,10 @@ void train_auto()
 		test_train->speed_count[i] = 0;
 	}
 	test_train->speed_level = 14;
-	test_train->last_sensor = track_graph + node_map[ 0 ][ 2 ];
-	status == train_next_sensor( test_train, switch_table );
-	assert( status == 0 );
+	test_train->next_sensor = track_graph + node_map[ 0 ][ 2 ];
+
+
+	WAR_PRINT( "init: next %c-%d\n", test_train->next_sensor->group+'A', test_train->next_sensor->id+1 );
 
 	
 	uint sensor_test_count = 0;
@@ -218,7 +218,9 @@ void train_auto()
 		case TRAIN_AUTO_NEW_SENSOR_DATA:
 			/* Unfortuate memcpy */
 			memcpy( ( uchar* )&sensor_data, ( uchar* )&request.data.sensor_data, sizeof( sensor_data ) );
-			
+
+			test_sensor = 0;
+
 			/* Update last triggered sensor */
 			for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
 				if( sensor_data.sensor_raw[ temp ] ){
@@ -227,19 +229,17 @@ void train_auto()
 						if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
 							last_sensor_group = temp / 2;
 							last_sensor_id = i + ( temp % 2 ) * 8;
+							test_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
 						}
 					}
 				}
 			}
-			/* TODO: Need to process new sensor data */
 			
-			// test version: only one train
-			//WAR_PRINT( "new sensor: G%d-%d    ", last_sensor_group, last_sensor_id );
-			test_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
-			
-			status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
-			assert( status == 0 );
-			status == train_next_sensor( test_train, switch_table );
+			if ( test_sensor == test_train->next_sensor ) {
+				status == update_train_speed( test_train, test_sensor, sensor_data.last_sensor_time );
+				assert( status == 0 );
+				status == train_next_sensor( test_train, switch_table );
+			}
 						
 			test_sensor = test_train->next_sensor;
 			sensor_test_count += 1;
