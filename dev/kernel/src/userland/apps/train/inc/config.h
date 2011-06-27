@@ -6,6 +6,7 @@
 #define NUM_SWITCHES         22
 #define MAX_NUM_TRAINS       10
 #define MAX_TRAIN_ID         128
+#define TRAIN_AUTO_REGISTER_SPEED 10
 
 /* UI */
 #define SENSOR_UI_NAME      "sensor_ui"
