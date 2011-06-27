@@ -85,13 +85,9 @@ void train_sensor()
 	*train_mod_tid = WhoIs( TRAIN_MODULE_NAME );
 	*train_auto_tid = WhoIs( TRAIN_AUTO_NAME );
 	*notified = 1;
-	*query_tid = Create( TRAIN_SENSOR_PRIORITY, sensor_query_server );
 
 	courier_init( courier_tid, sensor_new_data );
 
-	status = sensor_query_renew( *query_tid, &sensor_data_old );
-	assert( status == ERR_NONE );
-	
 	while( 1 ){
 		status = train_all_sensor( *train_mod_tid );
 		assert( status == 0 );
