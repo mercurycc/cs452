@@ -99,7 +99,7 @@ static void train_auto_alarm()
 	int ptid = MyParentTid();
 
 	while( 1 ){
-		Delay( 1 );
+		Delay( 2 );
 
 		train_auto_wakeup( ptid );
 	}
