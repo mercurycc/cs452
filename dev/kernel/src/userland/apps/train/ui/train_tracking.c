@@ -77,8 +77,8 @@ void tracking_ui()
 	status = RegisterAs( TRACKING_UI_NAME );
 	assert( status == REGISTER_AS_SUCCESS );
 
-	for( i = 0; i < 5; i += 1 ){
-		entry_reg[ i ].row = 6 + i;		
+	for( i = 1; i < 6; i += 1 ){
+		entry_reg[ i ].row = 5 + i;		
 	}
 	
 	region_init( &title_reg );
@@ -136,7 +136,7 @@ void tracking_ui()
 		case TRACKING_UI_NEW_TRAIN:
 			entry->col = 30;
 			entry->width = 2;
-			region_printf( entry, "%2d", request.train_id );
+			region_printf( entry, "%2d\n", request.train_id );
 			break;
 		case TRACKING_UI_CHKPNT:
 			entry->col = 33;

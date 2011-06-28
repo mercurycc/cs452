@@ -82,7 +82,7 @@ int sformat ( char* dst, const char *fmt, va_list va )
 		if ( ch != '%' ){
 			*(dst++) = ch;
 		} else {
-			lz = 0; w = 0;
+			lz = ' '; w = 0;
 			ch = *(fmt++);
 			if( ch == '0' ){
 				lz = '0'; ch = *(fmt++);
