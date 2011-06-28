@@ -161,6 +161,7 @@ void uart_driver()
 	volatile uint* flags;
 	volatile uint* intr;
 	volatile uint* ctrl;
+	volatile uint* rxsts;
 	Rbuf txbufbody = {0};
 	Rbuf* txbuf = &txbufbody;
 	uint txbuf_buffer[ UART_TXBUF_SIZE ];
@@ -176,6 +177,7 @@ void uart_driver()
 	flags = ( uint* )HW_ADDR( base, UART_FLAG_OFFSET );
 	intr = ( uint* )HW_ADDR( base, UART_INTR_OFFSET );
 	ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
+	rxsts = ( uint* )HW_ADDR( base, UART_RSR_OFFSET );
 
 	/* Initialized interrupt handler */
 	general_handler_tid = Create( 0, event_handler );
@@ -195,6 +197,8 @@ void uart_driver()
 		/* By definition there should only be one task asking for input from any serial port */
 		uart_receive_request( &tid, &request );
 		assert( tid > 0 );
+
+		// assert( ! ( ( *rxsts ) & OE_MASK ) );
 
 		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 
@@ -302,14 +306,14 @@ void uart_driver()
 			break;
 		}
 
-		if( ! general_waiting ){
-			event_start( general_handler_tid );
-			general_waiting = 1;
-		}
-
 		if( can_reply ){
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			ASSERT_M( status == SYSCALL_SUCCESS, "got %d\n", status );
+		}
+
+		if( ! general_waiting ){
+			event_start( general_handler_tid );
+			general_waiting = 1;
 		}
 
 		if( request.type == UART_QUIT ){

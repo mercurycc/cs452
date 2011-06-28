@@ -39,11 +39,16 @@ int update_train_location( Train_data* train );
 /* update train's speed (also location) when hit new sensor */
 int update_train_speed( Train_data* train, track_node* next_sensor, uint time_stamp ); 
 
+/* return the distance following the path from src to the next node */
+int node_distance( track_node* src, int* switch_table );
 /* return distance between two adjacent sesnors: has to going ahead from src to dst */
 int sensor_distance( track_node* src, track_node* dst );
 
 /* find next sensor on the track the train is going to hit */
 int train_next_sensor( Train_data* train, int* switch_table );
+/* Find next/previous node from a known node */
+track_node* track_next_node( track_node* node, int* switch_table );
+track_node* track_previous_node( track_node* node, int* switch_table );
 /* find next sensor from a known sensor */
 track_node* track_next_sensor( track_node* sensor, int* switch_table );
 
@@ -51,8 +56,8 @@ track_node* track_next_sensor( track_node* sensor, int* switch_table );
 track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] );
 /* clear a specific sensor report in sensor_data */
 int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor );
-
-
+/* Test if the requested sensor is tripped */
+int train_loc_is_sensor_tripped( Sensor_data* sensor_data, track_node* sensor );
 
 /* find shortest route, and return the distance between 2 nodes on the track */
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route );

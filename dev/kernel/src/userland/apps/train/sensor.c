@@ -82,6 +82,10 @@ void train_sensor()
 	int courier_tid = Create( TRAIN_SENSOR_PRIORITY, courier );
 	int status;
 
+	/* Timing */
+	int avg_time;
+	int curtime;
+
 	*sensor_ui_tid = WhoIs( SENSOR_UI_NAME );
 	*train_mod_tid = WhoIs( TRAIN_MODULE_NAME );
 	*train_auto_tid = WhoIs( TRAIN_AUTO_NAME );
@@ -90,13 +94,23 @@ void train_sensor()
 	courier_init( courier_tid, sensor_new_data );
 
 	while( 1 ){
+		curtime = perf_timer_time();
 		status = train_all_sensor( *train_mod_tid );
 		assert( status == 0 );
 
+		/* Transmission of 10 bytes takes 37 milliseconds.  This ensures when we are reading we can read all the
+		   bytes all at once */
+		/* More specifically, since the UART only triggers interrupt with 8 bytes, we could have read all 8
+		   bytes before the last 2 arrives, causing a time out required */
+		
 		/* Obtain sensor data */
 		for( group = 0; group < SENSOR_BYTE_COUNT; group += 1 ){
 			sensor_data->sensor_raw[ group ] = Getc( COM_1 );
 		}
+		
+		curtime = perf_timer_time() - curtime;
+		avg_time = ( curtime + avg_time ) / 2;
+		WAR_PRINT( "Taken %d usec\n", PERF_TIMER_TO_USEC( avg_time ) );
 
 		/* sensor data incoming time */
 		sensor_data->last_sensor_time = Time();

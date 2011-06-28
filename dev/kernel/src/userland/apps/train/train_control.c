@@ -9,6 +9,7 @@
 #include <user/name_server.h>
 #include <user/lib/sync.h>
 #include <user/lib/parser.h>
+#include "inc/track_node.h"
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"

@@ -5,6 +5,7 @@
 #include <user/assert.h>
 #include <user/time.h>
 #include <user/name_server.h>
+#include <config.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -21,7 +22,7 @@ int update_train_location( Train_data* train ) {
 	uint cur_time = Time();
 	
 	// calculate distance
-	uint time = cur_time - (train->last_sensor_time);
+	uint time = cur_time - (train->last_check_point_time);
 	uint distance = time * (train->speed.numerator) / (train->speed.denominator);
 	
 	// update train's distance
@@ -30,21 +31,22 @@ int update_train_location( Train_data* train ) {
 	return ERR_NONE;
 }
 
-int update_train_speed( Train_data* train, track_node* next_sensor, uint time_stamp ) {
-	
+int update_train_speed( Train_data* train, track_node* next_sensor, uint time_stamp )
+{
 	int status;
 
 	// get distance and time
 	track_node* last_sensor = train->last_sensor;
 	int distance = -1;
 	uint time = 1;
+	
 	if ( train->last_sensor_time ) {
 		distance = sensor_distance( last_sensor, next_sensor );
-		time =	time_stamp - train->last_sensor_time;
+		/* If this time is used then we could have atmost 70 ms of time error which could results in 4 cm of location error */
+		time = time_stamp - train->last_sensor_time;
 	}
 	
 	if ( distance != -1 ) {
-
 		// calculate new speed with avg
 		uint level = train->speed_level - 1;
 
@@ -53,7 +55,7 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 		unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
 		unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
 		
-		while (( bottom > 10000 )||( top > 10000 )) {
+		while( ( bottom > 10000 ) || ( top > 10000 ) ){
 			top = top / 10;
 			bottom = bottom / 10;
 		}
@@ -131,6 +133,33 @@ static inline int branch_to_sensor( track_node* src, track_node* dst ) {
 	}
 	
 	return -1;
+}
+
+int node_distance( track_node* src, int* switch_table )
+{
+	int swid;
+	int length;
+	
+	switch( src->type ){
+	case NODE_SENSOR:
+	case NODE_MERGE:
+	case NODE_ENTER:
+		length = src->edge[ DIR_AHEAD ].dist;
+		break;
+	case NODE_BRANCH:
+		swid = SWID_TO_ARRAYID( src->id + 1 );
+		if( switch_table[ swid ] == 'C' ){
+			length = src->edge[ DIR_CURVED ].dist;
+		} else {
+			length = src->edge[ DIR_STRAIGHT ].dist;
+		}
+		break;
+	default:
+		return -1;
+		break;
+	}
+
+	return length;
 }
 
 int sensor_distance( track_node* src, track_node* dst ){
@@ -282,43 +311,69 @@ int train_next_sensor( Train_data* train, int* switch_table ){
 	return -1;
 }
 
+track_node* track_next_node( track_node* node, int* switch_table )
+{
+	int id;
+	
+	switch ( node->type ) {
+	case NODE_SENSOR:
+	case NODE_MERGE:
+	case NODE_ENTER:
+		node = node->edge[DIR_AHEAD].dest;
+		break;
+	case NODE_BRANCH:
+		id = SWID_TO_ARRAYID( node->id + 1 );
+		assert( id >= 0 );
+		assert( id < 22 );
+		if ( switch_table[id] == 'S' ) {
+			node = node->edge[DIR_STRAIGHT].dest;
+		} else {
+			node = node->edge[DIR_CURVED].dest;
+		}
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+	return node;
+}
+
+track_node* track_previous_node( track_node* node, int* switch_table )
+{
+	track_node* reverse_next = track_next_node( node->reverse, switch_table );
+	
+	return reverse_next ? reverse_next->reverse : 0;
+}
+
 track_node* track_next_sensor( track_node* sensor, int* switch_table ){
 	track_node* ptr = sensor;
 	int id;
 
 	do {
-		switch ( ptr->type ) {
-		case NODE_SENSOR:
-		case NODE_MERGE:
-		case NODE_ENTER:
-			ptr = ptr->edge[DIR_AHEAD].dest;
-			break;
-		case NODE_BRANCH:
-			id = SWID_TO_ARRAYID( ptr->id + 1 );
-			assert( id >= 0 );
-			assert( id < 22 );
-			//id = ptr->id;
-			if ( switch_table[id] == 'S' ) {
-				ptr = ptr->edge[DIR_STRAIGHT].dest;
-			}
-			else {
-				ptr = ptr->edge[DIR_CURVED].dest;
-			}
-			break;
-		default:
-			return 0;
-			break;
-		}
-	} while ( ptr->type != NODE_SENSOR );
+		ptr = track_next_node( sensor, switch_table );
+	} while ( ptr && ptr->type != NODE_SENSOR );
 
 	return ptr;
 }
 
+int train_loc_is_sensor_tripped( Sensor_data* sensor_data, track_node* sensor )
+{
+	uint group;
+	uint id;
 
-track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] ){
+	group = sensor->group * 2 + sensor->id / BITS_IN_BYTE;
+	id = sensor->id % BITS_IN_BYTE;
+
+	return ( ( sensor_data->sensor_raw[ group ] ) & ( 0x80 >> id ) );
+}
+
+track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] )
+{
 	int group_start = 0;
 	int id_start = -1;
 	int i, j;
+	int group, id;
 
 	if ( current_sensor ) {
 		group_start = current_sensor->group * 2 + current_sensor->id / 8;
@@ -326,18 +381,18 @@ track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, 
 	}
 
 	//WAR_PRINT( "sensor begin: %d-%d\n", group_start, id_start );
-	for ( i = id_start+1; i < 8; i++ ) {
+	for ( i = id_start + 1; i < BITS_IN_BYTE; i++ ) {
 		if ( sensor_data->sensor_raw[group_start] & ( 0x80 >> i ) ) {
-			int group = group_start / 2;
-			int id = i + group_start % 2 * 8;
+			group = group_start / 2;
+			id = i + group_start % 2 * 8;
 			//WAR_PRINT( "sensor top: %d-%d: %c%d\n", group_start, i, group+'A', id+1 );
 			return track_graph + node_map[group][id];
 		}
 	}
 
-	for ( i = group_start+1; i < 10; i++ ) {
+	for ( i = group_start + 1; i < SENSOR_BYTE_COUNT; i++ ) {
 		if ( sensor_data->sensor_raw[i] ) {
-			for ( j = 0; j < 8; j++ ) {
+			for ( j = 0; j < BITS_IN_BYTE; j++ ) {
 				if ( sensor_data->sensor_raw[i] & ( 0x80 >> j ) ) {
 					int group = i/2;
 					int id = j+i%2*8;
@@ -359,8 +414,3 @@ int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
 	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] & ~(0x80 >> id);
 	return 0;
 }
-
-
-
-
-
