@@ -36,10 +36,15 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 
 	// get distance and time
 	track_node* last_sensor = train->last_sensor;
-	int distance = sensor_distance( last_sensor, next_sensor );
-	uint time = time_stamp - train->last_sensor_time;
+	int distance = -1;
+	uint time = 1;
+	if ( train->last_sensor_time ) {
+		distance = sensor_distance( last_sensor, next_sensor );
+		time =	time_stamp - train->last_sensor_time;
+		WAR_PRINT( "last sensor time %d\n", train->last_sensor_time );
+	}
 	
-	if (distance != -1) {
+	if ( distance != -1 ) {
 
 		// calculate new speed with avg
 		uint level = train->speed_level - 1;
@@ -271,8 +276,13 @@ int train_detective( Train_data* train, track_node** next_sensor_ahead, track_no
 }
 
 int train_next_sensor( Train_data* train, int* switch_table ){
+	train->next_sensor = track_next_sensor( train->last_sensor, switch_table );
+	if ( train->next_sensor ) return 0;
+	return -1;
+}
 
-	track_node* ptr = train->last_sensor;
+track_node* track_next_sensor( track_node* sensor, int* switch_table ){
+	track_node* ptr = sensor;
 	int id;
 
 	do {
@@ -283,7 +293,10 @@ int train_next_sensor( Train_data* train, int* switch_table ){
 			ptr = ptr->edge[DIR_AHEAD].dest;
 			break;
 		case NODE_BRANCH:
-			id = ptr->id;
+			id = SWID_TO_ARRAYID( ptr->id + 1 );
+			assert( id >= 0 );
+			assert( id < 22 );
+			//id = ptr->id;
 			if ( switch_table[id] == 'S' ) {
 				ptr = ptr->edge[DIR_STRAIGHT].dest;
 			}
@@ -292,16 +305,59 @@ int train_next_sensor( Train_data* train, int* switch_table ){
 			}
 			break;
 		default:
-			train->next_sensor = 0;
-			return -1;
+			return 0;
 			break;
 		}
 	} while ( ptr->type != NODE_SENSOR );
 
-	train->next_sensor = ptr;
+	return ptr;
+}
+
+
+track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] ){
+	int group_start = 0;
+	int id_start = -1;
+	int i, j;
+
+	if ( current_sensor ) {
+		group_start = current_sensor->group * 2 + current_sensor->id / 8;
+		id_start = current_sensor->id % 8;
+	}
+
+	//WAR_PRINT( "sensor begin: %d-%d\n", group_start, id_start );
+	for ( i = id_start+1; i < 8; i++ ) {
+		if ( sensor_data->sensor_raw[group_start] & ( 0x80 >> i ) ) {
+			int group = group_start / 2;
+			int id = i + group_start % 2 * 8;
+			//WAR_PRINT( "sensor top: %d-%d: %c%d\n", group_start, i, group+'A', id+1 );
+			return track_graph + node_map[group][id];
+		}
+	}
+
+	for ( i = group_start+1; i < 10; i++ ) {
+		if ( sensor_data->sensor_raw[i] ) {
+			for ( j = 0; j < 8; j++ ) {
+				if ( sensor_data->sensor_raw[i] & ( 0x80 >> j ) ) {
+					int group = i/2;
+					int id = j+i%2*8;
+					//WAR_PRINT( "sensor bottom: %d-%d: %c%d\n", i, j, group+'A', id+1 );
+					return track_graph + node_map[group][id];
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
+
+int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
+	int group = current_sensor->group * 2 + current_sensor->id / 8;
+	int id = current_sensor->id % 8;
+
+	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] & ~(0x80 >> id);
+	return 0;
+}
 
 
 

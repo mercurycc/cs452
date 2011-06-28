@@ -44,9 +44,19 @@ int sensor_distance( track_node* src, track_node* dst );
 
 /* find next sensor on the track the train is going to hit */
 int train_next_sensor( Train_data* train, int* switch_table );
+/* find next sensor from a known sensor */
+track_node* track_next_sensor( track_node* sensor, int* switch_table );
+
+/* parse sensor data, find the triggered sensor after the given one */
+track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] );
+/* clear a specific sensor report in sensor_data */
+int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor );
+
+
 
 /* find shortest route, and return the distance between 2 nodes on the track */
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route );
+
 
 
 /* find the expected target to hit by a train */
