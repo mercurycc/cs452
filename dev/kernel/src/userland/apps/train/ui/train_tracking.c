@@ -78,7 +78,12 @@ void tracking_ui()
 	assert( status == REGISTER_AS_SUCCESS );
 
 	for( i = 1; i < 6; i += 1 ){
-		entry_reg[ i ].row = 5 + i;		
+		entry_reg[ i ].col = 30;
+		entry_reg[ i ].row = 5 + i;
+		entry_reg[ i ].height = 1;
+		entry_reg[ i ].width = 0;
+		entry_reg[ i ].margin = 0;
+		entry_reg[ i ].boundary = 0;
 	}
 	
 	region_init( &title_reg );
