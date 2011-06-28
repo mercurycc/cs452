@@ -250,7 +250,7 @@ void train_auto()
 			current_train->speed_level = TRAIN_AUTO_REGISTER_SPEED;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
-			for ( i = 0; i < 14; i++ ) {
+			for ( i = 0; i < NUM_SPEED_LEVEL; i++ ) {
 				current_train->speed_table[i].numerator = 0;
 				current_train->speed_table[i].denominator = 1;
 				current_train->speed_count[i] = 0;
@@ -260,7 +260,7 @@ void train_auto()
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
 
-			WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
+			//WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
 
 			tracking_ui_new_train( tracking_ui_tid, current_train->id );
@@ -268,9 +268,18 @@ void train_auto()
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
+			if ( current_train->speed_level / 2 == request.data.set_speed.speed_level ) {
+				break;
+			}
 			current_train->old_speed_level = current_train->speed_level;
-			current_train->speed_level = request.data.set_speed.speed_level;
+			if ( current_train->old_speed_level < request.data.set_speed.speed_level ) {
+				current_train->speed_level = request.data.set_speed.speed_level * 2;
+			}
+			else if ( current_train->old_speed_level > request.data.set_speed.speed_level ) {
+				current_train->speed_level = request.data.set_speed.speed_level * 2+1;
+			}
 			current_train->state = TRAIN_STATE_SPEED_CHANGE;
+			WAR_PRINT( "speed change from %d to %d\n", current_train->old_speed_level, current_train->speed_level );
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
@@ -321,9 +330,11 @@ void train_auto()
 					/* For init only one sensor can be triggered by the init train.  Safe and easy assumption, not an ideal one though. */
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->last_sensor ) ){
 						current_train->pickup = TRAIN_PICKUP_FRONT;
+						clear_sensor_data( &sensor_data, current_train->last_sensor );
 					} else if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
 						current_train->pickup = TRAIN_PICKUP_BACK;
 						current_train->last_sensor = current_train->next_sensor;
+						clear_sensor_data( &sensor_data, current_train->next_sensor );
 					} else {
 						break;
 					}
@@ -331,23 +342,37 @@ void train_auto()
 					current_train->last_sensor_time = sensor_data.last_sensor_time;
 					current_train->check_point = current_train->last_sensor;
 					current_train->last_check_point_time = sensor_data.last_sensor_time;
-					current_train->next_sensor = track_next_sensor( current_train->next_sensor, switch_table );
+					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+					current_train->last_eta_time_stamp = 0;
 						
 					train_set_speed( module_tid, current_train->id, 0 );
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
+
+					WAR_PRINT( "reg train %d pickup %x hit sensor %c%d next sensor %c%d\n", current_train->id, current_train->pickup, current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 					break;
 				case TRAIN_STATE_SPEED_CHANGE:
 				case TRAIN_STATE_TRACKING:
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+						WAR_PRINT( "train %d in state %x speed %d / %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator );
+
 						if( current_train->state == TRAIN_STATE_TRACKING ){
 							/* Speed update for speed_change is handled by periodic update, sensor only helps with location */
 							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
 							assert( status == 0 );
 						}
+						else { // speed change
+							// TODO: consider the speed change curve, modify the speed
+							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
+							assert( status == 0 );
+							current_train->state = TRAIN_STATE_TRACKING;
+							
+
+						}
 						current_train->distance = 0;
 						current_train->remaining_distance = 0;
 						current_train->last_sensor = current_train->next_sensor;
 						current_train->next_sensor = track_next_sensor( current_train->next_sensor, switch_table );
+						current_train->check_point = current_train->last_sensor;
 
 						/* Update UI */
 						tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
@@ -355,18 +380,22 @@ void train_auto()
 								    current_train->last_sensor->id,
 								    sensor_data.last_sensor_time + current_train->next_sensor_eta,
 								    current_train->next_sensor_eta );
+						
+						current_train->next_sensor_eta = sensor_distance( current_train->last_sensor, current_train->next_sensor ) * current_train->speed.denominator / current_train->speed.numerator ;
+						current_train->last_eta_time_stamp = current_time;
 
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
 
 						tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
 								     current_train->next_sensor->group, current_train->next_sensor->id,
-								     0 );
+								     current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
 						/* Previous statement, eta/remaining distance not calculated */
-						assert( 0 );
+						//assert( 0 );
 
 						tracking_ui_speed( tracking_ui_tid, current_train->id,
-								   current_train->speed.numerator / current_train->speed.denominator );
+								   current_train->speed.numerator * 100 / current_train->speed.denominator );
+						//WAR_PRINT( "update train %d on sensor %c%d\n", current_train->id, current_train->last_sensor->group+'A', current_train->last_sensor->id+1 );
 					}
 					break;
 				default:
@@ -389,7 +418,7 @@ void train_auto()
 				case TRAIN_STATE_SPEED_CHANGE:
 					// TODO: deal with speed change curve and time/location
 					// Ze's comment: probably just an integral to track the distance and update the speed.
-					current_train->state = TRAIN_STATE_TRACKING;
+					// current_train->state = TRAIN_STATE_TRACKING;
 
 					/* Update speed */
 					break;
@@ -410,7 +439,19 @@ void train_auto()
 						current_train->last_check_point_time = current_time;
 						current_train->distance -= current_distance;
 					}
-					/* Update UI */			
+					// update eta
+					if ( current_train->last_eta_time_stamp ) {
+						current_train->next_sensor_eta -= current_time - current_train->last_eta_time_stamp;
+						current_train->last_eta_time_stamp = current_time;
+					}
+
+					/* Update UI */	
+					tracking_ui_landmrk( tracking_ui_tid, current_train->id,
+							     current_train->check_point->group, current_train->check_point->id );
+					tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
+							     current_train->next_sensor->group, current_train->next_sensor->id,
+							     current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
+
 					break;
 				}
 			}

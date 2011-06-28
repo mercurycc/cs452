@@ -3,6 +3,9 @@
 
 #include "track_node.h"
 
+/* number of speed levels of train */
+#define NUM_SPEED_LEVEL 30
+
 typedef struct Train_stat_s {
 	uint total_dist;
 	uint total_time;
@@ -31,8 +34,9 @@ typedef struct Train_data_s {
 	track_node* check_point;
 	track_node* next_sensor;
 	uint next_sensor_eta;            /* Estimated time of arrival to next sensor */
-	Speed speed_table[14];
-	uint speed_count[14];
+	uint last_eta_time_stamp;
+	Speed speed_table[NUM_SPEED_LEVEL];
+	uint speed_count[NUM_SPEED_LEVEL];
 	
 } Train_data;
 
