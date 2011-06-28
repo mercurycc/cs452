@@ -179,6 +179,8 @@ void uart_driver()
 	ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
 	rxsts = ( uint* )HW_ADDR( base, UART_RSR_OFFSET );
 
+	*rxsts = 0;
+
 	/* Initialized interrupt handler */
 	general_handler_tid = Create( 0, event_handler );
 	assert( general_handler_tid > 0 );
@@ -198,7 +200,7 @@ void uart_driver()
 		uart_receive_request( &tid, &request );
 		assert( tid > 0 );
 
-		// assert( ! ( ( *rxsts ) & OE_MASK ) );
+		assert( ! ( ( *rxsts ) & OE_MASK ) );
 
 		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 

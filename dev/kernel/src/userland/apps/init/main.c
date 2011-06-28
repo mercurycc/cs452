@@ -47,7 +47,7 @@ void user_init()
 	DEBUG_PRINT( DBG_USER, "display_server created with tid %d\n", tid );
 
 	/* Driver initialization */
-	status = uart_init( UART_1, 2400, 1, 1, 1 );
+	status = uart_init( UART_1, 2400, 0, 1, 1 );
 	assert( status == ERR_NONE );
 
 	status = uart_init( UART_2, 115200, 1, 0, 0 );
