@@ -343,6 +343,7 @@ void train_auto()
 					current_train->check_point = current_train->last_sensor;
 					current_train->last_check_point_time = sensor_data.last_sensor_time;
 					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+					current_train->last_eta_time_stamp = 0;
 						
 					train_set_speed( module_tid, current_train->id, 0 );
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
