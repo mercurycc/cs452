@@ -179,6 +179,10 @@ void uart_driver()
 	ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
 	rxsts = ( uint* )HW_ADDR( base, UART_RSR_OFFSET );
 
+	/* Drain garbage */
+	while( uart_ready_read( flags ) ){
+		status = *data;
+	}
 	*rxsts = 0;
 
 	/* Initialized interrupt handler */
@@ -200,7 +204,7 @@ void uart_driver()
 		uart_receive_request( &tid, &request );
 		assert( tid > 0 );
 
-		// assert( ! ( ( *rxsts ) & OE_MASK ) );
+		ASSERT_M( ! ( ( *rxsts ) & OE_MASK ), "%s", ( config.port == UART_1 ) ? "UART1" : "UART2" );
 
 		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 
@@ -340,7 +344,7 @@ int uart_init( uint port, uint speed, uint fifo, uint flow_ctrl, uint dbl_stop )
 	volatile uint* line_ctrl_medium = ( uint* )HW_ADDR( base, UART_LCRM_OFFSET );
 	volatile uint* line_ctrl_low = ( uint* )HW_ADDR( base, UART_LCRL_OFFSET );
 	volatile uint* uart_ctrl = ( uint* )HW_ADDR( base, UART_CTRL_OFFSET );
-
+	
 #ifdef IPC_MAGIC
 	init.magic = UART_MAGIC;
 #endif
