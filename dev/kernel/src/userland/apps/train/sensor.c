@@ -44,7 +44,7 @@ int sensor_id2name( char* str, uchar group, uchar id )
 	return ERR_NONE;
 }
 
-int sensor_name2id( char* str, int* group, int* id )
+int sensor_name2id( const char* str, int* group, int* id )
 {
 	*group = ( str[ 0 ] - 'A' ) * 2;
 	*id = stou( str + 1 ) - 1;

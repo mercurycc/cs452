@@ -201,3 +201,24 @@ int Delay( int ticks ) {
 int DelayUntil( int ticks ) {
 	return time_delay_until( CLOCK_SERVER_TID, ticks );
 }
+
+int time_tick_to_spec( Timespec* spec, int time )
+{
+	time /= 10;
+	
+	spec->fraction = time % 10;
+	time /= 10;
+
+	spec->second = time % 60;
+	time /= 60;
+
+	spec->minute = time % 60;
+	time /= 60;
+
+	spec->hour = time % 24;
+	time /= 24;
+
+	spec->day = time;
+
+	return ERR_NONE;
+}

@@ -33,6 +33,7 @@ void train_control()
 	int switch_tid;
 	int module_tid;
 	int auto_tid;
+	int tracking_ui_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -97,6 +98,9 @@ void train_control()
 
 	auto_tid = Create( TRAIN_AUTO_PRIROTY, train_auto );
 	assert( auto_tid > 0 );
+
+	tracking_ui_tid = Create( TRAIN_UI_PRIORITY, tracking_ui );
+	assert( tracking_ui_tid > 0 );
 
 	sync_wait();
 

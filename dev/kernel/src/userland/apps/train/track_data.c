@@ -1,6 +1,101 @@
 /* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
+#include <err.h>
+#include <user/assert.h>
+#include <lib/str.h>
 #include "inc/config.h"
 #include "inc/track_data.h"
+#include "inc/train.h"
+
+int track_node_id2name( char* str, int group, int id )
+{
+	char* group_name;
+	int id_conv;
+
+	switch( group ){
+	case GROUPA:
+	case GROUPB:
+	case GROUPC:
+	case GROUPD:
+	case GROUPE:
+		return sensor_id2name( str, group * 2, id % 2 );
+		break;
+	case GROUPMR:
+		group_name = "MR";
+		break;
+	case GROUPBR:
+		group_name = "BR";
+		break;
+	case GROUPEX:
+		group_name = "EX";
+		break;
+	case GROUPEN:
+		group_name = "EN";
+		break;
+	default:
+		assert( 0 );
+	}
+
+	switch( group ){
+	case GROUPBR:
+	case GROUPMR:
+		id_conv = ARRAYID_TO_SWID( id );
+		break;
+	default:
+		id_conv = id + 1;
+	}
+
+	sprintf( str, "%s%02d", group_name, id_conv );
+
+	return ERR_NONE;
+}
+
+int track_node_name2id( const char* str, int* group, int* id )
+{
+	char name[ 3 ];
+	enum { BRMR, ENEX, SENSOR } type;
+	int status;
+
+	name[ 0 ] = str[ 0 ];
+	name[ 1 ] = str[ 1 ];
+	name[ 2 ] = 0;
+
+	if( !strcmp( name, "MR" ) ){
+		*group = GROUPMR;
+		type = BRMR;
+	} else if( !strcmp( name, "BR" ) ){
+		*group = GROUPBR;
+		type = BRMR;
+	} else if( !strcmp( name, "EN" ) ){
+		*group = GROUPEN;
+		type = ENEX;
+	} else if( !strcmp( name, "EX" ) ){
+		*group = GROUPEX;
+		type = ENEX;
+	} else {
+		type = SENSOR;
+	}
+
+	*id = ( int )stou( str + 2 );
+
+	switch( type ){
+	case BRMR:
+		*id = SWID_TO_ARRAYID( *id );
+		return ERR_NONE;
+	case ENEX:
+		*id -= 1;
+		return ERR_NONE;
+	case SENSOR:
+		status = sensor_name2id( str, group, id );
+
+		*id += ( *group % 2 ) * 8;
+		*group /= 2;
+
+		return status;
+	default:
+		return ERR_INVALID_ARGUMENT;
+	}
+	
+}
 
 void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
 	track[0].name = "A1";

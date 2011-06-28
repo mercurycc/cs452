@@ -111,6 +111,7 @@ void train_auto()
 	Sensor_data sensor_data;
 	int last_sensor_group = -1;
 	int last_sensor_id = -1;
+	int tracking_ui_tid;
 	int alarm_tid;
 	int tid;
 	int i;
@@ -147,6 +148,9 @@ void train_auto()
 
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
+
+	tracking_ui_tid = WhoIs( TRACKING_UI_NAME );
+	assert( tracking_ui_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY, train_auto_alarm );
@@ -264,7 +268,6 @@ void train_auto()
 			sensor_test_count += 1;
 			WAR_PRINT( "%d sensor: last %c-%d, next %c-%d, speed %d\n", sensor_test_count, last_sensor_group+'A', last_sensor_id+1, test_sensor->group+'A', test_sensor->id+1, test_train->speed.numerator * 100 / test_train->speed.denominator );
 			
-			
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
 			current_train = trains + available_train;
@@ -283,6 +286,8 @@ void train_auto()
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
+
+			tracking_ui_new_train( tracking_ui_tid, current_train->id );
 			
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
