@@ -4,7 +4,7 @@
 #include "track_node.h"
 
 /* number of speed levels of train */
-#define NUM_SPEED_LEVEL 28
+#define NUM_SPEED_LEVEL 30
 
 typedef struct Train_stat_s {
 	uint total_dist;

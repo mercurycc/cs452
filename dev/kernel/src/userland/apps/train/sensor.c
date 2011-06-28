@@ -113,7 +113,7 @@ void train_sensor()
 		//WAR_PRINT( "Taken %d usec\n", PERF_TIMER_TO_USEC( avg_time ) );
 
 		/* sensor data incoming time */
-		sensor_data->last_sensor_time = Time();
+		sensor_data->last_sensor_time = Time()-SENSOR_AVERAGE_DELAY;
 		
 		for( group = 0; group < SENSOR_BYTE_COUNT; group += 1 ){
 			if( sensor_data->sensor_raw[ group ] != sensor_data_old->sensor_raw[ group ] ){

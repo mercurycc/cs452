@@ -14,7 +14,7 @@
 #define TIME_ERROR           0        /* TODO: Undefined yet */
 
 /* Perf measurements */
-#define SENSOR_AVERAGE_DELAY  8       /* in tickes */
+#define SENSOR_AVERAGE_DELAY  7       /* in tickes */
 
 /* UI */
 #define SENSOR_UI_NAME      "sensor_ui"

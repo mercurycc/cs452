@@ -48,7 +48,7 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 	
 	if ( distance != -1 ) {
 		// calculate new speed with avg
-		uint level = train->speed_level - 1;
+		uint level = train->speed_level;
 
 		//WAR_PRINT( "old speed %d / %d\n", train->speed_table[level].numerator, train->speed_table[level].denominator );
 
