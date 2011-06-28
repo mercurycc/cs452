@@ -67,7 +67,7 @@ int sensor_name2id( char* str, int* group, int* id )
 
 void train_sensor()
 {
-	Sensor_data data_buffer[ 2 ] = {{0}};
+	Sensor_data data_buffer[ 2 ] = {{{0}}};
 	Sensor_data* sensor_data_old = data_buffer;
 	Sensor_data* sensor_data = data_buffer + 1;
 	Sensor_data* temp = 0;
@@ -77,7 +77,7 @@ void train_sensor()
 	int* train_auto_tid = sensor_notifiee + 2;
 	int* notified = sensor_notifiee + 3;
 	int* query_tid = sensor_notifiee + 4;
-	int group, id;
+	int group;
 	int need_update = 0;
 	int courier_tid = Create( TRAIN_SENSOR_PRIORITY, courier );
 	int status;
@@ -128,10 +128,8 @@ static int sensor_new_data( int tid, int data )
 {
 	int* sensor_notifiee = ( int* )tid;
 	int* sensor_ui_tid = sensor_notifiee;
-	int* train_mod_tid = sensor_notifiee + 1;
 	int* train_auto_tid = sensor_notifiee + 2;
 	int* notified = sensor_notifiee + 3;
-	int* query_tid = sensor_notifiee + 4;
 	Sensor_data* sensor_data = ( Sensor_data* )data;
 	int status;
 

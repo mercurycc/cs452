@@ -114,7 +114,6 @@ void train_auto()
 	int alarm_tid;
 	int tid;
 	int i;
-	int j;
 	int temp;
 	track_node track_graph[ TRACK_NUM_NODES ];
 	int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ];
