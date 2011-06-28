@@ -264,7 +264,7 @@ void train_control()
 			int pickup_sensor_id;
 			if( token_filled == 3 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
-				status = sensor_name2id( token_buf[ 2 ], &pickup_sensor_group, &pickup_sensor_id );
+				status = track_node_name2id( token_buf[ 2 ], &pickup_sensor_group, &pickup_sensor_id );
 				if( status != ERR_NONE ){
 					region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] );
 					fail = 1;

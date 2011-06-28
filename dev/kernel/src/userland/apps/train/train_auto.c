@@ -288,6 +288,12 @@ void train_auto()
 			current_train->speed_level = TRAIN_AUTO_REGISTER_SPEED;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
+			for ( i = 0; i < 14; i++ ) {
+				current_train->speed_table[i].numerator = 0;
+				current_train->speed_table[i].denominator = 1;
+				current_train->speed_count[i] = 0;
+			}
+
 			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
@@ -341,32 +347,38 @@ void train_auto()
 			break;
 		}
 
-		/* Process train states *//*
+		/* Process train states */
 		if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA || request.type == TRAIN_AUTO_WAKEUP ){
 			for( temp = 1; temp < available_train; temp += 1 ){
 				current_train = trains + temp;
 				switch( current_train->state ){
 				case TRAIN_STATE_INIT:
-					current_sensor = parse_sensor( &sensor_data, 0, track_graph, node_map );
-										
-					if (( !current_sensor ) || (( current_sensor != current_train->last_sensor ) && (current_sensor != current_train->next_sensor ))) {
-						WAR_PRINT( "init sensor %c%d is not either last %c%d or next %c%d", current_sensor->group+'A', current_sensor->id+1, current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
-						break;
-					}
+					current_sensor = 0;
+					while ( 1 ) {
+						current_sensor = parse_sensor( &sensor_data, current_sensor, track_graph, node_map );
+						if ( !current_sensor ) {
+							break;
+						}
 
-					if ( current_train->last_sensor != current_sensor ) {
-						current_train->pickup = TRAIN_PICKUP_BACK;
+						if (( current_sensor != current_train->last_sensor ) && (current_sensor != current_train->next_sensor )) {
+							WAR_PRINT( "init sensor %c%d is not either last %c%d or next %c%d\n", current_sensor->group+'A', current_sensor->id+1, current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
+							continue;
+						}
+
+						if ( current_train->last_sensor != current_sensor ) {
+							current_train->pickup = TRAIN_PICKUP_BACK;
+						}
+						current_train->last_sensor = current_sensor;
+						current_train->last_sensor_time = sensor_data.last_sensor_time;
+						status = train_next_sensor( current_train, switch_table );
+						if ( status ) {
+							// heading to an exit, deal with it
+						}
+						
+						//train_set_speed( module_tid, current_train->id, 0 );
+						WAR_PRINT( "new reg train %d: pickup %d, next sensor: %c%d\n", current_train->id, current_train->pickup, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
+						current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					}
-					current_train->last_sensor = current_sensor;
-					current_train->last_sensor_time = sensor_data.last_sensor_time;
-					status = train_next_sensor( current_train, switch_table );
-					if ( status ) {
-						// heading to an exit, deal with it
-					}
-					
-					train_set_speed( module_tid, current_train->id, 0 );
-					WAR_PRINT( "new reg train %d: pickup %d, next sensor: %c%d ", current_train->id, current_train->pickup, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
-					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					break;
 				case TRAIN_STATE_STOP:
 					break;
@@ -386,7 +398,7 @@ void train_auto()
 							}
 
 							next_sensor = current_train->next_sensor;
-							//WAR_PRINT( "sensor hit: last %c%d, next %c%d, speed %d\n", current_sensor->group+'A', current_sensor->id+1, next_sensor->group+'A', next_sensor->id+1, current_train->speed.numerator * 100 / current_train->speed.denominator );
+							WAR_PRINT( "sensor hit: last %c%d, next %c%d, speed %d\n", current_sensor->group+'A', current_sensor->id+1, next_sensor->group+'A', next_sensor->id+1, current_train->speed.numerator * 100 / current_train->speed.denominator );
 	
 							clear_sensor_data( &sensor_data, current_sensor );
 						}
@@ -408,7 +420,7 @@ void train_auto()
 				}
 			}
 		}
-		*/
+		
 		/* Really late reply */
 		switch( request.type ){
 		case TRAIN_AUTO_WAKEUP:

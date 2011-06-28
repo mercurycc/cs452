@@ -41,18 +41,19 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 	if ( train->last_sensor_time ) {
 		distance = sensor_distance( last_sensor, next_sensor );
 		time =	time_stamp - train->last_sensor_time;
-		WAR_PRINT( "last sensor time %d\n", train->last_sensor_time );
 	}
 	
 	if ( distance != -1 ) {
 
 		// calculate new speed with avg
 		uint level = train->speed_level - 1;
-		
+
+		//WAR_PRINT( "old speed %d / %d\n", train->speed_table[level].numerator, train->speed_table[level].denominator );
+
 		unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
 		unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
 		
-		while (( bottom > 10000 )&&( top > 10000 )) {
+		while (( bottom > 10000 )||( top > 10000 )) {
 			top = top / 10;
 			bottom = bottom / 10;
 		}
