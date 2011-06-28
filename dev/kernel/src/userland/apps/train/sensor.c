@@ -83,8 +83,8 @@ void train_sensor()
 	int status;
 
 	/* Timing */
-	int avg_time;
-	int curtime;
+	//int avg_time;
+	//int curtime;
 
 	*sensor_ui_tid = WhoIs( SENSOR_UI_NAME );
 	*train_mod_tid = WhoIs( TRAIN_MODULE_NAME );
@@ -94,7 +94,7 @@ void train_sensor()
 	courier_init( courier_tid, sensor_new_data );
 
 	while( 1 ){
-		curtime = perf_timer_time();
+		//curtime = perf_timer_time();
 		status = train_all_sensor( *train_mod_tid );
 		assert( status == 0 );
 
@@ -108,9 +108,9 @@ void train_sensor()
 			sensor_data->sensor_raw[ group ] = Getc( COM_1 );
 		}
 		
-		curtime = perf_timer_time() - curtime;
-		avg_time = ( curtime + avg_time ) / 2;
-		WAR_PRINT( "Taken %d usec\n", PERF_TIMER_TO_USEC( avg_time ) );
+		//curtime = perf_timer_time() - curtime;
+		//avg_time = ( curtime + avg_time ) / 2;
+		//WAR_PRINT( "Taken %d usec\n", PERF_TIMER_TO_USEC( avg_time ) );
 
 		/* sensor data incoming time */
 		sensor_data->last_sensor_time = Time();

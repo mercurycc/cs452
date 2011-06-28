@@ -351,7 +351,7 @@ track_node* track_next_sensor( track_node* sensor, int* switch_table ){
 	int id;
 
 	do {
-		ptr = track_next_node( sensor, switch_table );
+		ptr = track_next_node( ptr, switch_table );
 	} while ( ptr && ptr->type != NODE_SENSOR );
 
 	return ptr;

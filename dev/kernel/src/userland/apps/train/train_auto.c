@@ -250,7 +250,7 @@ void train_auto()
 			current_train->speed_level = TRAIN_AUTO_REGISTER_SPEED;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
-			for ( i = 0; i < 14; i++ ) {
+			for ( i = 0; i < NUM_SPEED_LEVEL; i++ ) {
 				current_train->speed_table[i].numerator = 0;
 				current_train->speed_table[i].denominator = 1;
 				current_train->speed_count[i] = 0;
@@ -268,8 +268,16 @@ void train_auto()
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
+			if ( current_train->speed_level == request.data.set_speed.speed_level ) {
+				break;
+			}
 			current_train->old_speed_level = current_train->speed_level;
-			current_train->speed_level = request.data.set_speed.speed_level;
+			if ( current_train->old_speed_level < request.data.set_speed.speed_level ) {
+				current_train->speed_level = request.data.set_speed.speed_level * 2;
+			}
+			else if ( current_train->old_speed_level > request.data.set_speed.speed_level ) {
+				current_train->speed_level = request.data.set_speed.speed_level * 2+1;
+			}
 			current_train->state = TRAIN_STATE_SPEED_CHANGE;
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
