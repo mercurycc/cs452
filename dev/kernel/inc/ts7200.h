@@ -94,6 +94,9 @@
 #define UART_HDLCRIB_OFFSET     0x218
 #define UART_HDLCSTS_OFFSET     0x21c
 
+#define CLKSET1_ADDR            0x80930020
+#define CLKSET1_FCLKDIV_MASK    0x0E000000
+
 
 /* Interrupt source */
 /* See EP93xx_User_Guide_UM1.pdf pg 165 for explanation */

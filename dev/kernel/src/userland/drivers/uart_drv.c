@@ -200,7 +200,7 @@ void uart_driver()
 		uart_receive_request( &tid, &request );
 		assert( tid > 0 );
 
-		assert( ! ( ( *rxsts ) & OE_MASK ) );
+		// assert( ! ( ( *rxsts ) & OE_MASK ) );
 
 		DEBUG_PRINT( DBG_UART, "Received request: type %d, data 0x%x\n", request.type, request.data );
 

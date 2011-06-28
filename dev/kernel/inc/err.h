@@ -106,6 +106,13 @@ static inline int DEBUG_ENABLE( uint x )
 			while( 1 );					\
 		}							\
 	} while( 0 )
+#else
+#define DEBUG_PRINT( level, fmt, arg... )
+#define DEBUG_NOTICE( level, msg )
+#define ASSERT( cond )
+#define ASSERT_M( cond, msg, arg... )
+#endif /* DEBUG */
+
 #define WORDBINDUMP( word )						\
 	do {								\
 		uint i;							\
@@ -114,13 +121,7 @@ static inline int DEBUG_ENABLE( uint x )
 		}							\
 		bwprintf( COM2, "\n" );					\
 	} while( 0 )
-#else
-#define DEBUG_PRINT( level, fmt, arg... )
-#define DEBUG_NOTICE( level, msg )
-#define ASSERT( cond )
-#define ASSERT_M( cond, msg, arg... )
-#define WORDBINDUMP( word )
-#endif /* DEBUG */
+
 
 #ifdef TRACE
 #define ENTERFUNC()							\
