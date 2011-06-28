@@ -51,4 +51,8 @@ struct track_node {
 	track_edge edge[2];
 };
 
+/* track node name conversion */
+int track_node_id2name( char* str, int group, int id );
+int track_node_name2id( const char* str, int* group, int* id );
+
 #endif /* _TRAIN_TRACK_NODE_H_ */

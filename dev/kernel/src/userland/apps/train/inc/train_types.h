@@ -1,5 +1,8 @@
 #ifndef _TRAIN_TYPES_H_
 #define _TRAIN_TYPES_H_
+
+#include "track_node.h"
+
 typedef struct Train_stat_s {
 	uint total_dist;
 	uint total_time;

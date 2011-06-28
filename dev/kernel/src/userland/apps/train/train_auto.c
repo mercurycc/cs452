@@ -112,10 +112,10 @@ void train_auto()
 	Sensor_data sensor_data;
 	int last_sensor_group = -1;
 	int last_sensor_id = -1;
+	int tracking_ui_tid;
 	int alarm_tid;
 	int tid;
 	int i;
-	int j;
 	int temp;
 	track_node track_graph[ TRACK_NUM_NODES ];
 	int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ];
@@ -151,6 +151,9 @@ void train_auto()
 
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	assert( module_tid > 0 );
+
+	tracking_ui_tid = WhoIs( TRACKING_UI_NAME );
+	assert( tracking_ui_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY, train_auto_alarm );
@@ -291,6 +294,8 @@ void train_auto()
 
 			WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
+
+			tracking_ui_new_train( tracking_ui_tid, current_train->id );
 			
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:

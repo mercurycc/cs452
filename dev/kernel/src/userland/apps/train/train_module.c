@@ -114,7 +114,6 @@ void train_module()
 	int status;
 	int i;
 	int switch_ui_tid;
-	char direction;
 	char switch_table[ NUM_SWITCHES ];
 	Train_event event;
 	Train_reply reply;

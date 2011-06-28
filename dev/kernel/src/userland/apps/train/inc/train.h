@@ -47,18 +47,27 @@ int switch_ui_update_id( int tid, int id, char direction );
 int switch_ui_update_all( int tid, char direction );
 int switch_ui_check_id( int tid, int id );
 
+/* Train tracking ui api */
+int tracking_ui_new_train( int tid, int train_id );
+int tracking_ui_chkpnt( int tid, int train_id, int group, int id, int predict, int diff );
+int tracking_ui_landmrk( int tid, int train_id, int group, int id );
+int tracking_ui_dist( int tid, int train_id, int dist );
+int tracking_ui_nextmrk( int tid, int train_id, int group, int id, int eta );
+int tracking_ui_speed( int tid, int train_id, int speed );
+
 /* sensor api */
 /* Server */
 void train_sensor();
 /* group < 0 if no sensor has been triggered yet */
 int sensor_query_recent( int tid, int* group, int* id );
 int sensor_id2name( char* str, uchar group, uchar id );
-int sensor_name2id( char* str, int* group, int* id );
+int sensor_name2id( const char* str, int* group, int* id );
 
 /* ui components */
 void sensor_ui();
 int sensor_ui_update( int tid, Sensor_data* data );
 void clock_ui();
 void switches_ui();
+void tracking_ui();
 
 #endif

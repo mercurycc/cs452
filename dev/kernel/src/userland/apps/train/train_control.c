@@ -30,19 +30,17 @@ void train_control()
 	int clock_tid;
 	int sensor_tid;
 	int sensor_ui_tid;
-	int sensor_query_tid;
 	int switch_tid;
 	int module_tid;
 	int auto_tid;
+	int tracking_ui_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
 	char* token_buf[ TRAIN_COMMAND_MAX_TOKEN ] = {0};
 	int buf_i = 0;
 	int token_filled;
-	int command_status;
 	int i;
-	Sensor_data sensor_data;
 	/* Prompt UI */
 	Region prompt_titles = { 2, 20, 1, 11 - 2, 1, 0 };
 	Region prompt_reg = { 2, 21, 1, 78 - 2, 1, 0 };
@@ -100,6 +98,9 @@ void train_control()
 
 	auto_tid = Create( TRAIN_AUTO_PRIROTY, train_auto );
 	assert( auto_tid > 0 );
+
+	tracking_ui_tid = Create( TRAIN_UI_PRIORITY, tracking_ui );
+	assert( tracking_ui_tid > 0 );
 
 	sync_wait();
 
