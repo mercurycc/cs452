@@ -353,10 +353,14 @@ void train_auto()
 				case TRAIN_STATE_SPEED_CHANGE:
 				case TRAIN_STATE_TRACKING:
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
-
+						
 						if( current_train->state == TRAIN_STATE_TRACKING ){
 							/* Speed update for speed_change is handled by periodic update, sensor only helps with location */
+							if ( current_train->last_eta_time_stamp ) {
+								current_train->next_sensor_eta -= current_time - current_train->last_eta_time_stamp;
+								current_train->last_eta_time_stamp = current_time;
+							}
+
 							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
 							assert( status == 0 );
 						}
@@ -364,10 +368,13 @@ void train_auto()
 							// TODO: consider the speed change curve, modify the speed
 							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
 							assert( status == 0 );
-							current_train->state = TRAIN_STATE_TRACKING;
-							
+
+											
 
 						}
+
+						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
+
 						current_train->distance = 0;
 						current_train->remaining_distance = 0;
 						current_train->last_sensor = current_train->next_sensor;
