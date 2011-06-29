@@ -266,6 +266,11 @@ void train_auto()
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
 			current_train->stop_sensor = 0;
+			current_train->auto_command = 0;
+
+			/* Initialize command ring */
+			status = rbuf_init( &current_train->commands, ( uchar* )&current_train->cmd_buf, sizeof( Train_command ), CMD_BUFFER_SIZE );
+			assert( status == ERR_NONE );
 
 			//WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
@@ -364,7 +369,7 @@ void train_auto()
 				case TRAIN_STATE_SPEED_CHANGE:
 				case TRAIN_STATE_TRACKING:
 					/* FIXME: remove me */
-					if( train_loc_is_sensor_tripped( &sensor_data, current_train->stop_sensor ) ){
+					if( current_train->stop_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->stop_sensor ) ){
 						train_set_speed( module_tid, current_train->id, 0 );
 					}
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
@@ -609,7 +614,7 @@ int train_auto_query_sensor( int tid, int* group, int* id )
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
 }
 
-int train_hit_and_stop( int tid, int train_id, int group, int id )
+int train_auto_hit_and_stop( int tid, int train_id, int group, int id )
 {
 	Train_auto_request request;
 

@@ -6,6 +6,7 @@
 #define NUM_SWITCHES         22
 #define MAX_NUM_TRAINS       10
 #define MAX_TRAIN_ID         128
+#define CMD_BUFFER_SIZE      128
 
 #define TRAIN_AUTO_REGISTER_SPEED 10
 

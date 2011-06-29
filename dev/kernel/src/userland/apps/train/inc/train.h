@@ -41,7 +41,7 @@ int train_auto_set_switch_all( int tid, char direction );
 int train_auto_query_switch( int tid, uint id, int* direction );
 /* Return group < 0 if no sensor is triggered */
 int train_auto_query_sensor( int tid, int* group, int* id );
-
+int train_auto_hit_and_stop( int tid, int train_id, int group, int id );
 
 /* switch event api */
 int switch_ui_update_id( int tid, int id, char direction );
