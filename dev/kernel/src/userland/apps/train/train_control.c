@@ -277,6 +277,22 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "%s <train id> <sensor pickup heading towards>\n", token_buf[ 0 ] );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "hit" ) ){
+			int train_id;
+			int sensor_group;
+			int sensor_id;
+			if( token_filled == 3 ){
+				train_id = ( int )stou( token_buf[ 1 ] );
+				status = track_node_name2id( token_buf[ 2 ], &sensor_group, &sensor_id );
+				if( status != ERR_NONE ){
+					region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] );
+					fail = 1;
+				}
+				if( ! fail ){
+				}
+			} else {
+				region_printf( &result_reg, "%s <train id> <sensor to hit till stop>\n", token_buf[ 0 ] );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}

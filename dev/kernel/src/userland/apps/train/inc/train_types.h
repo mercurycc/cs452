@@ -1,6 +1,7 @@
 #ifndef _TRAIN_TYPES_H_
 #define _TRAIN_TYPES_H_
 
+#include <lib/rbuf.h>
 #include "track_node.h"
 
 /* number of speed levels of train */
@@ -37,10 +38,16 @@ typedef struct Train_data_s {
 	uint last_eta_time_stamp;
 	Speed speed_table[NUM_SPEED_LEVEL];
 	uint speed_count[NUM_SPEED_LEVEL];
+	track_node* stop_sensor;
 	
 } Train_data;
 
-
+typedef struct Train_command_s {
+	uint time;
+	uint type;
+	uint arg1;
+	uint arg2;
+} Train_command;
 
 #endif
 
