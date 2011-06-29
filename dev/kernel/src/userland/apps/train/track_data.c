@@ -17,7 +17,7 @@ int track_node_id2name( char* str, int group, int id )
 	case GROUPC:
 	case GROUPD:
 	case GROUPE:
-		return sensor_id2name( str, group * 2, id % 2 );
+		return sensor_id2name( str, group * 2 + id / 2, id % 2 );
 		break;
 	case GROUPMR:
 		group_name = "MR";
@@ -35,14 +35,7 @@ int track_node_id2name( char* str, int group, int id )
 		assert( 0 );
 	}
 
-	switch( group ){
-	case GROUPBR:
-	case GROUPMR:
-		id_conv = ARRAYID_TO_SWID( id );
-		break;
-	default:
-		id_conv = id + 1;
-	}
+	id_conv = id + 1;
 
 	sprintf( str, "%s%02d", group_name, id_conv );
 
@@ -99,6 +92,7 @@ int track_node_name2id( const char* str, int* group, int* id )
 
 void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
 	track[0].name = "A1";
+	track[0].index = 0;
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
 	track[0].group = GROUPA;
 	track[0].id = 1 - 1;
@@ -109,6 +103,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[0].edge[DIR_AHEAD].dest = &track[103];
 	track[0].edge[DIR_AHEAD].dist = 218;
 	track[1].name = "A2";
+	track[1].index = 1;
 	node_map[ GROUPA ][ 2 - 1 ] = 1;
 	track[1].group = GROUPA;
 	track[1].id = 2 - 1;
@@ -120,6 +115,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[1].edge[DIR_AHEAD].dest = &track[133];
 	track[1].edge[DIR_AHEAD].dist = 500;
 	track[2].name = "A3";
+	track[2].index = 2;
 	node_map[ GROUPA ][ 3 - 1 ] = 2;
 	track[2].group = GROUPA;
 	track[2].id = 3 - 1;
@@ -131,6 +127,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[2].edge[DIR_AHEAD].dest = &track[106];
 	track[2].edge[DIR_AHEAD].dist = 62;
 	track[3].name = "A4";
+	track[3].index = 3;
 	node_map[ GROUPA ][ 4 - 1 ] = 3;
 	track[3].group = GROUPA;
 	track[3].id = 4 - 1;
@@ -142,6 +139,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[3].edge[DIR_AHEAD].dest = &track[31];
 	track[3].edge[DIR_AHEAD].dist = 440;
 	track[4].name = "A5";
+	track[4].index = 4;
 	node_map[ GROUPA ][ 5 - 1 ] = 4;
 	track[4].group = GROUPA;
 	track[4].id = 5 - 1;
@@ -153,6 +151,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[4].edge[DIR_AHEAD].dest = &track[85];
 	track[4].edge[DIR_AHEAD].dist = 216;
 	track[5].name = "A6";
+	track[5].index = 5;
 	node_map[ GROUPA ][ 6 - 1 ] = 5;
 	track[5].group = GROUPA;
 	track[5].id = 6 - 1;
@@ -164,6 +163,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[5].edge[DIR_AHEAD].dest = &track[25];
 	track[5].edge[DIR_AHEAD].dist = 649;
 	track[6].name = "A7";
+	track[6].index = 6;
 	node_map[ GROUPA ][ 7 - 1 ] = 6;
 	track[6].group = GROUPA;
 	track[6].id = 7 - 1;
@@ -175,6 +175,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[6].edge[DIR_AHEAD].dest = &track[27];
 	track[6].edge[DIR_AHEAD].dist = 473;
 	track[7].name = "A8";
+	track[7].index = 7;
 	node_map[ GROUPA ][ 8 - 1 ] = 7;
 	track[7].group = GROUPA;
 	track[7].id = 8 - 1;
@@ -186,6 +187,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[7].edge[DIR_AHEAD].dest = &track[83];
 	track[7].edge[DIR_AHEAD].dist = 211;
 	track[8].name = "A9";
+	track[8].index = 8;
 	node_map[ GROUPA ][ 9 - 1 ] = 8;
 	track[8].group = GROUPA;
 	track[8].id = 9 - 1;
@@ -197,6 +199,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[8].edge[DIR_AHEAD].dest = &track[23];
 	track[8].edge[DIR_AHEAD].dist = 289;
 	track[9].name = "A10";
+	track[9].index = 9;
 	node_map[ GROUPA ][ 10 - 1 ] = 9;
 	track[9].group = GROUPA;
 	track[9].id = 10 - 1;
@@ -208,6 +211,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[9].edge[DIR_AHEAD].dest = &track[81];
 	track[9].edge[DIR_AHEAD].dist = 210;
 	track[10].name = "A11";
+	track[10].index = 10;
 	node_map[ GROUPA ][ 11 - 1 ] = 10;
 	track[10].group = GROUPA;
 	track[10].id = 11 - 1;
@@ -219,6 +223,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[10].edge[DIR_AHEAD].dest = &track[81];
 	track[10].edge[DIR_AHEAD].dist = 410;
 	track[11].name = "A12";
+	track[11].index = 11;
 	node_map[ GROUPA ][ 12 - 1 ] = 11;
 	track[11].group = GROUPA;
 	track[11].id = 12 - 1;
@@ -230,6 +235,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[11].edge[DIR_AHEAD].dest = &track[139];
 	track[11].edge[DIR_AHEAD].dist = 60;
 	track[12].name = "A13";
+	track[12].index = 12;
 	node_map[ GROUPA ][ 13 - 1 ] = 12;
 	track[12].group = GROUPA;
 	track[12].id = 13 - 1;
@@ -241,6 +247,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[12].edge[DIR_AHEAD].dest = &track[87];
 	track[12].edge[DIR_AHEAD].dist = 215;
 	track[13].name = "A14";
+	track[13].index = 13;
 	node_map[ GROUPA ][ 14 - 1 ] = 13;
 	track[13].group = GROUPA;
 	track[13].id = 14 - 1;
@@ -252,6 +259,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[13].edge[DIR_AHEAD].dest = &track[131];
 	track[13].edge[DIR_AHEAD].dist = 320;
 	track[14].name = "A15";
+	track[14].index = 14;
 	node_map[ GROUPA ][ 15 - 1 ] = 14;
 	track[14].group = GROUPA;
 	track[14].id = 15 - 1;
@@ -263,6 +271,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[14].edge[DIR_AHEAD].dest = &track[135];
 	track[14].edge[DIR_AHEAD].dist = 145;
 	track[15].name = "A16";
+	track[15].index = 15;
 	node_map[ GROUPA ][ 16 - 1 ] = 15;
 	track[15].group = GROUPA;
 	track[15].id = 16 - 1;
@@ -274,6 +283,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[15].edge[DIR_AHEAD].dest = &track[87];
 	track[15].edge[DIR_AHEAD].dist = 394;
 	track[16].name = "B1";
+	track[16].index = 16;
 	node_map[ GROUPB ][ 1 - 1 ] = 16;
 	track[16].group = GROUPB;
 	track[16].id = 1 - 1;
@@ -285,6 +295,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[16].edge[DIR_AHEAD].dest = &track[61];
 	track[16].edge[DIR_AHEAD].dist = 398;
 	track[17].name = "B2";
+	track[17].index = 17;
 	node_map[ GROUPB ][ 2 - 1 ] = 17;
 	track[17].group = GROUPB;
 	track[17].id = 2 - 1;
@@ -296,6 +307,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[17].edge[DIR_AHEAD].dest = &track[111];
 	track[17].edge[DIR_AHEAD].dist = 225;
 	track[18].name = "B3";
+	track[18].index = 18;
 	node_map[ GROUPB ][ 3 - 1 ] = 18;
 	track[18].group = GROUPB;
 	track[18].id = 3 - 1;
@@ -307,6 +319,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[18].edge[DIR_AHEAD].dest = &track[33];
 	track[18].edge[DIR_AHEAD].dist = 230;
 	track[19].name = "B4";
+	track[19].index = 19;
 	node_map[ GROUPB ][ 4 - 1 ] = 19;
 	track[19].group = GROUPB;
 	track[19].id = 4 - 1;
@@ -318,6 +331,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[19].edge[DIR_AHEAD].dest = &track[111];
 	track[19].edge[DIR_AHEAD].dist = 220;
 	track[20].name = "B5";
+	track[20].index = 20;
 	node_map[ GROUPB ][ 5 - 1 ] = 20;
 	track[20].group = GROUPB;
 	track[20].id = 5 - 1;
@@ -329,6 +343,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[20].edge[DIR_AHEAD].dest = &track[50];
 	track[20].edge[DIR_AHEAD].dist = 405;
 	track[21].name = "B6";
+	track[21].index = 21;
 	node_map[ GROUPB ][ 6 - 1 ] = 21;
 	track[21].group = GROUPB;
 	track[21].id = 6 - 1;
@@ -340,6 +355,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[21].edge[DIR_AHEAD].dest = &track[105];
 	track[21].edge[DIR_AHEAD].dist = 214;
 	track[22].name = "B7";
+	track[22].index = 22;
 	node_map[ GROUPB ][ 7 - 1 ] = 22;
 	track[22].group = GROUPB;
 	track[22].id = 7 - 1;
@@ -351,6 +367,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[22].edge[DIR_AHEAD].dest = &track[9];
 	track[22].edge[DIR_AHEAD].dist = 289;
 	track[23].name = "B8";
+	track[23].index = 23;
 	node_map[ GROUPB ][ 8 - 1 ] = 23;
 	track[23].group = GROUPB;
 	track[23].id = 8 - 1;
@@ -362,6 +379,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[23].edge[DIR_AHEAD].dest = &track[137];
 	track[23].edge[DIR_AHEAD].dist = 60;
 	track[24].name = "B9";
+	track[24].index = 24;
 	node_map[ GROUPB ][ 9 - 1 ] = 24;
 	track[24].group = GROUPB;
 	track[24].id = 9 - 1;
@@ -373,6 +391,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[24].edge[DIR_AHEAD].dest = &track[4];
 	track[24].edge[DIR_AHEAD].dist = 649;
 	track[25].name = "B10";
+	track[25].index = 25;
 	node_map[ GROUPB ][ 10 - 1 ] = 25;
 	track[25].group = GROUPB;
 	track[25].id = 10 - 1;
@@ -384,6 +403,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[25].edge[DIR_AHEAD].dest = &track[141];
 	track[25].edge[DIR_AHEAD].dist = 70;
 	track[26].name = "B11";
+	track[26].index = 26;
 	node_map[ GROUPB ][ 11 - 1 ] = 26;
 	track[26].group = GROUPB;
 	track[26].id = 11 - 1;
@@ -395,6 +415,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[26].edge[DIR_AHEAD].dest = &track[7];
 	track[26].edge[DIR_AHEAD].dist = 473;
 	track[27].name = "B12";
+	track[27].index = 27;
 	node_map[ GROUPB ][ 12 - 1 ] = 27;
 	track[27].group = GROUPB;
 	track[27].id = 12 - 1;
@@ -406,6 +427,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[27].edge[DIR_AHEAD].dest = &track[143];
 	track[27].edge[DIR_AHEAD].dist = 70;
 	track[28].name = "B13";
+	track[28].index = 28;
 	node_map[ GROUPB ][ 13 - 1 ] = 28;
 	track[28].group = GROUPB;
 	track[28].id = 13 - 1;
@@ -417,6 +439,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[28].edge[DIR_AHEAD].dest = &track[119];
 	track[28].edge[DIR_AHEAD].dist = 224;
 	track[29].name = "B14";
+	track[29].index = 29;
 	node_map[ GROUPB ][ 14 - 1 ] = 29;
 	track[29].group = GROUPB;
 	track[29].id = 14 - 1;
@@ -428,6 +451,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[29].edge[DIR_AHEAD].dest = &track[63];
 	track[29].edge[DIR_AHEAD].dist = 202;
 	track[30].name = "B15";
+	track[30].index = 30;
 	node_map[ GROUPB ][ 15 - 1 ] = 30;
 	track[30].group = GROUPB;
 	track[30].id = 15 - 1;
@@ -439,6 +463,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[30].edge[DIR_AHEAD].dest = &track[2];
 	track[30].edge[DIR_AHEAD].dist = 440;
 	track[31].name = "B16";
+	track[31].index = 31;
 	node_map[ GROUPB ][ 16 - 1 ] = 31;
 	track[31].group = GROUPB;
 	track[31].id = 16 - 1;
@@ -450,6 +475,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[31].edge[DIR_AHEAD].dest = &track[108];
 	track[31].edge[DIR_AHEAD].dist = 70;
 	track[32].name = "C1";
+	track[32].index = 32;
 	node_map[ GROUPC ][ 1 - 1 ] = 32;
 	track[32].group = GROUPC;
 	track[32].id = 1 - 1;
@@ -461,6 +487,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[32].edge[DIR_AHEAD].dest = &track[19];
 	track[32].edge[DIR_AHEAD].dist = 230;
 	track[33].name = "C2";
+	track[33].index = 33;
 	node_map[ GROUPC ][ 2 - 1 ] = 33;
 	track[33].group = GROUPC;
 	track[33].id = 2 - 1;
@@ -472,6 +499,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[33].edge[DIR_AHEAD].dest = &track[117];
 	track[33].edge[DIR_AHEAD].dist = 228;
 	track[34].name = "C3";
+	track[34].index = 34;
 	node_map[ GROUPC ][ 3 - 1 ] = 34;
 	track[34].group = GROUPC;
 	track[34].id = 3 - 1;
@@ -483,6 +511,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[34].edge[DIR_AHEAD].dest = &track[129];
 	track[34].edge[DIR_AHEAD].dist = 410;
 	track[35].name = "C4";
+	track[35].index = 35;
 	node_map[ GROUPC ][ 4 - 1 ] = 35;
 	track[35].group = GROUPC;
 	track[35].id = 4 - 1;
@@ -494,6 +523,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[35].edge[DIR_AHEAD].dest = &track[89];
 	track[35].edge[DIR_AHEAD].dist = 226;
 	track[36].name = "C5";
+	track[36].index = 36;
 	node_map[ GROUPC ][ 5 - 1 ] = 36;
 	track[36].group = GROUPC;
 	track[36].id = 5 - 1;
@@ -505,6 +535,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[36].edge[DIR_AHEAD].dest = &track[90];
 	track[36].edge[DIR_AHEAD].dist = 79;
 	track[37].name = "C6";
+	track[37].index = 37;
 	node_map[ GROUPC ][ 6 - 1 ] = 37;
 	track[37].group = GROUPC;
 	track[37].id = 6 - 1;
@@ -516,6 +547,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[37].edge[DIR_AHEAD].dest = &track[109];
 	track[37].edge[DIR_AHEAD].dist = 411;
 	track[38].name = "C7";
+	track[38].index = 38;
 	node_map[ GROUPC ][ 7 - 1 ] = 38;
 	track[38].group = GROUPC;
 	track[38].id = 7 - 1;
@@ -527,6 +559,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[38].edge[DIR_AHEAD].dest = &track[115];
 	track[38].edge[DIR_AHEAD].dist = 215;
 	track[39].name = "C8";
+	track[39].index = 39;
 	node_map[ GROUPC ][ 8 - 1 ] = 39;
 	track[39].group = GROUPC;
 	track[39].id = 8 - 1;
@@ -538,6 +571,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[39].edge[DIR_AHEAD].dest = &track[84];
 	track[39].edge[DIR_AHEAD].dist = 145;
 	track[40].name = "C9";
+	track[40].index = 40;
 	node_map[ GROUPC ][ 9 - 1 ] = 40;
 	track[40].group = GROUPC;
 	track[40].id = 9 - 1;
@@ -549,6 +583,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[40].edge[DIR_AHEAD].dest = &track[109];
 	track[40].edge[DIR_AHEAD].dist = 305;
 	track[41].name = "C10";
+	track[41].index = 41;
 	node_map[ GROUPC ][ 10 - 1 ] = 41;
 	track[41].group = GROUPC;
 	track[41].id = 10 - 1;
@@ -560,6 +595,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[41].edge[DIR_AHEAD].dest = &track[110];
 	track[41].edge[DIR_AHEAD].dist = 146;
 	track[42].name = "C11";
+	track[42].index = 42;
 	node_map[ GROUPC ][ 11 - 1 ] = 42;
 	track[42].group = GROUPC;
 	track[42].id = 11 - 1;
@@ -571,6 +607,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[42].edge[DIR_AHEAD].dest = &track[104];
 	track[42].edge[DIR_AHEAD].dist = 140;
 	track[43].name = "C12";
+	track[43].index = 43;
 	node_map[ GROUPC ][ 12 - 1 ] = 43;
 	track[43].group = GROUPC;
 	track[43].id = 12 - 1;
@@ -582,6 +619,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[43].edge[DIR_AHEAD].dest = &track[107];
 	track[43].edge[DIR_AHEAD].dist = 314;
 	track[44].name = "C13";
+	track[44].index = 44;
 	node_map[ GROUPC ][ 13 - 1 ] = 44;
 	track[44].group = GROUPC;
 	track[44].id = 13 - 1;
@@ -593,6 +631,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[44].edge[DIR_AHEAD].dest = &track[70];
 	track[44].edge[DIR_AHEAD].dist = 877;
 	track[45].name = "C14";
+	track[45].index = 45;
 	node_map[ GROUPC ][ 14 - 1 ] = 45;
 	track[45].group = GROUPC;
 	track[45].id = 14 - 1;
@@ -604,6 +643,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[45].edge[DIR_AHEAD].dest = &track[100];
 	track[45].edge[DIR_AHEAD].dist = 60;
 	track[46].name = "C15";
+	track[46].index = 46;
 	node_map[ GROUPC ][ 15 - 1 ] = 46;
 	track[46].group = GROUPC;
 	track[46].id = 15 - 1;
@@ -615,6 +655,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[46].edge[DIR_AHEAD].dest = &track[59];
 	track[46].edge[DIR_AHEAD].dist = 405;
 	track[47].name = "C16";
+	track[47].index = 47;
 	node_map[ GROUPC ][ 16 - 1 ] = 47;
 	track[47].group = GROUPC;
 	track[47].id = 16 - 1;
@@ -626,6 +667,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[47].edge[DIR_AHEAD].dest = &track[91];
 	track[47].edge[DIR_AHEAD].dist = 223;
 	track[48].name = "D1";
+	track[48].index = 48;
 	node_map[ GROUPD ][ 1 - 1 ] = 48;
 	track[48].group = GROUPD;
 	track[48].id = 1 - 1;
@@ -637,6 +679,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[48].edge[DIR_AHEAD].dest = &track[121];
 	track[48].edge[DIR_AHEAD].dist = 227;
 	track[49].name = "D2";
+	track[49].index = 49;
 	node_map[ GROUPD ][ 2 - 1 ] = 49;
 	track[49].group = GROUPD;
 	track[49].id = 2 - 1;
@@ -648,6 +691,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[49].edge[DIR_AHEAD].dest = &track[67];
 	track[49].edge[DIR_AHEAD].dist = 200;
 	track[50].name = "D3";
+	track[50].index = 50;
 	node_map[ GROUPD ][ 3 - 1 ] = 50;
 	track[50].group = GROUPD;
 	track[50].id = 3 - 1;
@@ -659,6 +703,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[50].edge[DIR_AHEAD].dest = &track[99];
 	track[50].edge[DIR_AHEAD].dist = 223;
 	track[51].name = "D4";
+	track[51].index = 51;
 	node_map[ GROUPD ][ 4 - 1 ] = 51;
 	track[51].group = GROUPD;
 	track[51].id = 4 - 1;
@@ -670,6 +715,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[51].edge[DIR_AHEAD].dest = &track[21];
 	track[51].edge[DIR_AHEAD].dist = 405;
 	track[52].name = "D5";
+	track[52].index = 52;
 	node_map[ GROUPD ][ 5 - 1 ] = 52;
 	track[52].group = GROUPD;
 	track[52].id = 5 - 1;
@@ -681,6 +727,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[52].edge[DIR_AHEAD].dest = &track[69];
 	track[52].edge[DIR_AHEAD].dist = 375;
 	track[53].name = "D6";
+	track[53].index = 53;
 	node_map[ GROUPD ][ 6 - 1 ] = 53;
 	track[53].group = GROUPD;
 	track[53].id = 6 - 1;
@@ -692,6 +739,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[53].edge[DIR_AHEAD].dest = &track[97];
 	track[53].edge[DIR_AHEAD].dist = 213;
 	track[54].name = "D7";
+	track[54].index = 54;
 	node_map[ GROUPD ][ 7 - 1 ] = 54;
 	track[54].group = GROUPD;
 	track[54].id = 7 - 1;
@@ -703,6 +751,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[54].edge[DIR_AHEAD].dest = &track[97];
 	track[54].edge[DIR_AHEAD].dist = 290;
 	track[55].name = "D8";
+	track[55].index = 55;
 	node_map[ GROUPD ][ 8 - 1 ] = 55;
 	track[55].group = GROUPD;
 	track[55].id = 8 - 1;
@@ -714,6 +763,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[55].edge[DIR_AHEAD].dest = &track[71];
 	track[55].edge[DIR_AHEAD].dist = 375;
 	track[56].name = "D9";
+	track[56].index = 56;
 	node_map[ GROUPD ][ 9 - 1 ] = 56;
 	track[56].group = GROUPD;
 	track[56].id = 9 - 1;
@@ -725,6 +775,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[56].edge[DIR_AHEAD].dest = &track[75];
 	track[56].edge[DIR_AHEAD].dist = 361;
 	track[57].name = "D10";
+	track[57].index = 57;
 	node_map[ GROUPD ][ 10 - 1 ] = 57;
 	track[57].group = GROUPD;
 	track[57].id = 10 - 1;
@@ -736,6 +787,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[57].edge[DIR_AHEAD].dest = &track[95];
 	track[57].edge[DIR_AHEAD].dist = 291;
 	track[58].name = "D11";
+	track[58].index = 58;
 	node_map[ GROUPD ][ 11 - 1 ] = 58;
 	track[58].group = GROUPD;
 	track[58].id = 11 - 1;
@@ -747,6 +799,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[58].edge[DIR_AHEAD].dest = &track[47];
 	track[58].edge[DIR_AHEAD].dist = 405;
 	track[59].name = "D12";
+	track[59].index = 59;
 	node_map[ GROUPD ][ 12 - 1 ] = 59;
 	track[59].group = GROUPD;
 	track[59].id = 12 - 1;
@@ -758,6 +811,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[59].edge[DIR_AHEAD].dest = &track[93];
 	track[59].edge[DIR_AHEAD].dist = 220;
 	track[60].name = "D13";
+	track[60].index = 60;
 	node_map[ GROUPD ][ 13 - 1 ] = 60;
 	track[60].group = GROUPD;
 	track[60].id = 13 - 1;
@@ -769,6 +823,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[60].edge[DIR_AHEAD].dest = &track[17];
 	track[60].edge[DIR_AHEAD].dist = 398;
 	track[61].name = "D14";
+	track[61].index = 61;
 	node_map[ GROUPD ][ 14 - 1 ] = 61;
 	track[61].group = GROUPD;
 	track[61].id = 14 - 1;
@@ -780,6 +835,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[61].edge[DIR_AHEAD].dest = &track[113];
 	track[61].edge[DIR_AHEAD].dist = 225;
 	track[62].name = "D15";
+	track[62].index = 62;
 	node_map[ GROUPD ][ 15 - 1 ] = 62;
 	track[62].group = GROUPD;
 	track[62].id = 15 - 1;
@@ -791,6 +847,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[62].edge[DIR_AHEAD].dest = &track[28];
 	track[62].edge[DIR_AHEAD].dist = 202;
 	track[63].name = "D16";
+	track[63].index = 63;
 	node_map[ GROUPD ][ 16 - 1 ] = 63;
 	track[63].group = GROUPD;
 	track[63].id = 16 - 1;
@@ -802,6 +859,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[63].edge[DIR_AHEAD].dest = &track[113];
 	track[63].edge[DIR_AHEAD].dist = 230;
 	track[64].name = "E1";
+	track[64].index = 64;
 	node_map[ GROUPE ][ 1 - 1 ] = 64;
 	track[64].group = GROUPE;
 	track[64].id = 1 - 1;
@@ -813,6 +871,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[64].edge[DIR_AHEAD].dest = &track[123];
 	track[64].edge[DIR_AHEAD].dist = 222;
 	track[65].name = "E2";
+	track[65].index = 65;
 	node_map[ GROUPE ][ 2 - 1 ] = 65;
 	track[65].group = GROUPE;
 	track[65].id = 2 - 1;
@@ -824,6 +883,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[65].edge[DIR_AHEAD].dest = &track[78];
 	track[65].edge[DIR_AHEAD].dist = 203;
 	track[66].name = "E3";
+	track[66].index = 66;
 	node_map[ GROUPE ][ 3 - 1 ] = 66;
 	track[66].group = GROUPE;
 	track[66].id = 3 - 1;
@@ -835,6 +895,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[66].edge[DIR_AHEAD].dest = &track[48];
 	track[66].edge[DIR_AHEAD].dist = 200;
 	track[67].name = "E4";
+	track[67].index = 67;
 	node_map[ GROUPE ][ 4 - 1 ] = 67;
 	track[67].group = GROUPE;
 	track[67].id = 4 - 1;
@@ -846,6 +907,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[67].edge[DIR_AHEAD].dest = &track[99];
 	track[67].edge[DIR_AHEAD].dist = 220;
 	track[68].name = "E5";
+	track[68].index = 68;
 	node_map[ GROUPE ][ 5 - 1 ] = 68;
 	track[68].group = GROUPE;
 	track[68].id = 5 - 1;
@@ -857,6 +919,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[68].edge[DIR_AHEAD].dest = &track[53];
 	track[68].edge[DIR_AHEAD].dist = 375;
 	track[69].name = "E6";
+	track[69].index = 69;
 	node_map[ GROUPE ][ 6 - 1 ] = 69;
 	track[69].group = GROUPE;
 	track[69].id = 6 - 1;
@@ -868,6 +931,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[69].edge[DIR_AHEAD].dest = &track[98];
 	track[69].edge[DIR_AHEAD].dist = 74;
 	track[70].name = "E7";
+	track[70].index = 70;
 	node_map[ GROUPE ][ 7 - 1 ] = 70;
 	track[70].group = GROUPE;
 	track[70].id = 7 - 1;
@@ -879,6 +943,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[70].edge[DIR_AHEAD].dest = &track[54];
 	track[70].edge[DIR_AHEAD].dist = 375;
 	track[71].name = "E8";
+	track[71].index = 71;
 	node_map[ GROUPE ][ 8 - 1 ] = 71;
 	track[71].group = GROUPE;
 	track[71].id = 8 - 1;
@@ -890,6 +955,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[71].edge[DIR_AHEAD].dest = &track[45];
 	track[71].edge[DIR_AHEAD].dist = 877;
 	track[72].name = "E9";
+	track[72].index = 72;
 	node_map[ GROUPE ][ 9 - 1 ] = 72;
 	track[72].group = GROUPE;
 	track[72].id = 9 - 1;
@@ -901,6 +967,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[72].edge[DIR_AHEAD].dest = &track[95];
 	track[72].edge[DIR_AHEAD].dist = 215;
 	track[73].name = "E10";
+	track[73].index = 73;
 	node_map[ GROUPE ][ 10 - 1 ] = 73;
 	track[73].group = GROUPE;
 	track[73].id = 10 - 1;
@@ -912,6 +979,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[73].edge[DIR_AHEAD].dest = &track[76];
 	track[73].edge[DIR_AHEAD].dist = 375;
 	track[74].name = "E11";
+	track[74].index = 74;
 	node_map[ GROUPE ][ 11 - 1 ] = 74;
 	track[74].group = GROUPE;
 	track[74].id = 11 - 1;
@@ -923,6 +991,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[74].edge[DIR_AHEAD].dest = &track[57];
 	track[74].edge[DIR_AHEAD].dist = 361;
 	track[75].name = "E12";
+	track[75].index = 75;
 	node_map[ GROUPE ][ 12 - 1 ] = 75;
 	track[75].group = GROUPE;
 	track[75].id = 12 - 1;
@@ -934,6 +1003,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[75].edge[DIR_AHEAD].dest = &track[92];
 	track[75].edge[DIR_AHEAD].dist = 65;
 	track[76].name = "E13";
+	track[76].index = 76;
 	node_map[ GROUPE ][ 13 - 1 ] = 76;
 	track[76].group = GROUPE;
 	track[76].id = 13 - 1;
@@ -945,6 +1015,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[76].edge[DIR_AHEAD].dest = &track[112];
 	track[76].edge[DIR_AHEAD].dist = 62;
 	track[77].name = "E14";
+	track[77].index = 77;
 	node_map[ GROUPE ][ 14 - 1 ] = 77;
 	track[77].group = GROUPE;
 	track[77].id = 14 - 1;
@@ -956,6 +1027,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[77].edge[DIR_AHEAD].dest = &track[72];
 	track[77].edge[DIR_AHEAD].dist = 375;
 	track[78].name = "E15";
+	track[78].index = 78;
 	node_map[ GROUPE ][ 15 - 1 ] = 78;
 	track[78].group = GROUPE;
 	track[78].id = 15 - 1;
@@ -967,6 +1039,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[78].edge[DIR_AHEAD].dest = &track[105];
 	track[78].edge[DIR_AHEAD].dist = 230;
 	track[79].name = "E16";
+	track[79].index = 79;
 	node_map[ GROUPE ][ 16 - 1 ] = 79;
 	track[79].group = GROUPE;
 	track[79].id = 16 - 1;
@@ -978,6 +1051,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[79].edge[DIR_AHEAD].dest = &track[64];
 	track[79].edge[DIR_AHEAD].dist = 203;
 	track[80].name = "BR1";
+	track[80].index = 80;
 	track[80].group = GROUPBR;
 	track[80].id = 1 - 1;
 	track[80].type = NODE_BRANCH;
@@ -992,6 +1066,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[80].edge[DIR_CURVED].dest = &track[8];
 	track[80].edge[DIR_CURVED].dist = 210;
 	track[81].name = "MR1";
+	track[81].index = 81;
 	track[81].group = GROUPMR;
 	track[81].id = 1 - 1;
 	track[81].type = NODE_MERGE;
@@ -1002,6 +1077,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[81].edge[DIR_AHEAD].dest = &track[83];
 	track[81].edge[DIR_AHEAD].dist = 191;
 	track[82].name = "BR2";
+	track[82].index = 82;
 	track[82].group = GROUPBR;
 	track[82].id = 2 - 1;
 	track[82].type = NODE_BRANCH;
@@ -1016,6 +1092,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[82].edge[DIR_CURVED].dest = &track[6];
 	track[82].edge[DIR_CURVED].dist = 211;
 	track[83].name = "MR2";
+	track[83].index = 83;
 	track[83].group = GROUPMR;
 	track[83].id = 2 - 1;
 	track[83].type = NODE_MERGE;
@@ -1026,6 +1103,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[83].edge[DIR_AHEAD].dest = &track[85];
 	track[83].edge[DIR_AHEAD].dist = 182;
 	track[84].name = "BR3";
+	track[84].index = 84;
 	track[84].group = GROUPBR;
 	track[84].id = 3 - 1;
 	track[84].type = NODE_BRANCH;
@@ -1040,6 +1118,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[84].edge[DIR_CURVED].dest = &track[82];
 	track[84].edge[DIR_CURVED].dist = 182;
 	track[85].name = "MR3";
+	track[85].index = 85;
 	track[85].group = GROUPMR;
 	track[85].id = 3 - 1;
 	track[85].type = NODE_MERGE;
@@ -1050,6 +1129,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[85].edge[DIR_AHEAD].dest = &track[38];
 	track[85].edge[DIR_AHEAD].dist = 145;
 	track[86].name = "BR4";
+	track[86].index = 86;
 	track[86].group = GROUPBR;
 	track[86].id = 4 - 1;
 	track[86].type = NODE_BRANCH;
@@ -1064,6 +1144,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[86].edge[DIR_CURVED].dest = &track[13];
 	track[86].edge[DIR_CURVED].dist = 215;
 	track[87].name = "MR4";
+	track[87].index = 87;
 	track[87].group = GROUPMR;
 	track[87].id = 4 - 1;
 	track[87].type = NODE_MERGE;
@@ -1074,6 +1155,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[87].edge[DIR_AHEAD].dest = &track[103];
 	track[87].edge[DIR_AHEAD].dist = 185;
 	track[88].name = "BR5";
+	track[88].index = 88;
 	track[88].group = GROUPBR;
 	track[88].id = 5 - 1;
 	track[88].type = NODE_BRANCH;
@@ -1088,6 +1170,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[88].edge[DIR_CURVED].dest = &track[93];
 	track[88].edge[DIR_CURVED].dist = 334;
 	track[89].name = "MR5";
+	track[89].index = 89;
 	track[89].group = GROUPMR;
 	track[89].id = 5 - 1;
 	track[89].type = NODE_MERGE;
@@ -1098,6 +1181,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[89].edge[DIR_AHEAD].dest = &track[114];
 	track[89].edge[DIR_AHEAD].dist = 187;
 	track[90].name = "BR6";
+	track[90].index = 90;
 	track[90].group = GROUPBR;
 	track[90].id = 6 - 1;
 	track[90].type = NODE_BRANCH;
@@ -1112,6 +1196,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[90].edge[DIR_CURVED].dest = &track[115];
 	track[90].edge[DIR_CURVED].dist = 338;
 	track[91].name = "MR6";
+	track[91].index = 91;
 	track[91].group = GROUPMR;
 	track[91].id = 6 - 1;
 	track[91].type = NODE_MERGE;
@@ -1122,6 +1207,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[91].edge[DIR_AHEAD].dest = &track[37];
 	track[91].edge[DIR_AHEAD].dist = 79;
 	track[92].name = "BR7";
+	track[92].index = 92;
 	track[92].group = GROUPBR;
 	track[92].id = 7 - 1;
 	track[92].type = NODE_BRANCH;
@@ -1136,6 +1222,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[92].edge[DIR_CURVED].dest = &track[89];
 	track[92].edge[DIR_CURVED].dist = 334;
 	track[93].name = "MR7";
+	track[93].index = 93;
 	track[93].group = GROUPMR;
 	track[93].id = 7 - 1;
 	track[93].type = NODE_MERGE;
@@ -1146,6 +1233,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[93].edge[DIR_AHEAD].dest = &track[74];
 	track[93].edge[DIR_AHEAD].dist = 65;
 	track[94].name = "BR8";
+	track[94].index = 94;
 	track[94].group = GROUPBR;
 	track[94].id = 8 - 1;
 	track[94].type = NODE_BRANCH;
@@ -1160,6 +1248,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[94].edge[DIR_CURVED].dest = &track[73];
 	track[94].edge[DIR_CURVED].dist = 215;
 	track[95].name = "MR8";
+	track[95].index = 95;
 	track[95].group = GROUPMR;
 	track[95].id = 8 - 1;
 	track[95].type = NODE_MERGE;
@@ -1170,6 +1259,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[95].edge[DIR_AHEAD].dest = &track[96];
 	track[95].edge[DIR_AHEAD].dist = 193;
 	track[96].name = "BR9";
+	track[96].index = 96;
 	track[96].group = GROUPBR;
 	track[96].id = 9 - 1;
 	track[96].type = NODE_BRANCH;
@@ -1184,6 +1274,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[96].edge[DIR_CURVED].dest = &track[52];
 	track[96].edge[DIR_CURVED].dist = 213;
 	track[97].name = "MR9";
+	track[97].index = 97;
 	track[97].group = GROUPMR;
 	track[97].id = 9 - 1;
 	track[97].type = NODE_MERGE;
@@ -1194,6 +1285,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[97].edge[DIR_AHEAD].dest = &track[94];
 	track[97].edge[DIR_AHEAD].dist = 193;
 	track[98].name = "BR10";
+	track[98].index = 98;
 	track[98].group = GROUPBR;
 	track[98].id = 10 - 1;
 	track[98].type = NODE_BRANCH;
@@ -1208,6 +1300,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[98].edge[DIR_CURVED].dest = &track[66];
 	track[98].edge[DIR_CURVED].dist = 220;
 	track[99].name = "MR10";
+	track[99].index = 99;
 	track[99].group = GROUPMR;
 	track[99].id = 10 - 1;
 	track[99].type = NODE_MERGE;
@@ -1218,6 +1311,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[99].edge[DIR_AHEAD].dest = &track[68];
 	track[99].edge[DIR_AHEAD].dist = 74;
 	track[100].name = "BR11";
+	track[100].index = 100;
 	track[100].group = GROUPBR;
 	track[100].id = 11 - 1;
 	track[100].type = NODE_BRANCH;
@@ -1232,6 +1326,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[100].edge[DIR_CURVED].dest = &track[107];
 	track[100].edge[DIR_CURVED].dist = 445;
 	track[101].name = "MR11";
+	track[101].index = 101;
 	track[101].group = GROUPMR;
 	track[101].id = 11 - 1;
 	track[101].type = NODE_MERGE;
@@ -1242,6 +1337,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[101].edge[DIR_AHEAD].dest = &track[44];
 	track[101].edge[DIR_AHEAD].dist = 60;
 	track[102].name = "BR12";
+	track[102].index = 102;
 	track[102].group = GROUPBR;
 	track[102].id = 12 - 1;
 	track[102].type = NODE_BRANCH;
@@ -1256,6 +1352,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[102].edge[DIR_CURVED].dest = &track[86];
 	track[102].edge[DIR_CURVED].dist = 185;
 	track[103].name = "MR12";
+	track[103].index = 103;
 	track[103].group = GROUPMR;
 	track[103].id = 12 - 1;
 	track[103].type = NODE_MERGE;
@@ -1266,6 +1363,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[103].edge[DIR_AHEAD].dest = &track[101];
 	track[103].edge[DIR_AHEAD].dist = 190;
 	track[104].name = "BR13";
+	track[104].index = 104;
 	track[104].group = GROUPBR;
 	track[104].id = 13 - 1;
 	track[104].type = NODE_BRANCH;
@@ -1280,6 +1378,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[104].edge[DIR_CURVED].dest = &track[79];
 	track[104].edge[DIR_CURVED].dist = 230;
 	track[105].name = "MR13";
+	track[105].index = 105;
 	track[105].group = GROUPMR;
 	track[105].id = 13 - 1;
 	track[105].type = NODE_MERGE;
@@ -1290,6 +1389,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[105].edge[DIR_AHEAD].dest = &track[43];
 	track[105].edge[DIR_AHEAD].dist = 140;
 	track[106].name = "BR14";
+	track[106].index = 106;
 	track[106].group = GROUPBR;
 	track[106].id = 14 - 1;
 	track[106].type = NODE_BRANCH;
@@ -1304,6 +1404,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[106].edge[DIR_CURVED].dest = &track[42];
 	track[106].edge[DIR_CURVED].dist = 314;
 	track[107].name = "MR14";
+	track[107].index = 107;
 	track[107].group = GROUPMR;
 	track[107].id = 14 - 1;
 	track[107].type = NODE_MERGE;
@@ -1314,6 +1415,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[107].edge[DIR_AHEAD].dest = &track[3];
 	track[107].edge[DIR_AHEAD].dist = 62;
 	track[108].name = "BR15";
+	track[108].index = 108;
 	track[108].group = GROUPBR;
 	track[108].id = 15 - 1;
 	track[108].type = NODE_BRANCH;
@@ -1328,6 +1430,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[108].edge[DIR_CURVED].dest = &track[41];
 	track[108].edge[DIR_CURVED].dist = 305;
 	track[109].name = "MR15";
+	track[109].index = 109;
 	track[109].group = GROUPMR;
 	track[109].id = 15 - 1;
 	track[109].type = NODE_MERGE;
@@ -1338,6 +1441,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[109].edge[DIR_AHEAD].dest = &track[30];
 	track[109].edge[DIR_AHEAD].dist = 70;
 	track[110].name = "BR16";
+	track[110].index = 110;
 	track[110].group = GROUPBR;
 	track[110].id = 16 - 1;
 	track[110].type = NODE_BRANCH;
@@ -1352,6 +1456,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[110].edge[DIR_CURVED].dest = &track[18];
 	track[110].edge[DIR_CURVED].dist = 220;
 	track[111].name = "MR16";
+	track[111].index = 111;
 	track[111].group = GROUPMR;
 	track[111].id = 16 - 1;
 	track[111].type = NODE_MERGE;
@@ -1362,6 +1467,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[111].edge[DIR_AHEAD].dest = &track[40];
 	track[111].edge[DIR_AHEAD].dist = 146;
 	track[112].name = "BR17";
+	track[112].index = 112;
 	track[112].group = GROUPBR;
 	track[112].id = 17 - 1;
 	track[112].type = NODE_BRANCH;
@@ -1376,6 +1482,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[112].edge[DIR_CURVED].dest = &track[62];
 	track[112].edge[DIR_CURVED].dist = 230;
 	track[113].name = "MR17";
+	track[113].index = 113;
 	track[113].group = GROUPMR;
 	track[113].id = 17 - 1;
 	track[113].type = NODE_MERGE;
@@ -1386,6 +1493,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[113].edge[DIR_AHEAD].dest = &track[77];
 	track[113].edge[DIR_AHEAD].dist = 62;
 	track[114].name = "BR18";
+	track[114].index = 114;
 	track[114].group = GROUPBR;
 	track[114].id = 18 - 1;
 	track[114].type = NODE_BRANCH;
@@ -1400,6 +1508,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[114].edge[DIR_CURVED].dest = &track[91];
 	track[114].edge[DIR_CURVED].dist = 338;
 	track[115].name = "MR18";
+	track[115].index = 115;
 	track[115].group = GROUPMR;
 	track[115].id = 18 - 1;
 	track[115].type = NODE_MERGE;
@@ -1410,6 +1519,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[115].edge[DIR_AHEAD].dest = &track[88];
 	track[115].edge[DIR_AHEAD].dist = 187;
 	track[116].name = "BR153";
+	track[116].index = 116;
 	track[116].group = GROUPBR;
 	track[116].id = 153 - 1;
 	track[116].type = NODE_BRANCH;
@@ -1424,6 +1534,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[116].edge[DIR_CURVED].dest = &track[32];
 	track[116].edge[DIR_CURVED].dist = 228;
 	track[117].name = "MR153";
+	track[117].index = 117;
 	track[117].group = GROUPMR;
 	track[117].id = 153 - 1;
 	track[117].type = NODE_MERGE;
@@ -1434,6 +1545,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[117].edge[DIR_AHEAD].dest = &track[119];
 	track[117].edge[DIR_AHEAD].dist = 24;
 	track[118].name = "BR154";
+	track[118].index = 118;
 	track[118].group = GROUPBR;
 	track[118].id = 154 - 1;
 	track[118].type = NODE_BRANCH;
@@ -1448,6 +1560,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[118].edge[DIR_CURVED].dest = &track[29];
 	track[118].edge[DIR_CURVED].dist = 224;
 	track[119].name = "MR154";
+	track[119].index = 119;
 	track[119].group = GROUPMR;
 	track[119].id = 154 - 1;
 	track[119].type = NODE_MERGE;
@@ -1458,6 +1571,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[119].edge[DIR_AHEAD].dest = &track[122];
 	track[119].edge[DIR_AHEAD].dist = 32;
 	track[120].name = "BR155";
+	track[120].index = 120;
 	track[120].group = GROUPBR;
 	track[120].id = 155 - 1;
 	track[120].type = NODE_BRANCH;
@@ -1472,6 +1586,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[120].edge[DIR_CURVED].dest = &track[49];
 	track[120].edge[DIR_CURVED].dist = 227;
 	track[121].name = "MR155";
+	track[121].index = 121;
 	track[121].group = GROUPMR;
 	track[121].id = 155 - 1;
 	track[121].type = NODE_MERGE;
@@ -1482,6 +1597,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[121].edge[DIR_AHEAD].dest = &track[123];
 	track[121].edge[DIR_AHEAD].dist = 24;
 	track[122].name = "BR156";
+	track[122].index = 122;
 	track[122].group = GROUPBR;
 	track[122].id = 156 - 1;
 	track[122].type = NODE_BRANCH;
@@ -1496,6 +1612,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[122].edge[DIR_CURVED].dest = &track[65];
 	track[122].edge[DIR_CURVED].dist = 222;
 	track[123].name = "MR156";
+	track[123].index = 123;
 	track[123].group = GROUPMR;
 	track[123].id = 156 - 1;
 	track[123].type = NODE_MERGE;
@@ -1506,6 +1623,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[123].edge[DIR_AHEAD].dest = &track[118];
 	track[123].edge[DIR_AHEAD].dist = 32;
 	track[124].name = "EN1";
+	track[124].index = 124;
 	track[124].group = GROUPEN;
 	track[124].id = 1 - 1;
 	track[124].type = NODE_ENTER;
@@ -1515,11 +1633,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[124].edge[DIR_AHEAD].dest = &track[117];
 	track[124].edge[DIR_AHEAD].dist = 230;
 	track[125].name = "EX1";
+	track[125].index = 125;
 	track[125].group = GROUPEX;
 	track[125].id = 1 - 1;
 	track[125].type = NODE_EXIT;
 	track[125].reverse = &track[124];
 	track[126].name = "EN2";
+	track[126].index = 126;
 	track[126].group = GROUPEN;
 	track[126].id = 2 - 1;
 	track[126].type = NODE_ENTER;
@@ -1529,11 +1649,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[126].edge[DIR_AHEAD].dest = &track[121];
 	track[126].edge[DIR_AHEAD].dist = 247;
 	track[127].name = "EX2";
+	track[127].index = 127;
 	track[127].group = GROUPEX;
 	track[127].id = 2 - 1;
 	track[127].type = NODE_EXIT;
 	track[127].reverse = &track[126];
 	track[128].name = "EN3";
+	track[128].index = 128;
 	track[128].group = GROUPEN;
 	track[128].id = 3 - 1;
 	track[128].type = NODE_ENTER;
@@ -1543,11 +1665,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[128].edge[DIR_AHEAD].dest = &track[35];
 	track[128].edge[DIR_AHEAD].dist = 410;
 	track[129].name = "EX3";
+	track[129].index = 129;
 	track[129].group = GROUPEX;
 	track[129].id = 3 - 1;
 	track[129].type = NODE_EXIT;
 	track[129].reverse = &track[128];
 	track[130].name = "EN4";
+	track[130].index = 130;
 	track[130].group = GROUPEN;
 	track[130].id = 4 - 1;
 	track[130].type = NODE_ENTER;
@@ -1557,11 +1681,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[130].edge[DIR_AHEAD].dest = &track[12];
 	track[130].edge[DIR_AHEAD].dist = 320;
 	track[131].name = "EX4";
+	track[131].index = 131;
 	track[131].group = GROUPEX;
 	track[131].id = 4 - 1;
 	track[131].type = NODE_EXIT;
 	track[131].reverse = &track[130];
 	track[132].name = "EN5";
+	track[132].index = 132;
 	track[132].group = GROUPEN;
 	track[132].id = 5 - 1;
 	track[132].type = NODE_ENTER;
@@ -1571,11 +1697,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[132].edge[DIR_AHEAD].dest = &track[0];
 	track[132].edge[DIR_AHEAD].dist = 500;
 	track[133].name = "EX5";
+	track[133].index = 133;
 	track[133].group = GROUPEX;
 	track[133].id = 5 - 1;
 	track[133].type = NODE_EXIT;
 	track[133].reverse = &track[132];
 	track[134].name = "EN6";
+	track[134].index = 134;
 	track[134].group = GROUPEN;
 	track[134].id = 6 - 1;
 	track[134].type = NODE_ENTER;
@@ -1585,11 +1713,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[134].edge[DIR_AHEAD].dest = &track[15];
 	track[134].edge[DIR_AHEAD].dist = 145;
 	track[135].name = "EX6";
+	track[135].index = 135;
 	track[135].group = GROUPEX;
 	track[135].id = 6 - 1;
 	track[135].type = NODE_EXIT;
 	track[135].reverse = &track[134];
 	track[136].name = "EN7";
+	track[136].index = 136;
 	track[136].group = GROUPEN;
 	track[136].id = 7 - 1;
 	track[136].type = NODE_ENTER;
@@ -1599,11 +1729,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[136].edge[DIR_AHEAD].dest = &track[22];
 	track[136].edge[DIR_AHEAD].dist = 60;
 	track[137].name = "EX7";
+	track[137].index = 137;
 	track[137].group = GROUPEX;
 	track[137].id = 7 - 1;
 	track[137].type = NODE_EXIT;
 	track[137].reverse = &track[136];
 	track[138].name = "EN8";
+	track[138].index = 138;
 	track[138].group = GROUPEN;
 	track[138].id = 8 - 1;
 	track[138].type = NODE_ENTER;
@@ -1613,11 +1745,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[138].edge[DIR_AHEAD].dest = &track[10];
 	track[138].edge[DIR_AHEAD].dist = 60;
 	track[139].name = "EX8";
+	track[139].index = 139;
 	track[139].group = GROUPEX;
 	track[139].id = 8 - 1;
 	track[139].type = NODE_EXIT;
 	track[139].reverse = &track[138];
 	track[140].name = "EN9";
+	track[140].index = 140;
 	track[140].group = GROUPEN;
 	track[140].id = 9 - 1;
 	track[140].type = NODE_ENTER;
@@ -1627,11 +1761,13 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[140].edge[DIR_AHEAD].dest = &track[24];
 	track[140].edge[DIR_AHEAD].dist = 70;
 	track[141].name = "EX9";
+	track[141].index = 141;
 	track[141].group = GROUPEX;
 	track[141].id = 9 - 1;
 	track[141].type = NODE_EXIT;
 	track[141].reverse = &track[140];
 	track[142].name = "EN10";
+	track[142].index = 142;
 	track[142].group = GROUPEN;
 	track[142].id = 10 - 1;
 	track[142].type = NODE_ENTER;
@@ -1641,6 +1777,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 	track[142].edge[DIR_AHEAD].dest = &track[26];
 	track[142].edge[DIR_AHEAD].dist = 70;
 	track[143].name = "EX10";
+	track[143].index = 143;
 	track[143].group = GROUPEX;
 	track[143].id = 10 - 1;
 	track[143].type = NODE_EXIT;
@@ -1649,6 +1786,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 
 void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
 	track[0].name = "A1";
+	track[0].index = 0;
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
 	track[0].group = GROUPA;
 	track[0].id = 1 - 1;
@@ -1659,6 +1797,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[0].edge[DIR_AHEAD].dest = &track[103];
 	track[0].edge[DIR_AHEAD].dist = 218;
 	track[1].name = "A2";
+	track[1].index = 1;
 	node_map[ GROUPA ][ 2 - 1 ] = 1;
 	track[1].group = GROUPA;
 	track[1].id = 2 - 1;
@@ -1670,6 +1809,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[1].edge[DIR_AHEAD].dest = &track[133];
 	track[1].edge[DIR_AHEAD].dist = 500;
 	track[2].name = "A3";
+	track[2].index = 2;
 	node_map[ GROUPA ][ 3 - 1 ] = 2;
 	track[2].group = GROUPA;
 	track[2].id = 3 - 1;
@@ -1681,6 +1821,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[2].edge[DIR_AHEAD].dest = &track[106];
 	track[2].edge[DIR_AHEAD].dist = 62;
 	track[3].name = "A4";
+	track[3].index = 3;
 	node_map[ GROUPA ][ 4 - 1 ] = 3;
 	track[3].group = GROUPA;
 	track[3].id = 4 - 1;
@@ -1692,6 +1833,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[3].edge[DIR_AHEAD].dest = &track[31];
 	track[3].edge[DIR_AHEAD].dist = 440;
 	track[4].name = "A5";
+	track[4].index = 4;
 	node_map[ GROUPA ][ 5 - 1 ] = 4;
 	track[4].group = GROUPA;
 	track[4].id = 5 - 1;
@@ -1703,6 +1845,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[4].edge[DIR_AHEAD].dest = &track[85];
 	track[4].edge[DIR_AHEAD].dist = 216;
 	track[5].name = "A6";
+	track[5].index = 5;
 	node_map[ GROUPA ][ 6 - 1 ] = 5;
 	track[5].group = GROUPA;
 	track[5].id = 6 - 1;
@@ -1714,6 +1857,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[5].edge[DIR_AHEAD].dest = &track[25];
 	track[5].edge[DIR_AHEAD].dist = 649;
 	track[6].name = "A7";
+	track[6].index = 6;
 	node_map[ GROUPA ][ 7 - 1 ] = 6;
 	track[6].group = GROUPA;
 	track[6].id = 7 - 1;
@@ -1725,6 +1869,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[6].edge[DIR_AHEAD].dest = &track[27];
 	track[6].edge[DIR_AHEAD].dist = 473;
 	track[7].name = "A8";
+	track[7].index = 7;
 	node_map[ GROUPA ][ 8 - 1 ] = 7;
 	track[7].group = GROUPA;
 	track[7].id = 8 - 1;
@@ -1736,6 +1881,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[7].edge[DIR_AHEAD].dest = &track[83];
 	track[7].edge[DIR_AHEAD].dist = 211;
 	track[8].name = "A9";
+	track[8].index = 8;
 	node_map[ GROUPA ][ 9 - 1 ] = 8;
 	track[8].group = GROUPA;
 	track[8].id = 9 - 1;
@@ -1747,6 +1893,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[8].edge[DIR_AHEAD].dest = &track[23];
 	track[8].edge[DIR_AHEAD].dist = 289;
 	track[9].name = "A10";
+	track[9].index = 9;
 	node_map[ GROUPA ][ 10 - 1 ] = 9;
 	track[9].group = GROUPA;
 	track[9].id = 10 - 1;
@@ -1758,6 +1905,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[9].edge[DIR_AHEAD].dest = &track[81];
 	track[9].edge[DIR_AHEAD].dist = 210;
 	track[10].name = "A11";
+	track[10].index = 10;
 	node_map[ GROUPA ][ 11 - 1 ] = 10;
 	track[10].group = GROUPA;
 	track[10].id = 11 - 1;
@@ -1769,6 +1917,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[10].edge[DIR_AHEAD].dest = &track[81];
 	track[10].edge[DIR_AHEAD].dist = 265;
 	track[11].name = "A12";
+	track[11].index = 11;
 	node_map[ GROUPA ][ 12 - 1 ] = 11;
 	track[11].group = GROUPA;
 	track[11].id = 12 - 1;
@@ -1780,6 +1929,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[11].edge[DIR_AHEAD].dest = &track[15];
 	track[11].edge[DIR_AHEAD].dist = 774;
 	track[12].name = "A13";
+	track[12].index = 12;
 	node_map[ GROUPA ][ 13 - 1 ] = 12;
 	track[12].group = GROUPA;
 	track[12].id = 13 - 1;
@@ -1791,6 +1941,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[12].edge[DIR_AHEAD].dest = &track[87];
 	track[12].edge[DIR_AHEAD].dist = 215;
 	track[13].name = "A14";
+	track[13].index = 13;
 	node_map[ GROUPA ][ 14 - 1 ] = 13;
 	track[13].group = GROUPA;
 	track[13].id = 14 - 1;
@@ -1802,6 +1953,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[13].edge[DIR_AHEAD].dest = &track[131];
 	track[13].edge[DIR_AHEAD].dist = 320;
 	track[14].name = "A15";
+	track[14].index = 14;
 	node_map[ GROUPA ][ 15 - 1 ] = 14;
 	track[14].group = GROUPA;
 	track[14].id = 15 - 1;
@@ -1813,6 +1965,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[14].edge[DIR_AHEAD].dest = &track[10];
 	track[14].edge[DIR_AHEAD].dist = 774;
 	track[15].name = "A16";
+	track[15].index = 15;
 	node_map[ GROUPA ][ 16 - 1 ] = 15;
 	track[15].group = GROUPA;
 	track[15].id = 16 - 1;
@@ -1824,6 +1977,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[15].edge[DIR_AHEAD].dest = &track[87];
 	track[15].edge[DIR_AHEAD].dist = 260;
 	track[16].name = "B1";
+	track[16].index = 16;
 	node_map[ GROUPB ][ 1 - 1 ] = 16;
 	track[16].group = GROUPB;
 	track[16].id = 1 - 1;
@@ -1835,6 +1989,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[16].edge[DIR_AHEAD].dest = &track[61];
 	track[16].edge[DIR_AHEAD].dist = 398;
 	track[17].name = "B2";
+	track[17].index = 17;
 	node_map[ GROUPB ][ 2 - 1 ] = 17;
 	track[17].group = GROUPB;
 	track[17].id = 2 - 1;
@@ -1846,6 +2001,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[17].edge[DIR_AHEAD].dest = &track[111];
 	track[17].edge[DIR_AHEAD].dist = 225;
 	track[18].name = "B3";
+	track[18].index = 18;
 	node_map[ GROUPB ][ 3 - 1 ] = 18;
 	track[18].group = GROUPB;
 	track[18].id = 3 - 1;
@@ -1857,6 +2013,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[18].edge[DIR_AHEAD].dest = &track[33];
 	track[18].edge[DIR_AHEAD].dist = 230;
 	track[19].name = "B4";
+	track[19].index = 19;
 	node_map[ GROUPB ][ 4 - 1 ] = 19;
 	track[19].group = GROUPB;
 	track[19].id = 4 - 1;
@@ -1868,6 +2025,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[19].edge[DIR_AHEAD].dest = &track[111];
 	track[19].edge[DIR_AHEAD].dist = 220;
 	track[20].name = "B5";
+	track[20].index = 20;
 	node_map[ GROUPB ][ 5 - 1 ] = 20;
 	track[20].group = GROUPB;
 	track[20].id = 5 - 1;
@@ -1879,6 +2037,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[20].edge[DIR_AHEAD].dest = &track[50];
 	track[20].edge[DIR_AHEAD].dist = 405;
 	track[21].name = "B6";
+	track[21].index = 21;
 	node_map[ GROUPB ][ 6 - 1 ] = 21;
 	track[21].group = GROUPB;
 	track[21].id = 6 - 1;
@@ -1890,6 +2049,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[21].edge[DIR_AHEAD].dest = &track[105];
 	track[21].edge[DIR_AHEAD].dist = 214;
 	track[22].name = "B7";
+	track[22].index = 22;
 	node_map[ GROUPB ][ 7 - 1 ] = 22;
 	track[22].group = GROUPB;
 	track[22].id = 7 - 1;
@@ -1901,6 +2061,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[22].edge[DIR_AHEAD].dest = &track[9];
 	track[22].edge[DIR_AHEAD].dist = 289;
 	track[23].name = "B8";
+	track[23].index = 23;
 	node_map[ GROUPB ][ 8 - 1 ] = 23;
 	track[23].group = GROUPB;
 	track[23].id = 8 - 1;
@@ -1912,6 +2073,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[23].edge[DIR_AHEAD].dest = &track[135];
 	track[23].edge[DIR_AHEAD].dist = 60;
 	track[24].name = "B9";
+	track[24].index = 24;
 	node_map[ GROUPB ][ 9 - 1 ] = 24;
 	track[24].group = GROUPB;
 	track[24].id = 9 - 1;
@@ -1923,6 +2085,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[24].edge[DIR_AHEAD].dest = &track[4];
 	track[24].edge[DIR_AHEAD].dist = 649;
 	track[25].name = "B10";
+	track[25].index = 25;
 	node_map[ GROUPB ][ 10 - 1 ] = 25;
 	track[25].group = GROUPB;
 	track[25].id = 10 - 1;
@@ -1934,6 +2097,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[25].edge[DIR_AHEAD].dest = &track[137];
 	track[25].edge[DIR_AHEAD].dist = 70;
 	track[26].name = "B11";
+	track[26].index = 26;
 	node_map[ GROUPB ][ 11 - 1 ] = 26;
 	track[26].group = GROUPB;
 	track[26].id = 11 - 1;
@@ -1945,6 +2109,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[26].edge[DIR_AHEAD].dest = &track[7];
 	track[26].edge[DIR_AHEAD].dist = 473;
 	track[27].name = "B12";
+	track[27].index = 27;
 	node_map[ GROUPB ][ 12 - 1 ] = 27;
 	track[27].group = GROUPB;
 	track[27].id = 12 - 1;
@@ -1956,6 +2121,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[27].edge[DIR_AHEAD].dest = &track[139];
 	track[27].edge[DIR_AHEAD].dist = 70;
 	track[28].name = "B13";
+	track[28].index = 28;
 	node_map[ GROUPB ][ 13 - 1 ] = 28;
 	track[28].group = GROUPB;
 	track[28].id = 13 - 1;
@@ -1967,6 +2133,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[28].edge[DIR_AHEAD].dest = &track[119];
 	track[28].edge[DIR_AHEAD].dist = 224;
 	track[29].name = "B14";
+	track[29].index = 29;
 	node_map[ GROUPB ][ 14 - 1 ] = 29;
 	track[29].group = GROUPB;
 	track[29].id = 14 - 1;
@@ -1978,6 +2145,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[29].edge[DIR_AHEAD].dest = &track[63];
 	track[29].edge[DIR_AHEAD].dist = 202;
 	track[30].name = "B15";
+	track[30].index = 30;
 	node_map[ GROUPB ][ 15 - 1 ] = 30;
 	track[30].group = GROUPB;
 	track[30].id = 15 - 1;
@@ -1989,6 +2157,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[30].edge[DIR_AHEAD].dest = &track[2];
 	track[30].edge[DIR_AHEAD].dist = 440;
 	track[31].name = "B16";
+	track[31].index = 31;
 	node_map[ GROUPB ][ 16 - 1 ] = 31;
 	track[31].group = GROUPB;
 	track[31].id = 16 - 1;
@@ -2000,6 +2169,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[31].edge[DIR_AHEAD].dest = &track[108];
 	track[31].edge[DIR_AHEAD].dist = 70;
 	track[32].name = "C1";
+	track[32].index = 32;
 	node_map[ GROUPC ][ 1 - 1 ] = 32;
 	track[32].group = GROUPC;
 	track[32].id = 1 - 1;
@@ -2011,6 +2181,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[32].edge[DIR_AHEAD].dest = &track[19];
 	track[32].edge[DIR_AHEAD].dist = 230;
 	track[33].name = "C2";
+	track[33].index = 33;
 	node_map[ GROUPC ][ 2 - 1 ] = 33;
 	track[33].group = GROUPC;
 	track[33].id = 2 - 1;
@@ -2022,6 +2193,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[33].edge[DIR_AHEAD].dest = &track[117];
 	track[33].edge[DIR_AHEAD].dist = 228;
 	track[34].name = "C3";
+	track[34].index = 34;
 	node_map[ GROUPC ][ 3 - 1 ] = 34;
 	track[34].group = GROUPC;
 	track[34].id = 3 - 1;
@@ -2033,6 +2205,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[34].edge[DIR_AHEAD].dest = &track[129];
 	track[34].edge[DIR_AHEAD].dist = 410;
 	track[35].name = "C4";
+	track[35].index = 35;
 	node_map[ GROUPC ][ 4 - 1 ] = 35;
 	track[35].group = GROUPC;
 	track[35].id = 4 - 1;
@@ -2044,6 +2217,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[35].edge[DIR_AHEAD].dest = &track[89];
 	track[35].edge[DIR_AHEAD].dist = 226;
 	track[36].name = "C5";
+	track[36].index = 36;
 	node_map[ GROUPC ][ 5 - 1 ] = 36;
 	track[36].group = GROUPC;
 	track[36].id = 5 - 1;
@@ -2055,6 +2229,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[36].edge[DIR_AHEAD].dest = &track[90];
 	track[36].edge[DIR_AHEAD].dist = 79;
 	track[37].name = "C6";
+	track[37].index = 37;
 	node_map[ GROUPC ][ 6 - 1 ] = 37;
 	track[37].group = GROUPC;
 	track[37].id = 6 - 1;
@@ -2066,6 +2241,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[37].edge[DIR_AHEAD].dest = &track[109];
 	track[37].edge[DIR_AHEAD].dist = 411;
 	track[38].name = "C7";
+	track[38].index = 38;
 	node_map[ GROUPC ][ 7 - 1 ] = 38;
 	track[38].group = GROUPC;
 	track[38].id = 7 - 1;
@@ -2077,6 +2253,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[38].edge[DIR_AHEAD].dest = &track[115];
 	track[38].edge[DIR_AHEAD].dist = 215;
 	track[39].name = "C8";
+	track[39].index = 39;
 	node_map[ GROUPC ][ 8 - 1 ] = 39;
 	track[39].group = GROUPC;
 	track[39].id = 8 - 1;
@@ -2088,6 +2265,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[39].edge[DIR_AHEAD].dest = &track[84];
 	track[39].edge[DIR_AHEAD].dist = 145;
 	track[40].name = "C9";
+	track[40].index = 40;
 	node_map[ GROUPC ][ 9 - 1 ] = 40;
 	track[40].group = GROUPC;
 	track[40].id = 9 - 1;
@@ -2099,6 +2277,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[40].edge[DIR_AHEAD].dest = &track[109];
 	track[40].edge[DIR_AHEAD].dist = 305;
 	track[41].name = "C10";
+	track[41].index = 41;
 	node_map[ GROUPC ][ 10 - 1 ] = 41;
 	track[41].group = GROUPC;
 	track[41].id = 10 - 1;
@@ -2110,6 +2289,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[41].edge[DIR_AHEAD].dest = &track[110];
 	track[41].edge[DIR_AHEAD].dist = 146;
 	track[42].name = "C11";
+	track[42].index = 42;
 	node_map[ GROUPC ][ 11 - 1 ] = 42;
 	track[42].group = GROUPC;
 	track[42].id = 11 - 1;
@@ -2121,6 +2301,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[42].edge[DIR_AHEAD].dest = &track[104];
 	track[42].edge[DIR_AHEAD].dist = 140;
 	track[43].name = "C12";
+	track[43].index = 43;
 	node_map[ GROUPC ][ 12 - 1 ] = 43;
 	track[43].group = GROUPC;
 	track[43].id = 12 - 1;
@@ -2132,6 +2313,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[43].edge[DIR_AHEAD].dest = &track[107];
 	track[43].edge[DIR_AHEAD].dist = 314;
 	track[44].name = "C13";
+	track[44].index = 44;
 	node_map[ GROUPC ][ 13 - 1 ] = 44;
 	track[44].group = GROUPC;
 	track[44].id = 13 - 1;
@@ -2143,6 +2325,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[44].edge[DIR_AHEAD].dest = &track[70];
 	track[44].edge[DIR_AHEAD].dist = 785;
 	track[45].name = "C14";
+	track[45].index = 45;
 	node_map[ GROUPC ][ 14 - 1 ] = 45;
 	track[45].group = GROUPC;
 	track[45].id = 14 - 1;
@@ -2154,6 +2337,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[45].edge[DIR_AHEAD].dest = &track[100];
 	track[45].edge[DIR_AHEAD].dist = 60;
 	track[46].name = "C15";
+	track[46].index = 46;
 	node_map[ GROUPC ][ 15 - 1 ] = 46;
 	track[46].group = GROUPC;
 	track[46].id = 15 - 1;
@@ -2165,6 +2349,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[46].edge[DIR_AHEAD].dest = &track[59];
 	track[46].edge[DIR_AHEAD].dist = 405;
 	track[47].name = "C16";
+	track[47].index = 47;
 	node_map[ GROUPC ][ 16 - 1 ] = 47;
 	track[47].group = GROUPC;
 	track[47].id = 16 - 1;
@@ -2176,6 +2361,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[47].edge[DIR_AHEAD].dest = &track[91];
 	track[47].edge[DIR_AHEAD].dist = 223;
 	track[48].name = "D1";
+	track[48].index = 48;
 	node_map[ GROUPD ][ 1 - 1 ] = 48;
 	track[48].group = GROUPD;
 	track[48].id = 1 - 1;
@@ -2187,6 +2373,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[48].edge[DIR_AHEAD].dest = &track[121];
 	track[48].edge[DIR_AHEAD].dist = 227;
 	track[49].name = "D2";
+	track[49].index = 49;
 	node_map[ GROUPD ][ 2 - 1 ] = 49;
 	track[49].group = GROUPD;
 	track[49].id = 2 - 1;
@@ -2198,6 +2385,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[49].edge[DIR_AHEAD].dest = &track[67];
 	track[49].edge[DIR_AHEAD].dist = 200;
 	track[50].name = "D3";
+	track[50].index = 50;
 	node_map[ GROUPD ][ 3 - 1 ] = 50;
 	track[50].group = GROUPD;
 	track[50].id = 3 - 1;
@@ -2209,6 +2397,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[50].edge[DIR_AHEAD].dest = &track[99];
 	track[50].edge[DIR_AHEAD].dist = 223;
 	track[51].name = "D4";
+	track[51].index = 51;
 	node_map[ GROUPD ][ 4 - 1 ] = 51;
 	track[51].group = GROUPD;
 	track[51].id = 4 - 1;
@@ -2220,6 +2409,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[51].edge[DIR_AHEAD].dest = &track[21];
 	track[51].edge[DIR_AHEAD].dist = 405;
 	track[52].name = "D5";
+	track[52].index = 52;
 	node_map[ GROUPD ][ 5 - 1 ] = 52;
 	track[52].group = GROUPD;
 	track[52].id = 5 - 1;
@@ -2231,6 +2421,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[52].edge[DIR_AHEAD].dest = &track[69];
 	track[52].edge[DIR_AHEAD].dist = 275;
 	track[53].name = "D6";
+	track[53].index = 53;
 	node_map[ GROUPD ][ 6 - 1 ] = 53;
 	track[53].group = GROUPD;
 	track[53].id = 6 - 1;
@@ -2242,6 +2433,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[53].edge[DIR_AHEAD].dest = &track[97];
 	track[53].edge[DIR_AHEAD].dist = 213;
 	track[54].name = "D7";
+	track[54].index = 54;
 	node_map[ GROUPD ][ 7 - 1 ] = 54;
 	track[54].group = GROUPD;
 	track[54].id = 7 - 1;
@@ -2253,6 +2445,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[54].edge[DIR_AHEAD].dest = &track[97];
 	track[54].edge[DIR_AHEAD].dist = 290;
 	track[55].name = "D8";
+	track[55].index = 55;
 	node_map[ GROUPD ][ 8 - 1 ] = 55;
 	track[55].group = GROUPD;
 	track[55].id = 8 - 1;
@@ -2264,6 +2457,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[55].edge[DIR_AHEAD].dest = &track[71];
 	track[55].edge[DIR_AHEAD].dist = 375;
 	track[56].name = "D9";
+	track[56].index = 56;
 	node_map[ GROUPD ][ 9 - 1 ] = 56;
 	track[56].group = GROUPD;
 	track[56].id = 9 - 1;
@@ -2275,6 +2469,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[56].edge[DIR_AHEAD].dest = &track[75];
 	track[56].edge[DIR_AHEAD].dist = 284;
 	track[57].name = "D10";
+	track[57].index = 57;
 	node_map[ GROUPD ][ 10 - 1 ] = 57;
 	track[57].group = GROUPD;
 	track[57].id = 10 - 1;
@@ -2286,6 +2481,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[57].edge[DIR_AHEAD].dest = &track[95];
 	track[57].edge[DIR_AHEAD].dist = 291;
 	track[58].name = "D11";
+	track[58].index = 58;
 	node_map[ GROUPD ][ 11 - 1 ] = 58;
 	track[58].group = GROUPD;
 	track[58].id = 11 - 1;
@@ -2297,6 +2493,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[58].edge[DIR_AHEAD].dest = &track[47];
 	track[58].edge[DIR_AHEAD].dist = 405;
 	track[59].name = "D12";
+	track[59].index = 59;
 	node_map[ GROUPD ][ 12 - 1 ] = 59;
 	track[59].group = GROUPD;
 	track[59].id = 12 - 1;
@@ -2308,6 +2505,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[59].edge[DIR_AHEAD].dest = &track[93];
 	track[59].edge[DIR_AHEAD].dist = 220;
 	track[60].name = "D13";
+	track[60].index = 60;
 	node_map[ GROUPD ][ 13 - 1 ] = 60;
 	track[60].group = GROUPD;
 	track[60].id = 13 - 1;
@@ -2319,6 +2517,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[60].edge[DIR_AHEAD].dest = &track[17];
 	track[60].edge[DIR_AHEAD].dist = 398;
 	track[61].name = "D14";
+	track[61].index = 61;
 	node_map[ GROUPD ][ 14 - 1 ] = 61;
 	track[61].group = GROUPD;
 	track[61].id = 14 - 1;
@@ -2330,6 +2529,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[61].edge[DIR_AHEAD].dest = &track[113];
 	track[61].edge[DIR_AHEAD].dist = 225;
 	track[62].name = "D15";
+	track[62].index = 62;
 	node_map[ GROUPD ][ 15 - 1 ] = 62;
 	track[62].group = GROUPD;
 	track[62].id = 15 - 1;
@@ -2341,6 +2541,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[62].edge[DIR_AHEAD].dest = &track[28];
 	track[62].edge[DIR_AHEAD].dist = 202;
 	track[63].name = "D16";
+	track[63].index = 63;
 	node_map[ GROUPD ][ 16 - 1 ] = 63;
 	track[63].group = GROUPD;
 	track[63].id = 16 - 1;
@@ -2352,6 +2553,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[63].edge[DIR_AHEAD].dest = &track[113];
 	track[63].edge[DIR_AHEAD].dist = 230;
 	track[64].name = "E1";
+	track[64].index = 64;
 	node_map[ GROUPE ][ 1 - 1 ] = 64;
 	track[64].group = GROUPE;
 	track[64].id = 1 - 1;
@@ -2363,6 +2565,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[64].edge[DIR_AHEAD].dest = &track[123];
 	track[64].edge[DIR_AHEAD].dist = 222;
 	track[65].name = "E2";
+	track[65].index = 65;
 	node_map[ GROUPE ][ 2 - 1 ] = 65;
 	track[65].group = GROUPE;
 	track[65].id = 2 - 1;
@@ -2374,6 +2577,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[65].edge[DIR_AHEAD].dest = &track[78];
 	track[65].edge[DIR_AHEAD].dist = 203;
 	track[66].name = "E3";
+	track[66].index = 66;
 	node_map[ GROUPE ][ 3 - 1 ] = 66;
 	track[66].group = GROUPE;
 	track[66].id = 3 - 1;
@@ -2385,6 +2589,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[66].edge[DIR_AHEAD].dest = &track[48];
 	track[66].edge[DIR_AHEAD].dist = 200;
 	track[67].name = "E4";
+	track[67].index = 67;
 	node_map[ GROUPE ][ 4 - 1 ] = 67;
 	track[67].group = GROUPE;
 	track[67].id = 4 - 1;
@@ -2396,6 +2601,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[67].edge[DIR_AHEAD].dest = &track[99];
 	track[67].edge[DIR_AHEAD].dist = 220;
 	track[68].name = "E5";
+	track[68].index = 68;
 	node_map[ GROUPE ][ 5 - 1 ] = 68;
 	track[68].group = GROUPE;
 	track[68].id = 5 - 1;
@@ -2407,6 +2613,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[68].edge[DIR_AHEAD].dest = &track[53];
 	track[68].edge[DIR_AHEAD].dist = 275;
 	track[69].name = "E6";
+	track[69].index = 69;
 	node_map[ GROUPE ][ 6 - 1 ] = 69;
 	track[69].group = GROUPE;
 	track[69].id = 6 - 1;
@@ -2418,6 +2625,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[69].edge[DIR_AHEAD].dest = &track[98];
 	track[69].edge[DIR_AHEAD].dist = 74;
 	track[70].name = "E7";
+	track[70].index = 70;
 	node_map[ GROUPE ][ 7 - 1 ] = 70;
 	track[70].group = GROUPE;
 	track[70].id = 7 - 1;
@@ -2429,6 +2637,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[70].edge[DIR_AHEAD].dest = &track[54];
 	track[70].edge[DIR_AHEAD].dist = 375;
 	track[71].name = "E8";
+	track[71].index = 71;
 	node_map[ GROUPE ][ 8 - 1 ] = 71;
 	track[71].group = GROUPE;
 	track[71].id = 8 - 1;
@@ -2440,6 +2649,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[71].edge[DIR_AHEAD].dest = &track[45];
 	track[71].edge[DIR_AHEAD].dist = 785;
 	track[72].name = "E9";
+	track[72].index = 72;
 	node_map[ GROUPE ][ 9 - 1 ] = 72;
 	track[72].group = GROUPE;
 	track[72].id = 9 - 1;
@@ -2451,6 +2661,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[72].edge[DIR_AHEAD].dest = &track[95];
 	track[72].edge[DIR_AHEAD].dist = 215;
 	track[73].name = "E10";
+	track[73].index = 73;
 	node_map[ GROUPE ][ 10 - 1 ] = 73;
 	track[73].group = GROUPE;
 	track[73].id = 10 - 1;
@@ -2462,6 +2673,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[73].edge[DIR_AHEAD].dest = &track[76];
 	track[73].edge[DIR_AHEAD].dist = 275;
 	track[74].name = "E11";
+	track[74].index = 74;
 	node_map[ GROUPE ][ 11 - 1 ] = 74;
 	track[74].group = GROUPE;
 	track[74].id = 11 - 1;
@@ -2473,6 +2685,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[74].edge[DIR_AHEAD].dest = &track[57];
 	track[74].edge[DIR_AHEAD].dist = 284;
 	track[75].name = "E12";
+	track[75].index = 75;
 	node_map[ GROUPE ][ 12 - 1 ] = 75;
 	track[75].group = GROUPE;
 	track[75].id = 12 - 1;
@@ -2484,6 +2697,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[75].edge[DIR_AHEAD].dest = &track[92];
 	track[75].edge[DIR_AHEAD].dist = 65;
 	track[76].name = "E13";
+	track[76].index = 76;
 	node_map[ GROUPE ][ 13 - 1 ] = 76;
 	track[76].group = GROUPE;
 	track[76].id = 13 - 1;
@@ -2495,6 +2709,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[76].edge[DIR_AHEAD].dest = &track[112];
 	track[76].edge[DIR_AHEAD].dist = 62;
 	track[77].name = "E14";
+	track[77].index = 77;
 	node_map[ GROUPE ][ 14 - 1 ] = 77;
 	track[77].group = GROUPE;
 	track[77].id = 14 - 1;
@@ -2506,6 +2721,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[77].edge[DIR_AHEAD].dest = &track[72];
 	track[77].edge[DIR_AHEAD].dist = 275;
 	track[78].name = "E15";
+	track[78].index = 78;
 	node_map[ GROUPE ][ 15 - 1 ] = 78;
 	track[78].group = GROUPE;
 	track[78].id = 15 - 1;
@@ -2517,6 +2733,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[78].edge[DIR_AHEAD].dest = &track[105];
 	track[78].edge[DIR_AHEAD].dist = 230;
 	track[79].name = "E16";
+	track[79].index = 79;
 	node_map[ GROUPE ][ 16 - 1 ] = 79;
 	track[79].group = GROUPE;
 	track[79].id = 16 - 1;
@@ -2528,6 +2745,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[79].edge[DIR_AHEAD].dest = &track[64];
 	track[79].edge[DIR_AHEAD].dist = 203;
 	track[80].name = "BR1";
+	track[80].index = 80;
 	track[80].group = GROUPBR;
 	track[80].id = 1 - 1;
 	track[80].type = NODE_BRANCH;
@@ -2542,6 +2760,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[80].edge[DIR_CURVED].dest = &track[8];
 	track[80].edge[DIR_CURVED].dist = 210;
 	track[81].name = "MR1";
+	track[81].index = 81;
 	track[81].group = GROUPMR;
 	track[81].id = 1 - 1;
 	track[81].type = NODE_MERGE;
@@ -2552,6 +2771,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[81].edge[DIR_AHEAD].dest = &track[83];
 	track[81].edge[DIR_AHEAD].dist = 191;
 	track[82].name = "BR2";
+	track[82].index = 82;
 	track[82].group = GROUPBR;
 	track[82].id = 2 - 1;
 	track[82].type = NODE_BRANCH;
@@ -2566,6 +2786,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[82].edge[DIR_CURVED].dest = &track[6];
 	track[82].edge[DIR_CURVED].dist = 211;
 	track[83].name = "MR2";
+	track[83].index = 83;
 	track[83].group = GROUPMR;
 	track[83].id = 2 - 1;
 	track[83].type = NODE_MERGE;
@@ -2576,6 +2797,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[83].edge[DIR_AHEAD].dest = &track[85];
 	track[83].edge[DIR_AHEAD].dist = 182;
 	track[84].name = "BR3";
+	track[84].index = 84;
 	track[84].group = GROUPBR;
 	track[84].id = 3 - 1;
 	track[84].type = NODE_BRANCH;
@@ -2590,6 +2812,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[84].edge[DIR_CURVED].dest = &track[82];
 	track[84].edge[DIR_CURVED].dist = 182;
 	track[85].name = "MR3";
+	track[85].index = 85;
 	track[85].group = GROUPMR;
 	track[85].id = 3 - 1;
 	track[85].type = NODE_MERGE;
@@ -2600,6 +2823,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[85].edge[DIR_AHEAD].dest = &track[38];
 	track[85].edge[DIR_AHEAD].dist = 145;
 	track[86].name = "BR4";
+	track[86].index = 86;
 	track[86].group = GROUPBR;
 	track[86].id = 4 - 1;
 	track[86].type = NODE_BRANCH;
@@ -2614,6 +2838,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[86].edge[DIR_CURVED].dest = &track[13];
 	track[86].edge[DIR_CURVED].dist = 215;
 	track[87].name = "MR4";
+	track[87].index = 87;
 	track[87].group = GROUPMR;
 	track[87].id = 4 - 1;
 	track[87].type = NODE_MERGE;
@@ -2624,6 +2849,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[87].edge[DIR_AHEAD].dest = &track[103];
 	track[87].edge[DIR_AHEAD].dist = 185;
 	track[88].name = "BR5";
+	track[88].index = 88;
 	track[88].group = GROUPBR;
 	track[88].id = 5 - 1;
 	track[88].type = NODE_BRANCH;
@@ -2638,6 +2864,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[88].edge[DIR_CURVED].dest = &track[93];
 	track[88].edge[DIR_CURVED].dist = 334;
 	track[89].name = "MR5";
+	track[89].index = 89;
 	track[89].group = GROUPMR;
 	track[89].id = 5 - 1;
 	track[89].type = NODE_MERGE;
@@ -2648,6 +2875,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[89].edge[DIR_AHEAD].dest = &track[114];
 	track[89].edge[DIR_AHEAD].dist = 187;
 	track[90].name = "BR6";
+	track[90].index = 90;
 	track[90].group = GROUPBR;
 	track[90].id = 6 - 1;
 	track[90].type = NODE_BRANCH;
@@ -2662,6 +2890,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[90].edge[DIR_CURVED].dest = &track[115];
 	track[90].edge[DIR_CURVED].dist = 338;
 	track[91].name = "MR6";
+	track[91].index = 91;
 	track[91].group = GROUPMR;
 	track[91].id = 6 - 1;
 	track[91].type = NODE_MERGE;
@@ -2672,6 +2901,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[91].edge[DIR_AHEAD].dest = &track[37];
 	track[91].edge[DIR_AHEAD].dist = 79;
 	track[92].name = "BR7";
+	track[92].index = 92;
 	track[92].group = GROUPBR;
 	track[92].id = 7 - 1;
 	track[92].type = NODE_BRANCH;
@@ -2686,6 +2916,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[92].edge[DIR_CURVED].dest = &track[89];
 	track[92].edge[DIR_CURVED].dist = 334;
 	track[93].name = "MR7";
+	track[93].index = 93;
 	track[93].group = GROUPMR;
 	track[93].id = 7 - 1;
 	track[93].type = NODE_MERGE;
@@ -2696,6 +2927,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[93].edge[DIR_AHEAD].dest = &track[74];
 	track[93].edge[DIR_AHEAD].dist = 65;
 	track[94].name = "BR8";
+	track[94].index = 94;
 	track[94].group = GROUPBR;
 	track[94].id = 8 - 1;
 	track[94].type = NODE_BRANCH;
@@ -2710,6 +2942,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[94].edge[DIR_CURVED].dest = &track[73];
 	track[94].edge[DIR_CURVED].dist = 215;
 	track[95].name = "MR8";
+	track[95].index = 95;
 	track[95].group = GROUPMR;
 	track[95].id = 8 - 1;
 	track[95].type = NODE_MERGE;
@@ -2720,6 +2953,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[95].edge[DIR_AHEAD].dest = &track[96];
 	track[95].edge[DIR_AHEAD].dist = 193;
 	track[96].name = "BR9";
+	track[96].index = 96;
 	track[96].group = GROUPBR;
 	track[96].id = 9 - 1;
 	track[96].type = NODE_BRANCH;
@@ -2734,6 +2968,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[96].edge[DIR_CURVED].dest = &track[52];
 	track[96].edge[DIR_CURVED].dist = 213;
 	track[97].name = "MR9";
+	track[97].index = 97;
 	track[97].group = GROUPMR;
 	track[97].id = 9 - 1;
 	track[97].type = NODE_MERGE;
@@ -2744,6 +2979,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[97].edge[DIR_AHEAD].dest = &track[94];
 	track[97].edge[DIR_AHEAD].dist = 193;
 	track[98].name = "BR10";
+	track[98].index = 98;
 	track[98].group = GROUPBR;
 	track[98].id = 10 - 1;
 	track[98].type = NODE_BRANCH;
@@ -2758,6 +2994,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[98].edge[DIR_CURVED].dest = &track[66];
 	track[98].edge[DIR_CURVED].dist = 220;
 	track[99].name = "MR10";
+	track[99].index = 99;
 	track[99].group = GROUPMR;
 	track[99].id = 10 - 1;
 	track[99].type = NODE_MERGE;
@@ -2768,6 +3005,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[99].edge[DIR_AHEAD].dest = &track[68];
 	track[99].edge[DIR_AHEAD].dist = 74;
 	track[100].name = "BR11";
+	track[100].index = 100;
 	track[100].group = GROUPBR;
 	track[100].id = 11 - 1;
 	track[100].type = NODE_BRANCH;
@@ -2782,6 +3020,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[100].edge[DIR_CURVED].dest = &track[107];
 	track[100].edge[DIR_CURVED].dist = 445;
 	track[101].name = "MR11";
+	track[101].index = 101;
 	track[101].group = GROUPMR;
 	track[101].id = 11 - 1;
 	track[101].type = NODE_MERGE;
@@ -2792,6 +3031,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[101].edge[DIR_AHEAD].dest = &track[44];
 	track[101].edge[DIR_AHEAD].dist = 60;
 	track[102].name = "BR12";
+	track[102].index = 102;
 	track[102].group = GROUPBR;
 	track[102].id = 12 - 1;
 	track[102].type = NODE_BRANCH;
@@ -2806,6 +3046,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[102].edge[DIR_CURVED].dest = &track[86];
 	track[102].edge[DIR_CURVED].dist = 185;
 	track[103].name = "MR12";
+	track[103].index = 103;
 	track[103].group = GROUPMR;
 	track[103].id = 12 - 1;
 	track[103].type = NODE_MERGE;
@@ -2816,6 +3057,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[103].edge[DIR_AHEAD].dest = &track[101];
 	track[103].edge[DIR_AHEAD].dist = 190;
 	track[104].name = "BR13";
+	track[104].index = 104;
 	track[104].group = GROUPBR;
 	track[104].id = 13 - 1;
 	track[104].type = NODE_BRANCH;
@@ -2830,6 +3072,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[104].edge[DIR_CURVED].dest = &track[79];
 	track[104].edge[DIR_CURVED].dist = 230;
 	track[105].name = "MR13";
+	track[105].index = 105;
 	track[105].group = GROUPMR;
 	track[105].id = 13 - 1;
 	track[105].type = NODE_MERGE;
@@ -2840,6 +3083,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[105].edge[DIR_AHEAD].dest = &track[43];
 	track[105].edge[DIR_AHEAD].dist = 140;
 	track[106].name = "BR14";
+	track[106].index = 106;
 	track[106].group = GROUPBR;
 	track[106].id = 14 - 1;
 	track[106].type = NODE_BRANCH;
@@ -2854,6 +3098,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[106].edge[DIR_CURVED].dest = &track[42];
 	track[106].edge[DIR_CURVED].dist = 314;
 	track[107].name = "MR14";
+	track[107].index = 107;
 	track[107].group = GROUPMR;
 	track[107].id = 14 - 1;
 	track[107].type = NODE_MERGE;
@@ -2864,6 +3109,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[107].edge[DIR_AHEAD].dest = &track[3];
 	track[107].edge[DIR_AHEAD].dist = 62;
 	track[108].name = "BR15";
+	track[108].index = 108;
 	track[108].group = GROUPBR;
 	track[108].id = 15 - 1;
 	track[108].type = NODE_BRANCH;
@@ -2878,6 +3124,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[108].edge[DIR_CURVED].dest = &track[41];
 	track[108].edge[DIR_CURVED].dist = 305;
 	track[109].name = "MR15";
+	track[109].index = 109;
 	track[109].group = GROUPMR;
 	track[109].id = 15 - 1;
 	track[109].type = NODE_MERGE;
@@ -2888,6 +3135,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[109].edge[DIR_AHEAD].dest = &track[30];
 	track[109].edge[DIR_AHEAD].dist = 70;
 	track[110].name = "BR16";
+	track[110].index = 110;
 	track[110].group = GROUPBR;
 	track[110].id = 16 - 1;
 	track[110].type = NODE_BRANCH;
@@ -2902,6 +3150,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[110].edge[DIR_CURVED].dest = &track[18];
 	track[110].edge[DIR_CURVED].dist = 220;
 	track[111].name = "MR16";
+	track[111].index = 111;
 	track[111].group = GROUPMR;
 	track[111].id = 16 - 1;
 	track[111].type = NODE_MERGE;
@@ -2912,6 +3161,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[111].edge[DIR_AHEAD].dest = &track[40];
 	track[111].edge[DIR_AHEAD].dist = 146;
 	track[112].name = "BR17";
+	track[112].index = 112;
 	track[112].group = GROUPBR;
 	track[112].id = 17 - 1;
 	track[112].type = NODE_BRANCH;
@@ -2926,6 +3176,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[112].edge[DIR_CURVED].dest = &track[62];
 	track[112].edge[DIR_CURVED].dist = 230;
 	track[113].name = "MR17";
+	track[113].index = 113;
 	track[113].group = GROUPMR;
 	track[113].id = 17 - 1;
 	track[113].type = NODE_MERGE;
@@ -2936,6 +3187,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[113].edge[DIR_AHEAD].dest = &track[77];
 	track[113].edge[DIR_AHEAD].dist = 62;
 	track[114].name = "BR18";
+	track[114].index = 114;
 	track[114].group = GROUPBR;
 	track[114].id = 18 - 1;
 	track[114].type = NODE_BRANCH;
@@ -2950,6 +3202,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[114].edge[DIR_CURVED].dest = &track[91];
 	track[114].edge[DIR_CURVED].dist = 338;
 	track[115].name = "MR18";
+	track[115].index = 115;
 	track[115].group = GROUPMR;
 	track[115].id = 18 - 1;
 	track[115].type = NODE_MERGE;
@@ -2960,6 +3213,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[115].edge[DIR_AHEAD].dest = &track[88];
 	track[115].edge[DIR_AHEAD].dist = 187;
 	track[116].name = "BR153";
+	track[116].index = 116;
 	track[116].group = GROUPBR;
 	track[116].id = 153 - 1;
 	track[116].type = NODE_BRANCH;
@@ -2974,6 +3228,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[116].edge[DIR_CURVED].dest = &track[32];
 	track[116].edge[DIR_CURVED].dist = 228;
 	track[117].name = "MR153";
+	track[117].index = 117;
 	track[117].group = GROUPMR;
 	track[117].id = 153 - 1;
 	track[117].type = NODE_MERGE;
@@ -2984,6 +3239,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[117].edge[DIR_AHEAD].dest = &track[119];
 	track[117].edge[DIR_AHEAD].dist = 24;
 	track[118].name = "BR154";
+	track[118].index = 118;
 	track[118].group = GROUPBR;
 	track[118].id = 154 - 1;
 	track[118].type = NODE_BRANCH;
@@ -2998,6 +3254,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[118].edge[DIR_CURVED].dest = &track[29];
 	track[118].edge[DIR_CURVED].dist = 224;
 	track[119].name = "MR154";
+	track[119].index = 119;
 	track[119].group = GROUPMR;
 	track[119].id = 154 - 1;
 	track[119].type = NODE_MERGE;
@@ -3008,6 +3265,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[119].edge[DIR_AHEAD].dest = &track[122];
 	track[119].edge[DIR_AHEAD].dist = 32;
 	track[120].name = "BR155";
+	track[120].index = 120;
 	track[120].group = GROUPBR;
 	track[120].id = 155 - 1;
 	track[120].type = NODE_BRANCH;
@@ -3022,6 +3280,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[120].edge[DIR_CURVED].dest = &track[49];
 	track[120].edge[DIR_CURVED].dist = 227;
 	track[121].name = "MR155";
+	track[121].index = 121;
 	track[121].group = GROUPMR;
 	track[121].id = 155 - 1;
 	track[121].type = NODE_MERGE;
@@ -3032,6 +3291,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[121].edge[DIR_AHEAD].dest = &track[123];
 	track[121].edge[DIR_AHEAD].dist = 24;
 	track[122].name = "BR156";
+	track[122].index = 122;
 	track[122].group = GROUPBR;
 	track[122].id = 156 - 1;
 	track[122].type = NODE_BRANCH;
@@ -3046,6 +3306,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[122].edge[DIR_CURVED].dest = &track[65];
 	track[122].edge[DIR_CURVED].dist = 222;
 	track[123].name = "MR156";
+	track[123].index = 123;
 	track[123].group = GROUPMR;
 	track[123].id = 156 - 1;
 	track[123].type = NODE_MERGE;
@@ -3056,6 +3317,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[123].edge[DIR_AHEAD].dest = &track[118];
 	track[123].edge[DIR_AHEAD].dist = 32;
 	track[124].name = "EN1";
+	track[124].index = 124;
 	track[124].group = GROUPEN;
 	track[124].id = 1 - 1;
 	track[124].type = NODE_ENTER;
@@ -3065,11 +3327,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[124].edge[DIR_AHEAD].dest = &track[117];
 	track[124].edge[DIR_AHEAD].dist = 230;
 	track[125].name = "EX1";
+	track[125].index = 125;
 	track[125].group = GROUPEX;
 	track[125].id = 1 - 1;
 	track[125].type = NODE_EXIT;
 	track[125].reverse = &track[124];
 	track[126].name = "EN2";
+	track[126].index = 126;
 	track[126].group = GROUPEN;
 	track[126].id = 2 - 1;
 	track[126].type = NODE_ENTER;
@@ -3079,11 +3343,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[126].edge[DIR_AHEAD].dest = &track[121];
 	track[126].edge[DIR_AHEAD].dist = 247;
 	track[127].name = "EX2";
+	track[127].index = 127;
 	track[127].group = GROUPEX;
 	track[127].id = 2 - 1;
 	track[127].type = NODE_EXIT;
 	track[127].reverse = &track[126];
 	track[128].name = "EN3";
+	track[128].index = 128;
 	track[128].group = GROUPEN;
 	track[128].id = 3 - 1;
 	track[128].type = NODE_ENTER;
@@ -3093,11 +3359,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[128].edge[DIR_AHEAD].dest = &track[35];
 	track[128].edge[DIR_AHEAD].dist = 410;
 	track[129].name = "EX3";
+	track[129].index = 129;
 	track[129].group = GROUPEX;
 	track[129].id = 3 - 1;
 	track[129].type = NODE_EXIT;
 	track[129].reverse = &track[128];
 	track[130].name = "EN4";
+	track[130].index = 130;
 	track[130].group = GROUPEN;
 	track[130].id = 4 - 1;
 	track[130].type = NODE_ENTER;
@@ -3107,11 +3375,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[130].edge[DIR_AHEAD].dest = &track[12];
 	track[130].edge[DIR_AHEAD].dist = 320;
 	track[131].name = "EX4";
+	track[131].index = 131;
 	track[131].group = GROUPEX;
 	track[131].id = 4 - 1;
 	track[131].type = NODE_EXIT;
 	track[131].reverse = &track[130];
 	track[132].name = "EN5";
+	track[132].index = 132;
 	track[132].group = GROUPEN;
 	track[132].id = 5 - 1;
 	track[132].type = NODE_ENTER;
@@ -3121,11 +3391,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[132].edge[DIR_AHEAD].dest = &track[0];
 	track[132].edge[DIR_AHEAD].dist = 500;
 	track[133].name = "EX5";
+	track[133].index = 133;
 	track[133].group = GROUPEX;
 	track[133].id = 5 - 1;
 	track[133].type = NODE_EXIT;
 	track[133].reverse = &track[132];
 	track[134].name = "EN7";
+	track[134].index = 134;
 	track[134].group = GROUPEN;
 	track[134].id = 7 - 1;
 	track[134].type = NODE_ENTER;
@@ -3135,11 +3407,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[134].edge[DIR_AHEAD].dest = &track[22];
 	track[134].edge[DIR_AHEAD].dist = 60;
 	track[135].name = "EX7";
+	track[135].index = 135;
 	track[135].group = GROUPEX;
 	track[135].id = 7 - 1;
 	track[135].type = NODE_EXIT;
 	track[135].reverse = &track[134];
 	track[136].name = "EN9";
+	track[136].index = 136;
 	track[136].group = GROUPEN;
 	track[136].id = 9 - 1;
 	track[136].type = NODE_ENTER;
@@ -3149,11 +3423,13 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[136].edge[DIR_AHEAD].dest = &track[24];
 	track[136].edge[DIR_AHEAD].dist = 70;
 	track[137].name = "EX9";
+	track[137].index = 137;
 	track[137].group = GROUPEX;
 	track[137].id = 9 - 1;
 	track[137].type = NODE_EXIT;
 	track[137].reverse = &track[136];
 	track[138].name = "EN10";
+	track[138].index = 138;
 	track[138].group = GROUPEN;
 	track[138].id = 10 - 1;
 	track[138].type = NODE_ENTER;
@@ -3163,6 +3439,7 @@ void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP
 	track[138].edge[DIR_AHEAD].dest = &track[26];
 	track[138].edge[DIR_AHEAD].dist = 70;
 	track[139].name = "EX10";
+	track[139].index = 139;
 	track[139].group = GROUPEX;
 	track[139].id = 10 - 1;
 	track[139].type = NODE_EXIT;
