@@ -7,7 +7,8 @@
 #define TRAIN_SENSOR_PRIORITY   6
 #define TRAIN_MODULE_PRIORITY   7
 #define TRAIN_AUTO_PRIROTY      7
-#define TRAIN_UI_PRIORITY       8
+#define TRAIN_PLAN_PRIORITY     8
+#define TRAIN_UI_PRIORITY       9
 
 /* train event api */
 /* Server */
