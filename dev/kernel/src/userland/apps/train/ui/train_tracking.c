@@ -77,23 +77,23 @@ void tracking_ui()
 	status = RegisterAs( TRACKING_UI_NAME );
 	assert( status == REGISTER_AS_SUCCESS );
 
-	for( i = 1; i < 6; i += 1 ){
-		// entry_reg[ i ].col = 30;
-		entry_reg[ i ].row = 5 + i;
-		/* entry_reg[ i ].height = 1; */
-		/* entry_reg[ i ].width = 0; */
-		/* entry_reg[ i ].margin = 0; */
-		/* entry_reg[ i ].boundary = 0; */
-		region_init( entry_reg + i );
-		region_printf( entry_reg + i, "  |   |          |    |     |    |   |    |" );
-	}
-	
 	region_init( &title_reg );
 	region_printf( &title_reg, "Train Tracking / d.(mm), t.(10ms), v.(mm/s)\n" );
 	region_init( &data_reg );
 	region_printf( &data_reg,
 		       " #|Chk|   Pred   |Diff| Mrk |Dist|Nxt| ETA|Spd" );
 
+	for( i = 1; i < 6; i += 1 ){
+		entry_reg[ i ].col = 30;
+		entry_reg[ i ].row = 5 + i;
+		entry_reg[ i ].height = 1;
+		entry_reg[ i ].width = 76 - 30;
+		entry_reg[ i ].margin = 0;
+		entry_reg[ i ].boundary = 0;
+		region_init( entry_reg + i );
+		region_printf( entry_reg + i, "  |   |          |    |     |    |   |    |" );
+	}
+	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		status -= sizeof( uint ) * 2;
