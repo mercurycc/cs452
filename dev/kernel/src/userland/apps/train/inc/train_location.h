@@ -23,7 +23,7 @@ typedef struct Map_node_s {
 
 
 /* how many historical data is kept for speed approximate */
-#define NUM_SPEED_HISTORY 10
+#define NUM_SPEED_HISTORY 5
 
 /* for path search */
 #define INFINITY 2147483647

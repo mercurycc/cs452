@@ -288,7 +288,7 @@ void train_auto()
 				break;
 			}
 			current_train->old_speed_level = current_train->speed_level;
-			if ( current_train->old_speed_level < request.data.set_speed.speed_level ) {
+			if ( current_train->old_speed_level / 2 < request.data.set_speed.speed_level ) {
 				current_train->speed_level = request.data.set_speed.speed_level * 2;
 			}
 			else if ( current_train->old_speed_level > request.data.set_speed.speed_level ) {
@@ -390,14 +390,14 @@ void train_auto()
 						}
 						else { // speed change
 							// TODO: consider the speed change curve, modify the speed
-							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
-							assert( status == 0 );
+							//status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
+							//assert( status == 0 );
 
-											
-
+								
+							current_train->state = TRAIN_STATE_TRACKING;
 						}
 
-						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
+						WAR_PRINT( "train %d in speed level %d speed %d / %d, eta %d\n", current_train->id, current_train->speed_level, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
 
 						current_train->distance = 0;
 						current_train->remaining_distance = 0;
