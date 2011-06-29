@@ -289,6 +289,8 @@ void train_control()
 					fail = 1;
 				}
 				if( ! fail ){
+					train_auto_hit_and_stop( auto_tid, train_id, sensor_group, sensor_id );
+					region_printf( &result_reg, "Set train %d to stop after hit sensor %s\n", train_id, token_buf[ 2 ] );
 				}
 			} else {
 				region_printf( &result_reg, "%s <train id> <sensor to hit till stop>\n", token_buf[ 0 ] );

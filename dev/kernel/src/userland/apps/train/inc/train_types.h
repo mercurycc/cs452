@@ -3,6 +3,7 @@
 
 #include <lib/rbuf.h>
 #include "track_node.h"
+#include "config.h"
 
 /* number of speed levels of train */
 #define NUM_SPEED_LEVEL 30
@@ -17,6 +18,13 @@ typedef struct Speed_s {
 	uint numerator;
 	uint denominator;
 } Speed;
+
+typedef struct Train_command_s {
+	uint time;
+	uint type;
+	uint arg1;
+	uint arg2;
+} Train_command;
 
 typedef struct Train_data_s {
 	uint id;
@@ -36,18 +44,13 @@ typedef struct Train_data_s {
 	track_node* next_sensor;
 	uint next_sensor_eta;            /* Estimated time of arrival to next sensor */
 	uint last_eta_time_stamp;
-	Speed speed_table[NUM_SPEED_LEVEL];
-	uint speed_count[NUM_SPEED_LEVEL];
+	Speed speed_table[ NUM_SPEED_LEVEL ];
+	uint speed_count[ NUM_SPEED_LEVEL ];
 	track_node* stop_sensor;
-	
+	uint auto_command;               /* Flag indicating if auto is controlling the train for, for instance, trip planning */
+	Rbuf commands;
+	Train_command cmd_buf[ CMD_BUFFER_SIZE ]; 
 } Train_data;
-
-typedef struct Train_command_s {
-	uint time;
-	uint type;
-	uint arg1;
-	uint arg2;
-} Train_command;
 
 #endif
 
