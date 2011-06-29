@@ -45,6 +45,7 @@ struct track_node {
 	const char *name;
 	int group;
 	int id;
+	int index;
 	node_type type;
 	int num;              /* sensor or switch number */
 	track_node *reverse;  /* same location, but opposite direction */
