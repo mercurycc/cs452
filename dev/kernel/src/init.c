@@ -52,6 +52,12 @@ int kernel_init( Context* ctx )
 	status = console_init( ctx->terminal );
 	ASSERT( status == ERR_NONE );
 
+	/* Initialize train console */
+	status = console_setup( ctx->train_set, CONSOLE_1, 2400, 0, 1, 1 );
+	ASSERT( status == ERR_NONE );
+	status = console_init( ctx->train_set );
+	ASSERT( status == ERR_NONE );
+
 	/* Initialize perf clock */
 	status = perf_init();
 	ASSERT( status == ERR_NONE );
