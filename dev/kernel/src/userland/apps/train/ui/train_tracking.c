@@ -139,7 +139,7 @@ void tracking_ui()
 			entry->col = 30;
 			entry->width = 2;
 			region_printf( entry, "%2d\n", request.train_id );
-			WAR_PRINT( "train info registered, row %d\n", entry->row );
+			WAR_PRINT( "train info registered, row %d col %d width %d\n", entry->row, entry->col, entry->width );
 			break;
 		case TRACKING_UI_CHKPNT:
 			entry->col = 33;
