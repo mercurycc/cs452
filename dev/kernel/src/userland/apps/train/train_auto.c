@@ -268,6 +268,7 @@ void train_auto()
 
 			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
+			current_train->next_check_point = 0;
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
 			current_train->stop_sensor = 0;
 			current_train->auto_command = 0;
@@ -306,6 +307,7 @@ void train_auto()
 			}
 			/* TODO: This has not update the distance yet */
 			current_train->check_point = track_previous_node( current_train->check_point, switch_table );
+			current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 			current_sensor = current_train->last_sensor;
 			current_train->last_sensor = current_train->next_sensor->reverse;
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
@@ -361,6 +363,7 @@ void train_auto()
 
 					current_train->last_sensor_time = sensor_data.last_sensor_time;
 					current_train->check_point = current_train->last_sensor;
+					current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 					current_train->last_check_point_time = sensor_data.last_sensor_time;
 					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 					current_train->last_eta_time_stamp = 0;
@@ -397,6 +400,7 @@ void train_auto()
 						current_train->last_sensor = current_train->next_sensor;
 						current_train->next_sensor = track_next_sensor( current_train->next_sensor, switch_table );
 						current_train->check_point = current_train->last_sensor;
+						current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 
 						/* Update UI */
 						tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
@@ -460,7 +464,8 @@ void train_auto()
 				case TRAIN_STATE_SPEED_CHANGE:
 					current_distance = node_distance( current_train->check_point, switch_table );
 					if( current_train->distance > current_distance ){
-						current_train->check_point = track_next_node( current_train->check_point, switch_table );
+						current_train->check_point = current_train->next_check_point;
+						current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 						current_train->last_check_point_time = current_time;
 						current_train->distance -= current_distance;
 					}

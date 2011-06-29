@@ -41,6 +41,7 @@ typedef struct Train_data_s {
 	track_node* last_sensor;
 	uint last_check_point_time;
 	track_node* check_point;
+	track_node* next_check_point;
 	track_node* next_sensor;
 	uint next_sensor_eta;            /* Estimated time of arrival to next sensor */
 	uint last_eta_time_stamp;
