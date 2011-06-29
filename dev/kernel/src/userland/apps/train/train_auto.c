@@ -247,7 +247,7 @@ void train_auto()
 			current_train->distance = 0;
 			current_train->speed.numerator = 0;
 			current_train->speed.denominator = 1;
-			current_train->speed_level = TRAIN_AUTO_REGISTER_SPEED;
+			current_train->speed_level = 0;
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = 0;
 			for ( i = 0; i < NUM_SPEED_LEVEL; i++ ) {
@@ -353,7 +353,7 @@ void train_auto()
 				case TRAIN_STATE_SPEED_CHANGE:
 				case TRAIN_STATE_TRACKING:
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-						WAR_PRINT( "train %d in state %x speed %d / %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator );
+						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
 
 						if( current_train->state == TRAIN_STATE_TRACKING ){
 							/* Speed update for speed_change is handled by periodic update, sensor only helps with location */
@@ -395,6 +395,7 @@ void train_auto()
 
 						tracking_ui_speed( tracking_ui_tid, current_train->id,
 								   current_train->speed.numerator * 100 / current_train->speed.denominator );
+						tracking_ui_dist( tracking_ui_tid, current_train->id, current_train->distance );
 						//WAR_PRINT( "update train %d on sensor %c%d\n", current_train->id, current_train->last_sensor->group+'A', current_train->last_sensor->id+1 );
 					}
 					break;
@@ -409,7 +410,7 @@ void train_auto()
 				current_train = trains + temp;
 				switch( current_train->state ){
 				case TRAIN_STATE_TRACKING:
-					current_train->distance += current_train->speed.numerator *
+					current_train->distance = current_train->speed.numerator *
 						( current_time - current_train->last_check_point_time ) / current_train->speed.denominator;
 					break;
 				case TRAIN_STATE_REVERSE:
@@ -451,6 +452,7 @@ void train_auto()
 					tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
 							     current_train->next_sensor->group, current_train->next_sensor->id,
 							     current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
+					tracking_ui_dist( tracking_ui_tid, current_train->id, current_train->distance );
 
 					break;
 				}
