@@ -38,6 +38,7 @@ typedef struct Train_data_s {
 	uint last_eta_time_stamp;
 	Speed speed_table[NUM_SPEED_LEVEL];
 	uint speed_count[NUM_SPEED_LEVEL];
+	track_node* stop_sensor;
 	
 } Train_data;
 

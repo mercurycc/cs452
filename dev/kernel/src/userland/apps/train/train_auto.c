@@ -48,7 +48,8 @@ enum Train_auto_request_type {
 	TRAIN_AUTO_SET_SWITCH_DIR,
 	TRAIN_AUTO_SET_ALL_SWITCH,
 	TRAIN_AUTO_QUERY_SWITCH_DIR,
-	TRAIN_AUTO_QUERY_LAST_SENSOR
+	TRAIN_AUTO_QUERY_LAST_SENSOR,
+	TRAIN_AUTO_HIT_AND_STOP
 };
 
 typedef struct Train_auto_request_s {
@@ -84,6 +85,11 @@ typedef struct Train_auto_request_s {
 		struct {
 			uint dummy;
 		} query_sensor;
+		struct {
+			uint train_id;
+			uint group;
+			uint id;
+		} hit_and_stop;
 	} data;
 } Train_auto_request;
 
@@ -259,6 +265,7 @@ void train_auto()
 			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
+			current_train->stop_sensor = 0;
 
 			//WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
@@ -309,6 +316,10 @@ void train_auto()
 			reply.group = last_sensor_group;
 			reply.id = last_sensor_id;
 			break;
+		case TRAIN_AUTO_HIT_AND_STOP:
+			current_train = trains + train_map[ request.data.hit_and_stop.train_id ];
+			current_train->stop_sensor = track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ];
+			break;
 		}
 
 		/* Late reply */
@@ -352,6 +363,10 @@ void train_auto()
 					break;
 				case TRAIN_STATE_SPEED_CHANGE:
 				case TRAIN_STATE_TRACKING:
+					/* FIXME: remove me */
+					if( train_loc_is_sensor_tripped( &sensor_data, current_train->stop_sensor ) ){
+						train_set_speed( module_tid, current_train->id, 0 );
+					}
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
 						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
 
@@ -594,4 +609,14 @@ int train_auto_query_sensor( int tid, int* group, int* id )
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.query_sensor ), group, id );
 }
 
+int train_hit_and_stop( int tid, int train_id, int group, int id )
+{
+	Train_auto_request request;
 
+	request.type = TRAIN_AUTO_HIT_AND_STOP;
+	request.data.hit_and_stop.train_id = train_id;
+	request.data.hit_and_stop.group = group;
+	request.data.hit_and_stop.id = id;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.hit_and_stop ), 0, 0 );
+}
