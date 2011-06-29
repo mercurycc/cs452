@@ -17,7 +17,7 @@ int track_node_id2name( char* str, int group, int id )
 	case GROUPC:
 	case GROUPD:
 	case GROUPE:
-		return sensor_id2name( str, group * 2 + id / 2, id % 2 );
+		return sensor_id2name( str, group * 2 + id / BITS_IN_BYTE, id % BITS_IN_BYTE );
 		break;
 	case GROUPMR:
 		group_name = "MR";
