@@ -206,6 +206,9 @@ void train_auto()
 		case TRAIN_AUTO_QUERY_LAST_SENSOR:
 			assert( status == sizeof( request.data.query_sensor ) );
 			break;
+		case TRAIN_AUTO_HIT_AND_STOP:
+			assert( status == sizeof( request.data.hit_and_stop ) );
+			break;
 		}
 
 		/* Quick reply */
@@ -216,6 +219,7 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 		case TRAIN_AUTO_SET_SWITCH_DIR:
 		case TRAIN_AUTO_SET_ALL_SWITCH:
+		case TRAIN_AUTO_HIT_AND_STOP:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		default:
