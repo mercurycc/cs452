@@ -301,16 +301,18 @@ void train_control()
 			int train_id;
 			int sensor_group;
 			int sensor_id;
-			if( token_filled == 3 ){
+			int distance;
+			if( token_filled == 4 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
 				status = track_node_name2id( token_buf[ 2 ], &sensor_group, &sensor_id );
 				if( status != ERR_NONE ){
 					region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] );
 					fail = 1;
 				}
+				distance = ( int )stou( token_buf[ 3 ] );
 				if( ! fail ){
-					train_auto_hit_and_stop( auto_tid, train_id, sensor_group, sensor_id );
-					region_printf( &result_reg, "Set train %d to stop after hit sensor %s\n", train_id, token_buf[ 2 ] );
+					train_auto_hit_and_stop( auto_tid, train_id, sensor_group, sensor_id, distance );
+					region_printf( &result_reg, "Set train %d to stop after sensor %s distance %d\n", train_id, token_buf[ 2 ], distance );
 				}
 			} else {
 				region_printf( &result_reg, "%s <train id> <sensor to hit till stop>\n", token_buf[ 0 ] );
