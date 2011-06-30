@@ -27,7 +27,7 @@
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */
-#define SENSOR_XMIT_TIME    7
+#define SENSOR_XMIT_TIME    8
 
 #define WARNING_REGION       { 14, 23, 1, 78 - 14, 1, 0 }
 #define SWID_TO_ARRAYID( i ) ( i < 19 ? i - 1 : i - 135 )

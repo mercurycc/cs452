@@ -47,6 +47,8 @@ typedef struct Train_data_s {
 	uint last_eta_time_stamp;
 	Speed speed_table[ NUM_SPEED_LEVEL ];
 	uint speed_count[ NUM_SPEED_LEVEL ];
+	uint speed_change_time_stamp;
+	uint speed_distance;
 	track_node* stop_sensor;
 	uint auto_command;               /* Flag indicating if auto is controlling the train for, for instance, trip planning */
 	Rbuf commands;
