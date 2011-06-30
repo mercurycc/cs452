@@ -262,6 +262,8 @@ void train_auto()
 				status = train_planner_init( current_train->planner_tid, current_train );
 				assert( status == ERR_NONE );
 
+				current_train->id = request.data.new_train.train_id;
+
 				/* Update UI */
 				tracking_ui_new_train( tracking_ui_tid, current_train->id );
 			} else {
@@ -269,7 +271,6 @@ void train_auto()
 			}
 
 			/* Set initial states */
-			current_train->id = request.data.new_train.train_id;
 			current_train->state = TRAIN_STATE_INIT;
 			current_train->pickup = request.data.new_train.pickup;
 			current_train->distance = 0;
