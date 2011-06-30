@@ -14,6 +14,7 @@ typedef struct Rbuf_t {
 int rbuf_init( Rbuf* buf, uchar* buffer, uint element_size, uint size );
 int rbuf_reset( Rbuf* buf );
 int rbuf_empty( Rbuf* buf );
+int rbuf_put_front( Rbuf* buf, const uchar* data );
 int rbuf_put( Rbuf* buf, const uchar* data );
 int rbuf_get( Rbuf* buf, uchar* data );
 

@@ -19,12 +19,10 @@ typedef struct Speed_s {
 	uint denominator;
 } Speed;
 
-typedef struct Train_command_s {
-	uint time;
-	uint type;
-	uint arg1;
-	uint arg2;
-} Train_command;
+typedef struct Train_path_s {
+	int group;
+	int id;
+} Train_path;
 
 typedef struct Train_data_s {
 	uint id;
@@ -49,8 +47,9 @@ typedef struct Train_data_s {
 	uint speed_count[ NUM_SPEED_LEVEL ];
 	track_node* stop_sensor;
 	uint auto_command;               /* Flag indicating if auto is controlling the train for, for instance, trip planning */
-	Rbuf commands;
-	Train_command cmd_buf[ CMD_BUFFER_SIZE ]; 
+	int planner_tid;
+	const track_node* track_graph;
+	const int* switch_table;
 } Train_data;
 
 #endif

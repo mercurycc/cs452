@@ -277,6 +277,30 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "%s <train id> <sensor pickup heading towards>\n", token_buf[ 0 ] );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "plan" ) ){
+			int train_id;
+			int group;
+			int id;
+			int dist_pass;
+			if( token_filled == 4 ){
+				train_id = ( int )stou( token_buf[ 1 ] );
+				status = track_node_name2id( token_buf[ 2 ], &group, &id );
+				if( status != ERR_NONE ){
+					region_printf( &result_reg, "%s is not a valid point\n", token_buf[ 2 ] );
+					fail = 1;
+				}
+				dist_pass = ( int )stou( token_buf[ 3 ] );
+				if( dist_pass < 0 ){
+					region_printf( &result_reg, "Negative distance not supported yet\n" );
+					fail = 1;
+				}
+				if( ! fail ){
+					train_auto_plan( auto_tid, train_id, group, id, dist_pass );
+					region_printf( &result_reg, "Plan to %s (%d, %d) for train %d\n", token_buf[ 2 ], group, id, train_id );
+				}
+			} else {
+				region_printf( &result_reg, "%s <train id> <land mark> <distance pass the landmard>\n", token_buf[ 0 ] );
+			}
 		} else if( ! strcmp( token_buf[ 0 ], "hit" ) ){
 			int train_id;
 			int sensor_group;

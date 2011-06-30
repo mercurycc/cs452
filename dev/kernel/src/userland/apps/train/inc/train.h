@@ -2,6 +2,8 @@
 #define _USER_TRAIN_H_
 
 #include "sensor_data.h"
+#include "track_node.h"
+#include "train_types.h"
 
 /* task priorities : high - low */
 #define TRAIN_SENSOR_PRIORITY   6
@@ -42,6 +44,7 @@ int train_auto_query_switch( int tid, uint id, int* direction );
 /* Return group < 0 if no sensor is triggered */
 int train_auto_query_sensor( int tid, int* group, int* id );
 int train_auto_hit_and_stop( int tid, int train_id, int group, int id );
+int train_auto_plan( int tid, int train_id, int group, int id, int dist_pass );
 
 /* switch event api */
 int switch_ui_update_id( int tid, int id, char direction );
@@ -70,5 +73,13 @@ int sensor_ui_update( int tid, Sensor_data* data );
 void clock_ui();
 void switches_ui();
 void tracking_ui();
+
+/* Train planner task */
+/* Server */
+void train_planner();
+/* API */
+int train_planner_init( int tid, Train_data* train );
+int train_planner_path_plan( int tid, track_node* dst, uint dist_pass );
+int train_planner_wakeup( int tid );
 
 #endif

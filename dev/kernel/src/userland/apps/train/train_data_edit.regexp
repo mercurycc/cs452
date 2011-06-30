@@ -18,6 +18,33 @@ Sensors only:
 \1\2\3\4\5\6\7\8
 \1node_map[ GROUP\6 ][ \7 - 1 ] = \3;
 
+Branch/Merger, less than 18:
+
+^\(.*\)\(track\[\)\([0-9]+\)\(\]\)\(.name = "\)\(MR\|BR\)\([0-9]\{1,2\}\)\(";\)$
+    1        2         3       4         5          6           7         8
+  indent             index             field      group        id
+
+\1\2\3\4\5\6\7\8
+\1node_map[ GROUP\6 ][ \7 - 1 ] = \3;
+
+Branch/Merger, greater than 18:
+
+^\(.*\)\(track\[\)\([0-9]+\)\(\]\)\(.name = "\)\(MR\|BR\)\(15[0-9]\)\(";\)$
+    1        2         3       4         5          6         7         8
+  indent             index             field      group      id
+
+\1\2\3\4\5\6\7\8
+\1node_map[ GROUP\6 ][ \7 - 135 ] = \3;
+
+Entrance/Exit:
+
+^\(.*\)\(track\[\)\([0-9]+\)\(\]\)\(.name = "\)\(EN\|EX\)\([0-9]+\)\(";\)$
+    1        2         3       4         5          6         7       8
+  indent             index             field      group      id
+
+\1\2\3\4\5\6\7\8
+\1node_map[ GROUP\6 ][ \7 - 1 ] = \3;
+
 Index:
 ^\(.*\)\(track\[\)\([0-9]+\)\(\]\)\(.name = "\)\([A-Z]+\)\([0-9]+\)\(";\)$
     1        2         3       4         5         6         7       8

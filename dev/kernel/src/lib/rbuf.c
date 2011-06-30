@@ -30,6 +30,11 @@ static inline uint rbuf_next_index( Rbuf* buf, uint index )
 	return ( index + 1 ) % buf->count;
 }
 
+static inline uint rbuf_prev_index( Rbuf* buf, uint index )
+{
+	return ( buf->count + index - 1 ) % buf->count;
+}
+
 int rbuf_reset( Rbuf* buf )
 {
 	buf->get = 0;
@@ -53,6 +58,21 @@ int rbuf_put( Rbuf* buf, const uchar* data )
 		element_addr = rbuf_get_element_address( buf, buf->put );
 		memcpy( element_addr, data, buf->element_size );
 		buf->put = rbuf_next_index( buf, buf->put );
+	} else {
+		return ERR_RBUF_FULL;
+	}
+
+	return ERR_NONE;
+}
+
+int rbuf_put_front( Rbuf* buf, const uchar* data )
+{
+	uchar* element_addr = 0;
+
+	if( rbuf_prev_index( buf, buf->get ) != buf->put ){
+		buf->get = rbuf_prev_index( buf, buf->get );
+		element_addr = rbuf_get_element_address( buf, buf->get );
+		memcpy( element_addr, data, buf->element_size );
 	} else {
 		return ERR_RBUF_FULL;
 	}
