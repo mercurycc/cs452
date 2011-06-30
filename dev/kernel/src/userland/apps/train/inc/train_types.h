@@ -8,6 +8,22 @@
 /* number of speed levels of train */
 #define NUM_SPEED_LEVEL 30
 
+enum Train_planner_direction_type {
+	PLANNER_FORWARD,
+	PLANNER_BACKWARD,
+};
+
+enum Train_state {
+	TRAIN_STATE_INIT,             /* Init */
+	TRAIN_STATE_STOP,             /* Stopped */
+	TRAIN_STATE_TRACKING,         /* Normal state */
+	TRAIN_STATE_REVERSE,          /* Just reversed direction */
+	TRAIN_STATE_SPEED_CHANGE,     /* Just changed speed */
+	TRAIN_STATE_SPEED_ERROR,      /* Speed prediction out of bound error */
+	TRAIN_STATE_SWITCH_ERROR,     /* Switch prediction error */
+	TRAIN_STATE_UNKNOW            /* Unknown state */
+};
+
 typedef struct Train_stat_s {
 	uint total_dist;
 	uint total_time;
@@ -22,6 +38,7 @@ typedef struct Speed_s {
 typedef struct Train_path_s {
 	int group;
 	int id;
+	int direction;
 } Train_path;
 
 typedef struct Train_data_s {
@@ -50,11 +67,16 @@ typedef struct Train_data_s {
 	track_node* speed_mark;
 	uint stop_distance;
 	track_node* stop_sensor;
+	
+	/* Planner */
 	uint auto_command;               /* Flag indicating if auto is controlling the train for, for instance, trip planning */
 	int planner_tid;
+	int planner_ready;               /* If not ready, don't wake up to avoid deadlock */
+	int planner_stop;
+	const track_node* planner_stop_node;
+	int planner_stop_dist;
 	const track_node* track_graph;
 	const int* switch_table;
+	const int* node_map;
 } Train_data;
-
 #endif
-

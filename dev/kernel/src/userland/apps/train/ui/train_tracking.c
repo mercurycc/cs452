@@ -90,9 +90,10 @@ void tracking_ui()
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		status -= sizeof( uint ) * 2;
-		/* Size check */
 
 		data_reg.boundary = 0;
+		
+		/* Size check */
 		switch( request.type ){
 		case TRACKING_UI_NEW_TRAIN:
 			assert( status == 0 );

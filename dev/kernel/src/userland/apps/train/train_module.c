@@ -13,7 +13,7 @@
 
 #define SWITCH_XMIT_DELAY 16
 #define SWITCH_OFF_DELAY 20
-#define TRAIN_XMIT_DELAY 15
+#define TRAIN_XMIT_DELAY 20
 #define SWITCH_ALL_DELAY 180
 
 typedef struct Train_event_s Train_event;

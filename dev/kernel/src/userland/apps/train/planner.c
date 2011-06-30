@@ -15,6 +15,7 @@
 #include "inc/train_location.h"
 #include "inc/warning.h"
 #include "inc/train_types.h"
+#include <perf.h>
 
 enum Train_planner_request_type {
 	PLANNER_INIT,
@@ -28,27 +29,29 @@ typedef struct Planner_request_s {
 	uint dist_pass;           /* Distance needed to pass dst */
 } Planner_request;
 
-static inline void train_planner_update_cost( uint* cost, int* parent, uint new_cost, int index, int parent_index )
+static inline void train_planner_update_cost( uint* cost, int parent[][ 2 ], uint new_cost, int index, int parent_index, int direction )
 {
 	if( cost[ index ] > new_cost ){
 		cost[ index ] = new_cost;
-		parent[ index ] = parent_index;
+		parent[ index ][ 0 ] = parent_index;
+		parent[ index ][ 1 ] = direction;
 	}
 }
 
 #define DST_DIRECT( current_node, dst )      ( current_node == dst )
-#define DST_REVERSE( current_node, dst )     ( current_node == dst->reverse->edge[ DIR_AHEAD ].dest->reverse )
-#define DST_REVERSE_BR( current_node, dst )  ( dst->reverse->type == NODE_BRANCH && current_node == dst->reverse->edge[ DIR_CURVED ].dest->reverse )
+#define DST_REVERSE( current_node, dst )     ( current_node == dst->edge[ DIR_AHEAD ].dest->reverse )
+#define DST_REVERSE_BR( current_node, dst )  ( dst->type == NODE_BRANCH && current_node == dst->edge[ DIR_CURVED ].dest->reverse )
+#define MAP_NODE( group, id )                ( track_graph + group * TRACK_GRAPH_NODES_PER_GROUP + id )
 
 static inline int train_planner_is_dst( const track_node* current, const track_node* dst )
 {
 	return  DST_DIRECT( current, dst ) || DST_REVERSE( current, dst ) || DST_REVERSE_BR( current, dst );
 }
 
-static int train_planner_plan( const track_node* dst, int dist_pass, volatile const Train_data* train, Rbuf* path, uint* path_length )
+static int train_planner_plan( const track_node* dst, int dist_pass, volatile const Train_data* train, Rbuf* path, uint* path_length, uint* direction, int module_tid, int auto_tid, const track_node** final_node )
 {
 	uint cost[ TRACK_NUM_NODES ];                /* ~0 for infinity */
-	int parent[ TRACK_NUM_NODES ];               /* -1 for no parent */
+	int parent[ TRACK_NUM_NODES ][ 2 ];          /* -1 for no parent, second element for direction */
 	int mark[ TRACK_NUM_NODES ];
 	uint min_cost;
 	int min_index;
@@ -57,16 +60,17 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 	const track_node* current_node;
 	const track_node* next_node;
 	const track_node* track_graph = train->track_graph;
+	const track_node* check_point = train->check_point;
+	const track_node* next_check_point = train->next_check_point;
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	Train_path path_node;
 	char name[ 6 ];
 	int status;
 
-	track_node_id2name( name, dst->group, dst->id );
-	region_printf( &path_display, "Request to dst %s, dist %d for %d\n", name, dist_pass, train->id );
+	/* int time; */
 
-	Delay( 100 );
-
+	/* time = perf_timer_time(); */
+	
 	/* Initialize cost */
 	for( i = 0; i < TRACK_NUM_NODES; i += 1 ){
 		cost[ i ] = ~0;
@@ -102,10 +106,10 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 	}
 	
 	/* Assign initial cost */
-	cost[ train->check_point->reverse->index ] = train->distance;
-	parent[ train->check_point->reverse->index ] = -1;
-	cost[ train->next_check_point->index ] = train->remaining_distance;
-	parent[ train->check_point->reverse->index ] = -1;
+	cost[ check_point->reverse->index ] = train->distance;
+	parent[ check_point->reverse->index ][ 0 ] = -1;
+	cost[ next_check_point->index ] = train->remaining_distance;
+	parent[ next_check_point->index ][ 0 ] = -1;
 
 	/* Find path */
 	while( 1 ){
@@ -125,23 +129,30 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 
 		current_node = track_graph + min_index;
 		if( train_planner_is_dst( current_node, dst ) ){
-			track_node_id2name( name, current_node->group, current_node->id );
-			region_printf( &path_display, "Got to the END: %s\n", name );
-			Delay( 100 );
+			*final_node = current_node;
+			if( DST_DIRECT( current_node, dst ) ){
+				*path_length = dist_pass;
+			} else {
+				*path_length = current_node->edge[ DIR_AHEAD ].dist - dist_pass;
+			}
+			if( current_node->type == NODE_BRANCH ){
+				if( current_node->edge[ DIR_AHEAD ].dest == dst ){
+					path_node.direction = 'S';
+				} else {
+					path_node.direction = 'C';
+				}
+			}
 			break;
 		}
-
-		track_node_id2name( name, current_node->group, current_node->id );
-		region_printf( &path_display, "Current min: %s\n", name );
-		// Delay( 100 );
 
 		/* Update neighbor cost */
 		/* Reverse */
 		next_node = current_node->reverse;
 		if( ! mark[ next_node->index ] ){
 			/* TODO: this 100 is not correct.  Should be around 2 stop distance at stop speed */
-			temp = min_cost + 100;
-			train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
+			/* TODO: Disable reverse for now */
+			temp = ~0; // min_cost + 100;
+			train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 		}
 
 		if( current_node->type != NODE_EXIT ){
@@ -149,7 +160,7 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp = min_cost + current_node->edge[ DIR_AHEAD ].dist;
-				train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
+				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 			}
 
 			/* Curved, if brancher */
@@ -157,7 +168,7 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp = min_cost + current_node->edge[ DIR_CURVED ].dist;
-					train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
+					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
 				}
 			}
 		}
@@ -175,6 +186,11 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 
 		track_node_id2name( name, path_node.group, path_node.id );
 		region_append( &path_display, "<-%s", name );
+		if( current_node->type == NODE_BRANCH ){
+			train_switch( module_tid, path_node.id + 1, path_node.direction );
+			train_auto_set_switch( auto_tid, path_node.id + 1, path_node.direction );
+			region_append( &path_display, "%c", path_node.direction );
+		}
 
 		status = rbuf_put_front( path, ( uchar* )&path_node );
 		if( status == ERR_RBUF_FULL ){
@@ -183,9 +199,21 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 			return ERR_FAIL;
 		}
 
-		i = parent[ i ];
+		path_node.direction = parent[ i ][ 1 ];
+		i = parent[ i ][ 0 ];
 	} while( i >= 0 );
 
+	if( current_node == check_point->reverse ){
+		region_append( &path_display, " REVERSE" );
+		*direction = PLANNER_BACKWARD;
+	} else if( current_node == next_check_point ){
+		*direction = PLANNER_FORWARD;
+	}
+
+	/* time = perf_timer_time() - time; */
+
+	/* region_append( &path_display, "\nTime %d us\n", PERF_TIMER_TO_USEC( time ) ); */
+	
 	return ERR_NONE;
 }
 
@@ -194,46 +222,239 @@ void train_planner()
 	/* TODO: rewrite the whole thing to accomodate multiple trains */
 	Planner_request request;
 	int tid;
-	int status;
 	Train_path path_node;
 	uint path_length;
-	volatile Train_data* train;
+	Train_data* train;
+	volatile const int* switch_table;
+	const track_node* track_graph;
+	const track_node* backward_node;
+	const track_node* targets[ TARGET_BUFFER_SIZE ];
+	const int* node_map;
+	const track_node* final_node;
+	const track_node* temp_node;
 	Rbuf path;
-	int distance;
 	Train_path path_buf[ PATH_BUFFER_SIZE ];
+	uint plan_direction;
+	uint remain_distance;
+	uint dist_pass;
+	int module_tid;
+	int auto_tid;
+	int planning;
+	int i, j;
+	int distance;
+	int near_end;
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
+	uint count = 0;
+	int status;
 
 	region_init( &path_display );
-
-	/* Initialize command ring */
-	status = rbuf_init( &path, ( uchar* )&path_buf, sizeof( Train_path ), PATH_BUFFER_SIZE );
-	assert( status == ERR_NONE );
 
 	/* Receive init */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
 	assert( status == sizeof( request ) );
 	status = Reply( tid, ( char* )&status, sizeof( status ) );
 	assert( status == SYSCALL_SUCCESS );
+
+	module_tid = WhoIs( TRAIN_MODULE_NAME );
+	assert( module_tid > 0 );
+
+	auto_tid = WhoIs( TRAIN_AUTO_NAME );
+	assert( module_tid > 0 );
 	
 	train = ( Train_data* )request.dst;
+	track_graph = train->track_graph;
+	node_map = train->node_map;
+	switch_table = train->switch_table;
+
+	/* Initialize command ring */
+	status = rbuf_init( &path, ( uchar* )path_buf, sizeof( Train_path ), sizeof( Train_path ) * PATH_BUFFER_SIZE );
+	assert( status == ERR_NONE );
 
 	while( 1 ){
+		train->planner_ready = 1;
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
-		if( request.type == PLANNER_WAKEUP ){
-			distance = train->distance;
-		}
 		status = Reply( tid, ( char* )&status, sizeof( status ) );
 		assert( status == SYSCALL_SUCCESS );
 
 		switch( request.type ){
 		case PLANNER_PATH_PLAN:
+			planning = 1;
 			rbuf_reset( &path );
-			status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length );
+			status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length, &plan_direction, module_tid, auto_tid, &final_node );
 			assert( status == ERR_NONE );
+			dist_pass = request.dist_pass;
+
+			train->planner_stop = 1;
+			train->planner_stop_node = final_node;
+			train->planner_stop_dist = path_length;
 			break;
 		case PLANNER_WAKEUP:
+			count += 1;
+			i = train->remaining_distance;
+			temp_node = train->next_check_point;
+				
+			while( i < train->stop_distance ){
+				if( temp_node == train->planner_stop_node ){
+					i += train->planner_stop_dist;
+					train->auto_command = 0;
+					train->planner_stop = 0;
+					train_set_speed( module_tid, train->id, 0 );
+					train_auto_set_speed( auto_tid, train->id, 0 );
+					region_printf( &path_display, "Stoping\n" );
+				} else {
+					region_printf( &path_display, "Getting there %d\n", count );
+					i += temp_node->edge[ DIR_AHEAD ].dist;
+				}
+				temp_node = temp_node->edge[ DIR_AHEAD ].dest;
+			}
 			
+			break;
+		}
+
+		/* Skip the rest */
+		continue;
+
+		switch( request.type ){
+		case PLANNER_PATH_PLAN:
+			/* Retrive first targets */
+			for( i = 0; i < TARGET_BUFFER_SIZE; i += 1 ){
+				if( ! rbuf_empty( &path ) ){
+					rbuf_get( &path, ( uchar* )&path_node );
+					targets[ i ] = MAP_NODE( path_node.group, path_node.id );
+					if( targets[ i ]->type == NODE_BRANCH ){
+						train_switch( module_tid, targets[ i ]->id + 1, path_node.direction );
+						train_auto_set_switch( auto_tid, targets[ i ]->id + 1, path_node.direction );
+					}
+					if( i > 0 && targets[ i ] == targets[ i - 1 ]->reverse ){
+						train_set_speed( module_tid, train->id, 0 );
+						train_auto_set_speed( auto_tid, train->id, 0 );
+						plan_direction = PLANNER_BACKWARD;
+						near_end = 1;
+					}
+					/* TODO: test if switches are skipped */
+					/* if( targets[ i ]->type == NODE_BRANCH ){ */
+					/* 	backward_node = targets[ i ]; */
+					/* 	if( *plan_direction == PLANNER_FORWARD ){ */
+					/* 		train_planner_plan( backward_node, 0, train, path, path_length, plan_direction ); */
+					/* 	} */
+					/* } */
+				}
+			}
+
+			if( plan_direction == PLANNER_BACKWARD ){
+				rbuf_get( &path, ( uchar* )&path_node );
+				backward_node = MAP_NODE( path_node.group, path_node.id );
+				train_set_speed( module_tid, train->id, 0 );
+				train_auto_set_speed( auto_tid, train->id, 0 );
+				near_end = 1;
+			} else {
+				train_set_speed( module_tid, train->id, TRAIN_TRAVEL_SPEED );
+				train_auto_set_speed( auto_tid, train->id, TRAIN_TRAVEL_SPEED );
+				near_end = 0;
+				planning = 0;
+			}
+
+			break;
+		case PLANNER_WAKEUP:
+			region_printf( &path_display, "Awake %d\n", count );
+			count += 1;
+			if( ! train->auto_command ){
+				/* Only run when we are planning the train */
+				break;
+			}
+			switch( train->state ){
+			case TRAIN_STATE_STOP:
+				if( plan_direction == PLANNER_BACKWARD ){
+					if( planning ){
+						status = train_planner_plan( backward_node, 0, train, &path, &path_length, &plan_direction, module_tid, auto_tid, &final_node );
+						assert( status == ERR_NONE );
+						assert( plan_direction == PLANNER_FORWARD );
+						plan_direction = PLANNER_BACKWARD;
+						planning = 0;
+					} else {
+						/* Reverse direction, almost certain to be on a switch */
+						train_reverse( module_tid, train->id );
+						train_auto_set_reverse( auto_tid, train->id );
+						train_set_speed( module_tid, train->id, TRAIN_TRAVEL_SPEED );
+						train_auto_set_speed( auto_tid, train->id, TRAIN_TRAVEL_SPEED );
+						plan_direction = PLANNER_FORWARD;
+					}
+				} else {
+					/* At stop */
+					train->auto_command = 0;
+				}
+				break;
+			case TRAIN_STATE_TRACKING:
+			case TRAIN_STATE_SPEED_CHANGE:
+				if( planning ){
+					/* Wait for train to stop */
+					break;
+				}
+				if( ! near_end ){
+					/* Check if any of the saved targets is hit */
+					for( i = 0; i < TARGET_BUFFER_SIZE; i += 1 ){
+						if( train->check_point == targets[ i ] ){
+							break;
+						}
+					}
+
+					if( i < TARGET_BUFFER_SIZE ){
+						for( j = 0; j < i; j += 1 ){
+							track_node_id2name( name, targets[ j ]->group, targets[ j ]->id );
+							region_append( &path_display, " %s ", name );
+						}
+						for( j = 0, i += 1; i < TARGET_BUFFER_SIZE; j += 1, i += 1 ){
+							targets[ j ] = targets[ i ];
+						}
+						/* This assert means we should not hit all the saved targets, otherwise we are too slow.
+						   Also, in the later section we do rely on this fact */
+						assert( j > 0 );
+						
+						for(; j < TARGET_BUFFER_SIZE; j += 1 ){
+							if( ! rbuf_empty( &path ) ){
+								rbuf_get( &path, ( uchar* )&path_node );
+								targets[ j ] = MAP_NODE( path_node.group, path_node.id );
+								if( targets[ j ]->type == NODE_BRANCH ){
+									train_switch( module_tid, targets[ j ]->id + 1, path_node.direction );
+									train_auto_set_switch( auto_tid, targets[ j ]->id + 1, path_node.direction );
+								}
+								/* Reverse */
+								if( targets[ j ] == targets[ j - 1 ] ){
+									plan_direction = PLANNER_BACKWARD;
+									near_end = 1;
+								}
+							} else {
+								targets[ j ] = 0;
+								near_end = 1;
+							}
+						}
+					}
+				} /* near end */
+
+				if( near_end ){
+					/* Stop when the next few foward edges plus dist_pass is about stop distance.
+					   We hold several targets, it is highly unlikely that the 
+					 */
+					remain_distance = dist_pass + train->remaining_distance;
+					for( i = 0; i < TARGET_BUFFER_SIZE; i += 1 ){
+						/* i == TARGET_BUFFER_SIZE is a condition because the last one in the
+						   targets must be a forward target to be the destination.  The planner
+						   should rule out the possibility of the need to reverse before the
+						   target */
+						if( i == TARGET_BUFFER_SIZE || targets[ i + 1 ] == targets[ i ]->edge[ DIR_AHEAD ].dest ){
+							remain_distance += targets[ i ]->edge[ DIR_AHEAD ].dist;
+						} else {
+							break;
+						}
+					}
+
+					if( remain_distance < train->stop_distance ){
+						train_set_speed( module_tid, train->id, 0 );
+						train_auto_set_speed( auto_tid, train->id, 0 );
+					}
+				}
+			}
 			break;
 		}
 	}

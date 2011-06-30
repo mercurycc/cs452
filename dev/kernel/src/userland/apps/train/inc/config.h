@@ -8,6 +8,7 @@
 #define TRAIN_TRAVEL_SPEED   14
 #define MAX_TRAIN_ID         128
 #define PATH_BUFFER_SIZE     128
+#define TARGET_BUFFER_SIZE   5     /* First for current chk pnt, others for future */
 
 #define TRAIN_AUTO_REGISTER_SPEED 10
 

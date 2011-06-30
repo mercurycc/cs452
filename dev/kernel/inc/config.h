@@ -8,7 +8,7 @@
 #define KERNEL_NUM_CONSOLES           2
 #define KERNEL_TID_SIZE               7   
 #define KERNEL_MAX_NUM_TASKS          ( 1 << KERNEL_TID_SIZE ) / 2
-#define KERNEL_STACK_PAGE             16
+#define KERNEL_STACK_PAGE             32
 #define KERNEL_PAGE_SIZE              4096
 #define KERNEL_HIGH_PRIORITY          0
 #define KERNEL_LOW_PRIORITY           31
@@ -17,7 +17,7 @@
 
 /* Userland parameters */
 #define IPC_MAGIC                     1          /* Turn on magic check */
-#define USER_STACK_PAGE               16
+#define USER_STACK_PAGE               32
 #define NAME_SERVER_HASH_ENTRIES      128
 #define CLOCK_OPERATION_TICKS         4          /* Extra time for clock driver to operate if it receives a count down request that is close to current count down */
 #define SLOW_DRIVER_PRIORITY          0

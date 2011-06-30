@@ -20,18 +20,6 @@
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 
-
-enum Train_state {
-	TRAIN_STATE_INIT,             /* Init */
-	TRAIN_STATE_STOP,             /* Stopped */
-	TRAIN_STATE_TRACKING,         /* Normal state */
-	TRAIN_STATE_REVERSE,          /* Just reversed direction */
-	TRAIN_STATE_SPEED_CHANGE,     /* Just changed speed */
-	TRAIN_STATE_SPEED_ERROR,      /* Speed prediction out of bound error */
-	TRAIN_STATE_SWITCH_ERROR,     /* Switch prediction error */
-	TRAIN_STATE_UNKNOW            /* Unknown state */
-};
-
 enum Train_pickup {
 	TRAIN_PICKUP_FRONT,
 	TRAIN_PICKUP_BACK,
@@ -309,6 +297,7 @@ void train_auto()
 			current_train->track_graph = track_graph;
 			current_train->switch_table = switch_table;
 			current_train->node_map = ( int* )node_map;
+			current_train->planner_stop = 0;
 
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
 			
@@ -374,10 +363,16 @@ void train_auto()
 			current_train->stop_sensor = track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ];
 			break;
 		case TRAIN_AUTO_PLAN:
-			current_train = trains + train_map[ request.data.hit_and_stop.train_id ];
-			train_planner_path_plan( current_train->planner_tid,
-						 track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ],
-						 request.data.plan.dist_pass );
+			if( ! current_train->auto_command ){
+				current_train = trains + train_map[ request.data.hit_and_stop.train_id ];
+				current_train->auto_command = 1;
+				current_train->planner_ready = 0;
+				train_planner_path_plan( current_train->planner_tid,
+							 track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ],
+							 request.data.plan.dist_pass );
+			} else {
+				WAR_NOTICE( "One path executing, cannot reschedule path\n" );
+			}
 			break;
 		}
 
@@ -607,6 +602,7 @@ void train_auto()
 		if( request.type == TRAIN_AUTO_WAKEUP ){
 			for( temp = 1; temp < available_train; temp += 1 ){
 				current_train = trains + temp;
+
 				switch( current_train->state ){
 				case TRAIN_STATE_SPEED_CHANGE:
 					break;
@@ -659,8 +655,15 @@ void train_auto()
 					tracking_ui_dist( tracking_ui_tid, current_train->id, current_train->distance );
 					tracking_ui_speed( tracking_ui_tid, current_train->id,
 							   current_train->speed.numerator * 100 / current_train->speed.denominator );
-
 					break;
+				}
+
+				/* Wake up planner */
+				if( current_train->planner_ready ){
+					current_train->planner_ready = 0;
+					train_planner_wakeup( current_train->planner_tid );
+					/* The following line is only safe when planner is at lower priority, otherwise
+					   we could rewrite its 1 value making it forever unavailable */
 				}
 			}
 		}
