@@ -279,10 +279,19 @@ void train_auto()
 			current_train->old_speed_level = 0;
 			current_train->last_sensor_time = current_time;
 			for ( i = 0; i < NUM_SPEED_LEVEL; i++ ) {
-				current_train->speed_table[i].numerator = TRAIN_SPEED_PRED_FACTOR( current_train->id )*i;
-				assert(( ~i )||( current_train->speed_table[i].numerator ));
-				current_train->speed_table[i].denominator = 2;
-				current_train->speed_count[i] = 0;
+				int factor;
+				if ( current_train->id == 23 ) {
+					factor = 55;
+				}
+				else if ( current_train->id == 21 ) {
+					factor = 22;
+				}
+				else {
+					factor = 0;
+				}
+				current_train->speed_table[i].numerator = factor * i;
+				current_train->speed_table[i].denominator = 200;
+				current_train->speed_count[i] = INIT_SPEED_COUNT;
 			}
 			current_train->speed_table[0].numerator = 0;
 			current_train->speed_table[1].numerator = 0;
@@ -369,9 +378,10 @@ void train_auto()
 					current_train->next_sensor_eta = diff * temp_distance * bottom / top;
 				}
 
-				WAR_PRINT( "speed change %d-%d, at dist %d, eta change %d-%d,ind %x\n", current_train->old_speed_level, current_train->speed_level, current_train->speed_distance, diff, current_train->next_sensor_eta, indicator );
 			}
 			*/
+			WAR_PRINT( "speed change %d-%d, at dist %d\n", current_train->old_speed_level, current_train->speed_level, current_train->speed_distance);
+
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
@@ -469,10 +479,6 @@ void train_auto()
 							bottom = bottom / 10;
 						}
 						//assert( bottom );
-						if ( bottom == 0 ) {
-							top = 0;
-							bottom = 1;
-						}
 						current_train->speed.numerator = top;
 						current_train->speed.denominator = bottom;
 						current_train->stop_distance = current_train->speed.numerator * SPEED_CHANGE_TIME / current_train->speed.denominator / 2;
@@ -636,29 +642,36 @@ void train_auto()
 						/* Update eta */
 						changing = 0;
 						if ( changing ) {
+							
 							int dist = sensor_distance( current_train->last_sensor, current_train->next_sensor );
 							int modifier = 0;
 							int time_left = current_train->speed_change_time_stamp + SPEED_CHANGE_TIME - current_time;
+							int old_eta = sensor_distance( current_train->last_sensor, current_train->next_sensor ) * current_train->speed.denominator / current_train->speed.numerator;
 
 							int c = current_train->speed_table[ current_train->speed_level ].numerator;
 							int d = current_train->speed_table[ current_train->speed_level ].denominator;
 							int e = current_train->speed.numerator;
 							int f = current_train->speed.denominator;
 
-							unsigned long long int finish_top = ( e * d + c * f ) * time_left;
-							unsigned long long int finish_bot = 2 * d * f;
+							unsigned long long int finish_top = e * d + c * f;
+							unsigned long long int finish_bot = 2 * d * f / time_left;
 
 							int finish = finish_top / finish_bot;
 							
 							if ( finish > dist ) {
 								// approximated
 								modifier = time_left * finish / dist;
-								WAR_PRINT( "finish %d dist %d modifier %d", finish, dist, modifier );
+								WAR_PRINT( "finish %d dist %d modifier %d\n", finish, dist, modifier );
 							}
 							else {
 								modifier = time_left + ( dist - finish ) * current_train->speed.denominator / current_train->speed.numerator;
 							}
+							if (( old_eta - modifier > 6000 )||( modifier - old_eta < 6000 )) {
+								modifier = old_eta;
+							}
 							current_train->next_sensor_eta = modifier;
+							
+
 						}
 						else {
 							current_train->next_sensor_eta = sensor_distance( current_train->last_sensor, current_train->next_sensor ) * current_train->speed.denominator / current_train->speed.numerator ;
