@@ -50,6 +50,8 @@ typedef struct Train_data_s {
 	track_node* speed_mark;
 	uint stop_distance;
 	track_node* stop_sensor;
+	track_node* stop_node;
+	uint stop_length;
 	uint auto_command;               /* Flag indicating if auto is controlling the train for, for instance, trip planning */
 	int planner_tid;
 	const track_node* track_graph;

@@ -59,7 +59,7 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 			top = top / 10;
 			bottom = bottom / 10;
 		}
-		
+		assert( bottom );
 		train->speed_table[level].numerator = top;
 		train->speed_table[level].denominator = bottom;
 		if ( train->speed_count[level] < NUM_SPEED_HISTORY ) {
