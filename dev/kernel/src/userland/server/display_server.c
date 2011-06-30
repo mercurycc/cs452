@@ -191,9 +191,15 @@ static inline void display_fill( Region* reg, const char* msg, const char* curre
 	int boundary = reg->boundary ? 1 : 0;
 
 	/* The 1 added/subtracted is for the boundry */
-	for( row = reg->margin / 2 + boundary; row < ( reg->height - reg->margin / 2 - boundary ); row += 1 ){
+	for( row = reg->row_append + reg->margin / 2 + boundary; row < ( reg->height - reg->margin / 2 - boundary ); row += 1 ){
 		clear_line = 0;
-		for( col = reg->margin + boundary; col < ( reg->width - reg->margin - boundary ); col += 1 ){
+		if( reg->col_append ){
+			col = reg->col_append;
+			reg->col_append = 0;
+		} else {
+			col = 0;
+		}
+		for( col += reg->margin + boundary; col < ( reg->width - reg->margin - boundary ); col += 1 ){
 			if( clear_line ){
 				display_modify( col + reg->col, row + reg->row, ' ', current, target );
 			} else {
@@ -273,7 +279,6 @@ void display_server()
 		switch( request.metadata.type ){
 		case DISPLAY_INIT:
 			/* Create drawer */
-
 			drawer_tid = Create( IDLE_SERVICE_PRIORITY, display_drawer );
 			assert( drawer_tid > 0 );
 			break;
@@ -314,7 +319,7 @@ void display_server()
 			can_draw = 0;
 
 			status = Reply( drawer_tid, ( char* )&reply, sizeof( reply ) );
-			assert( status == SYSCALL_SUCCESS );
+			ASSERT_M( status == SYSCALL_SUCCESS, "got %d\n", status );
 		}
 	}
 
@@ -371,7 +376,29 @@ int display_init()
 int region_init( Region* region )
 {
 	assert( region );
+	
+	region->col_append = 0;
+	region->row_append = 0;
+	
 	return display_request( DISPLAY_REGION_INIT, region, 0, 0, 0 );
+}
+
+static int region_print_append( Region* region, char* msg, int size )
+{
+	int boundary;
+	int row_length;
+	int status;
+	
+	status = display_request( DISPLAY_REGION_DRAW, region, msg, size, 0 );
+
+	boundary = region->boundary ? 1 : 0;
+
+	size += region->col_append;
+	row_length = region->width - region->margin * 2 - boundary * 2;
+	region->row_append += size / row_length;
+	region->col_append = size % row_length;
+
+	return status;	
 }
 
 int region_printf( Region* region, char* fmt, ... )
@@ -385,12 +412,32 @@ int region_printf( Region* region, char* fmt, ... )
 	size = sformat( dst, fmt, va );
 	va_end( va );
 
-	return display_request( DISPLAY_REGION_DRAW, region, dst, size, 0 );
+	region->col_append = 0;
+	region->row_append = 0;
+
+	return region_print_append( region, dst, size );
+}
+
+int region_append( Region* region, char* fmt, ... )
+{
+	va_list va;
+	int size;
+	char dst[ DISPLAY_MAX_MSG ];
+
+	va_start( va, fmt );
+	assert( region );
+	size = sformat( dst, fmt, va );
+	va_end( va );
+
+	return region_print_append( region, dst, size );
 }
 
 int region_clear( Region* region )
 {
 	assert( region );
+
+	region->col_append = 0;
+	region->row_append = 0;
 	
 	return display_request( DISPLAY_REGION_CLEAR, region, 0, 0, 0 );
 }

@@ -49,7 +49,8 @@ enum Train_auto_request_type {
 	TRAIN_AUTO_SET_ALL_SWITCH,
 	TRAIN_AUTO_QUERY_SWITCH_DIR,
 	TRAIN_AUTO_QUERY_LAST_SENSOR,
-	TRAIN_AUTO_HIT_AND_STOP
+	TRAIN_AUTO_HIT_AND_STOP,
+	TRAIN_AUTO_PLAN
 };
 
 typedef struct Train_auto_request_s {
@@ -90,6 +91,12 @@ typedef struct Train_auto_request_s {
 			uint group;
 			uint id;
 		} hit_and_stop;
+		struct {
+			uint train_id;
+			uint group;
+			uint id;
+			uint dist_pass;
+		} plan;
 	} data;
 } Train_auto_request;
 
@@ -209,6 +216,9 @@ void train_auto()
 		case TRAIN_AUTO_HIT_AND_STOP:
 			assert( status == sizeof( request.data.hit_and_stop ) );
 			break;
+		case TRAIN_AUTO_PLAN:
+			assert( status == sizeof( request.data.plan ) );
+			break;
 		}
 
 		/* Quick reply */
@@ -220,6 +230,7 @@ void train_auto()
 		case TRAIN_AUTO_SET_SWITCH_DIR:
 		case TRAIN_AUTO_SET_ALL_SWITCH:
 		case TRAIN_AUTO_HIT_AND_STOP:
+		case TRAIN_AUTO_PLAN:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		default:
@@ -272,9 +283,13 @@ void train_auto()
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor->reverse, switch_table );
 			current_train->stop_sensor = 0;
 			current_train->auto_command = 0;
+			current_train->track_graph = track_graph;
+			current_train->switch_table = switch_table;
 
-			/* Initialize command ring */
-			status = rbuf_init( &current_train->commands, ( uchar* )&current_train->cmd_buf, sizeof( Train_command ), CMD_BUFFER_SIZE );
+			current_train->planner_tid = Create( TRAIN_PLAN_PRIORITY, train_planner );
+			assert( current_train->planner_tid > 0 );
+
+			status = train_planner_init( current_train->planner_tid, current_train );
 			assert( status == ERR_NONE );
 
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
@@ -340,6 +355,12 @@ void train_auto()
 			current_train = trains + train_map[ request.data.hit_and_stop.train_id ];
 			current_train->stop_sensor = track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ];
 			break;
+		case TRAIN_AUTO_PLAN:
+			current_train = trains + train_map[ request.data.hit_and_stop.train_id ];
+			train_planner_path_plan( current_train->planner_tid,
+						 track_graph + node_map[ request.data.hit_and_stop.group ][ request.data.hit_and_stop.id ],
+						 request.data.plan.dist_pass );
+			break;
 		}
 
 		/* Late reply */
@@ -384,7 +405,7 @@ void train_auto()
 					current_train->last_check_point_time = sensor_data.last_sensor_time;
 					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 					current_train->last_eta_time_stamp = 0;
-						
+					
 					train_set_speed( module_tid, current_train->id, 0 );
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 
@@ -728,4 +749,17 @@ int train_auto_hit_and_stop( int tid, int train_id, int group, int id )
 	request.data.hit_and_stop.id = id;
 
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.hit_and_stop ), 0, 0 );
+}
+
+int train_auto_plan( int tid, int train_id, int group, int id, int dist_pass )
+{
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_PLAN;
+	request.data.plan.train_id = train_id;
+	request.data.plan.group = group;
+	request.data.plan.id = id;
+	request.data.plan.dist_pass = dist_pass;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.plan ), 0, 0 );
 }

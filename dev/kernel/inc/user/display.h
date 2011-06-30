@@ -17,11 +17,14 @@ typedef struct Region_s {
 	uint width;
 	uint margin;
 	uint boundary;
+	uint col_append;
+	uint row_append;
 } Region;
 
 int display_init();
 int region_init( Region* region );
 int region_printf( Region* region, char* fmt, ... );
+int region_append( Region* region, char* fmt, ... );
 int region_clear( Region* region );
 int display_quit();
 

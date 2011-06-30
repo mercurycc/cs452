@@ -23,7 +23,7 @@ enum Graph_node_group {
 	GROUP_COUNT
 };
 
-#define TRACK_GRAPH_NODES_PER_GROUP   16
+#define TRACK_GRAPH_NODES_PER_GROUP   22
 
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
