@@ -11,7 +11,7 @@
 #include "inc/train.h"
 #include "inc/warning.h"
 
-#define SWITCH_XMIT_DELAY 16
+#define SWITCH_XMIT_DELAY 18
 #define SWITCH_OFF_DELAY 20
 #define TRAIN_XMIT_DELAY 20
 #define SWITCH_ALL_DELAY 180

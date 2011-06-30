@@ -151,7 +151,7 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 		if( ! mark[ next_node->index ] ){
 			/* TODO: this 100 is not correct.  Should be around 2 stop distance at stop speed */
 			/* TODO: Disable reverse for now */
-			temp = ~0; // min_cost + 100;
+			temp = min_cost + 100;
 			train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 		}
 
@@ -290,23 +290,36 @@ void train_planner()
 			train->planner_stop_dist = path_length;
 			break;
 		case PLANNER_WAKEUP:
-			count += 1;
-			i = train->remaining_distance;
-			temp_node = train->next_check_point;
-				
-			while( i < train->stop_distance ){
+			if( train->planner_stop ){
+				count += 1;
+				temp_node = train->check_point;
 				if( temp_node == train->planner_stop_node ){
-					i += train->planner_stop_dist;
-					train->auto_command = 0;
-					train->planner_stop = 0;
-					train_set_speed( module_tid, train->id, 0 );
-					train_auto_set_speed( auto_tid, train->id, 0 );
-					region_printf( &path_display, "Stoping\n" );
+					i = -train->distance;
 				} else {
-					region_printf( &path_display, "Getting there %d\n", count );
-					i += temp_node->edge[ DIR_AHEAD ].dist;
+					temp_node == train->next_check_point;
+					i = train->remaining_distance;
 				}
-				temp_node = temp_node->edge[ DIR_AHEAD ].dest;
+				
+				while( i < train->stop_distance ){
+					if( temp_node == train->planner_stop_node ){
+						region_printf( &path_display, "Reaching dest\n" );
+						i += train->planner_stop_dist;
+						if( i <= train->stop_distance ){
+							train->auto_command = 0;
+							train->planner_stop = 0;
+							status = train_set_speed( module_tid, train->id, 0 );
+							assert( status == ERR_NONE );
+							status = train_auto_set_speed( auto_tid, train->id, 0 );
+							assert( status == ERR_NONE );
+							region_printf( &path_display, "Stoping\n" );
+						}
+						break;
+					} else {
+						i += temp_node->edge[ DIR_AHEAD ].dist;
+					}
+					temp_node = temp_node->edge[ DIR_AHEAD ].dest;
+				}
+				region_printf( &path_display, "Getting %d\n", i );
 			}
 			
 			break;

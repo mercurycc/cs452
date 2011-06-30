@@ -387,7 +387,7 @@ void train_auto()
 			current_train->last_sensor = current_train->next_sensor->reverse;
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 			current_train->state = TRAIN_STATE_REVERSE;
-			WAR_PRINT( "last sensor %c%d next sensor %c%d\n", current_train->last_sensor->group+'A',  current_train->last_sensor->id + 1, current_train->next_sensor->group+'A',  current_train->next_sensor->id + 1 )
+			WAR_PRINT( "last sensor %c%d next sensor %c%d\n", current_train->last_sensor->group+'A',  current_train->last_sensor->id + 1, current_train->next_sensor->group+'A',  current_train->next_sensor->id + 1 );
 			break;
 		case TRAIN_AUTO_SET_SWITCH_DIR:
 			switch_table[ SWID_TO_ARRAYID( request.data.set_switch.switch_id ) ] = request.data.set_switch.direction;
@@ -755,7 +755,7 @@ void train_auto()
 				}
 
 				/* Wake up planner */
-				if( current_train->planner_ready ){
+				if( current_train->planner_ready && current_train->planner_stop ){
 					current_train->planner_ready = 0;
 					train_planner_wakeup( current_train->planner_tid );
 					/* The following line is only safe when planner is at lower priority, otherwise

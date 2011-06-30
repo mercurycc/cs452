@@ -60,6 +60,7 @@ void tracking_ui()
 	/* UI specific, see UIDesign */
 	Region title_reg = { 28, 3, 1, 73 - 28, 1, 0 };
 	Region data_reg = { 28, 4, 12 - 4, 78 - 28, 1, 1 };
+	Region entry;
 	int train_map[ MAX_NUM_TRAINS ] = { 0 };
 	char mark_name[ 16 ];
 	Timespec time;
@@ -76,22 +77,22 @@ void tracking_ui()
 	region_printf( &data_reg,
 		       " #|Chk|   Pred   |Diff| Mrk |Dist|Nxt| ETA|Spd" );
 
-	data_reg.col = 30;
-	data_reg.height = 1;
-	data_reg.width = 76 - 30;
-	data_reg.margin = 0;
-	data_reg.boundary = 0;
-	for( i = 1; i < 6; i += 1 ){
-		data_reg.row = 5 + i;
-		region_init( &data_reg );
-		region_printf( &data_reg, "  |   |          |    |     |    |   |    |" );
+	entry.col = 30;
+	entry.height = 1;
+	entry.width = 76 - 30;
+	entry.margin = 0;
+	entry.boundary = 0;
+	for( i = 0; i < 5; i += 1 ){
+		entry.row = 6 + i;
+		region_init( &entry );
+		region_printf( &entry, "  |   |          |    |     |    |   |    |" );
 	}
 	
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		status -= sizeof( uint ) * 2;
 
-		data_reg.boundary = 0;
+		entry.boundary = 0;
 		
 		/* Size check */
 		switch( request.type ){
@@ -126,55 +127,55 @@ void tracking_ui()
 			break;
 		}
 
-		data_reg.row = train_map[ request.train_id ] + 5;
+		entry.row = train_map[ request.train_id ] + 5;
 
 		switch( request.type ){
 		case TRACKING_UI_NEW_TRAIN:
-			data_reg.col = 30;
-			data_reg.width = 2;
-			region_printf( &data_reg, "%2d\n", request.train_id );
+			entry.col = 30;
+			entry.width = 2;
+			region_printf( &entry, "%2d\n", request.train_id );
 			WAR_PRINT( "train %d registered, r %d c %d h %d w %d m %d b %d\n", request.train_id,
-				   data_reg.row, data_reg.col, data_reg.height, data_reg.width, data_reg.margin, data_reg.boundary );
+				   entry.row, entry.col, entry.height, entry.width, entry.margin, entry.boundary );
 			break;
 		case TRACKING_UI_CHKPNT:
-			data_reg.col = 33;
-			data_reg.width = 3;
+			entry.col = 33;
+			entry.width = 3;
 			track_node_id2name( mark_name, request.data.chkpnt.group, request.data.chkpnt.id );
-			region_printf( &data_reg, "%s\n", mark_name );
-			data_reg.col = 37;
-			data_reg.width = 10;
+			region_printf( &entry, "%s\n", mark_name );
+			entry.col = 37;
+			entry.width = 10;
 			time_tick_to_spec( &time, request.data.chkpnt.predict );
-			region_printf( &data_reg, "%02u:%02u:%02u:%u\n", time.hour, time.minute, time.second, time.fraction );
-			data_reg.col = 48;
-			data_reg.width = 4;
+			region_printf( &entry, "%02u:%02u:%02u:%u\n", time.hour, time.minute, time.second, time.fraction );
+			entry.col = 48;
+			entry.width = 4;
 			time_tick_to_spec( &time, request.data.chkpnt.diff < 0 ? - request.data.chkpnt.diff : request.data.chkpnt.diff );
-			region_printf( &data_reg, "%c%u:%u\n", request.data.chkpnt.diff < 0 ? '-' : '+', time.second, time.fraction );
+			region_printf( &entry, "%c%u:%u\n", request.data.chkpnt.diff < 0 ? '-' : '+', time.second, time.fraction );
 			assert( ! time.minute );
 			break;
 		case TRACKING_UI_LANDMRK:
-			data_reg.col = 53;
-			data_reg.width = 5;
+			entry.col = 53;
+			entry.width = 5;
 			track_node_id2name( mark_name, request.data.landmrk.group, request.data.landmrk.id );
-			region_printf( &data_reg, "%s\n", mark_name );
+			region_printf( &entry, "%s\n", mark_name );
 			break;
 		case TRACKING_UI_DIST:
-			data_reg.col = 59;
-			data_reg.width = 4;
-			region_printf( &data_reg, "%4d\n", request.data.dist.dist );
+			entry.col = 59;
+			entry.width = 4;
+			region_printf( &entry, "%4d\n", request.data.dist.dist );
 			break;
 		case TRACKING_UI_NEXT:
-			data_reg.col = 64;
-			data_reg.width = 3;
+			entry.col = 64;
+			entry.width = 3;
 			track_node_id2name( mark_name, request.data.nextmrk.group, request.data.nextmrk.id );
-			region_printf( &data_reg, "%s\n", mark_name );
-			data_reg.col = 68;
-			data_reg.width = 4;
-			region_printf( &data_reg, "%4d\n", request.data.nextmrk.eta );
+			region_printf( &entry, "%s\n", mark_name );
+			entry.col = 68;
+			entry.width = 4;
+			region_printf( &entry, "%4d\n", request.data.nextmrk.eta );
 			break;
 		case TRACKING_UI_SPEED:
-			data_reg.col = 73;
-			data_reg.width = 3;
-			region_printf( &data_reg, "%3d\n", request.data.speed.speed );
+			entry.col = 73;
+			entry.width = 3;
+			region_printf( &entry, "%3d\n", request.data.speed.speed );
 			break;
 		default:
 			assert( 0 );
