@@ -128,11 +128,12 @@ void tracking_ui()
 		data_reg.row = train_map[ request.train_id ] + 5;
 
 		switch( request.type ){
-		case TRACKING_UI_NEW_TRAIN:			entry->col = 30;
-			entry->width = 2;
-			region_printf( entry, "%2d\n", request.train_id );
-			//WAR_PRINT( "train %d registered, r %d c %d h %d w %d m %d b %d\n", request.train_id,
-				   //entry->row, entry->col, entry->height, entry->width, entry->margin, entry->boundary );
+		case TRACKING_UI_NEW_TRAIN:
+			data_reg.col = 30;
+			data_reg.width = 2;
+			region_printf( &data_reg, "%2d\n", request.train_id );
+			WAR_PRINT( "train %d registered, r %d c %d h %d w %d m %d b %d\n", request.train_id,
+				   data_reg.row, data_reg.col, data_reg.height, data_reg.width, data_reg.margin, data_reg.boundary );
 			break;
 		case TRACKING_UI_CHKPNT:
 			data_reg.col = 33;
