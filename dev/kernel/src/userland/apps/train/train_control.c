@@ -146,7 +146,7 @@ void train_control()
 				buf[ buf_i ] = ' ';
 			}
 
-			if( isalpha( data ) || isdigit( data ) || isspace( data ) ){
+			if( isalpha( data ) || isdigit( data ) || isspace( data ) || data == '-' ){
 				region_printf( &prompt_reg, "%c", data );
 				prompt_reg.col += 1;
 				buf_i += 1;
@@ -289,11 +289,7 @@ void train_control()
 					region_printf( &result_reg, "%s is not a valid point\n", token_buf[ 2 ] );
 					fail = 1;
 				}
-				dist_pass = ( int )stou( token_buf[ 3 ] );
-				if( dist_pass < 0 ){
-					region_printf( &result_reg, "Negative distance not supported yet\n" );
-					fail = 1;
-				}
+				dist_pass = ( int )stoi( token_buf[ 3 ] );
 				if( ! fail ){
 					train_auto_plan( auto_tid, train_id, group, id, dist_pass );
 					region_printf( &result_reg, "Plan to %s (%d, %d) for train %d\n", token_buf[ 2 ], group, id, train_id );

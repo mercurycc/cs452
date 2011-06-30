@@ -45,7 +45,7 @@ static inline int train_planner_is_dst( const track_node* current, const track_n
 	return  DST_DIRECT( current, dst ) || DST_REVERSE( current, dst ) || DST_REVERSE_BR( current, dst );
 }
 
-static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* train, Rbuf* path )
+static int train_planner_plan( const track_node* dst, int dist_pass, volatile const Train_data* train, Rbuf* path, uint* path_length )
 {
 	uint cost[ TRACK_NUM_NODES ];                /* ~0 for infinity */
 	int parent[ TRACK_NUM_NODES ];               /* -1 for no parent */
@@ -57,8 +57,15 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 	const track_node* current_node;
 	const track_node* next_node;
 	const track_node* track_graph = train->track_graph;
+	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	Train_path path_node;
+	char name[ 6 ];
 	int status;
+
+	track_node_id2name( name, dst->group, dst->id );
+	region_printf( &path_display, "Request to dst %s, dist %d for %d\n", name, dist_pass, train->id );
+
+	Delay( 100 );
 
 	/* Initialize cost */
 	for( i = 0; i < TRACK_NUM_NODES; i += 1 ){
@@ -67,7 +74,12 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 	}
 
 	/* Find true destination */
-	while( dist_pass > dst->edge[ DIR_AHEAD ].dist ){
+	if( dist_pass < 0 ){
+		dist_pass = -dist_pass;
+		dst = dst->reverse;
+	}
+	
+	while( dst->type != NODE_EXIT && dist_pass > dst->edge[ DIR_AHEAD ].dist ){
 		switch( dst->type ){
 		case NODE_SENSOR:
 		case NODE_MERGE:
@@ -84,6 +96,10 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 		dist_pass -= dst->edge[ DIR_AHEAD ].dist;
 		dst = dst->edge[ DIR_AHEAD ].dest;
 	}
+
+	if( dst->type == NODE_EXIT ){
+		dist_pass = 0;
+	}
 	
 	/* Assign initial cost */
 	cost[ train->check_point->reverse->index ] = train->distance;
@@ -99,7 +115,7 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 		/* Find minimum cost */
 		/* TODO: use heap */
 		for( i = 0; i < TRACK_NUM_NODES; i += 1 ){
-			if( ! mark[ i ] && cost[ i ] < min_cost ){
+			if( ( ! mark[ i ] ) && cost[ i ] < min_cost ){
 				min_index = i;
 				min_cost = cost[ i ];
 			}
@@ -109,8 +125,15 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 
 		current_node = track_graph + min_index;
 		if( train_planner_is_dst( current_node, dst ) ){
+			track_node_id2name( name, current_node->group, current_node->id );
+			region_printf( &path_display, "Got to the END: %s\n", name );
+			Delay( 100 );
 			break;
 		}
+
+		track_node_id2name( name, current_node->group, current_node->id );
+		region_printf( &path_display, "Current min: %s\n", name );
+		// Delay( 100 );
 
 		/* Update neighbor cost */
 		/* Reverse */
@@ -120,40 +143,48 @@ static int train_planner_plan( track_node* dst, uint dist_pass, Train_data* trai
 			temp = min_cost + 100;
 			train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
 		}
-		
-		/* Ahead */
-		next_node = current_node->edge[ DIR_AHEAD ].dest;
-		if( ! mark[ next_node->index ] ){
-			temp = min_cost + current_node->edge[ DIR_AHEAD ].dist;
-			train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
-		}
 
-		/* Curved, if brancher */
-		if( current_node->type == NODE_BRANCH ){
-			next_node = current_node->edge[ DIR_CURVED ].dest;
+		if( current_node->type != NODE_EXIT ){
+			/* Ahead */
+			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
-				temp = min_cost + current_node->edge[ DIR_CURVED ].dist;
+				temp = min_cost + current_node->edge[ DIR_AHEAD ].dist;
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
+			}
+
+			/* Curved, if brancher */
+			if( current_node->type == NODE_BRANCH ){
+				next_node = current_node->edge[ DIR_CURVED ].dest;
+				if( ! mark[ next_node->index ] ){
+					temp = min_cost + current_node->edge[ DIR_CURVED ].dist;
+					train_planner_update_cost( cost, parent, temp, next_node->index, min_index );
+				}
 			}
 		}
 	}
 
 	i = min_index;
-	
+
+	region_clear( &path_display );
+
 	/* Fill in path */
 	do {
 		current_node = track_graph + i;
 		path_node.group = current_node->group;
 		path_node.id = current_node->id;
 
+		track_node_id2name( name, path_node.group, path_node.id );
+		region_append( &path_display, "<-%s", name );
+
 		status = rbuf_put_front( path, ( uchar* )&path_node );
 		if( status == ERR_RBUF_FULL ){
-			WAR_PRINT( "Train %d path finding failed: buffer full\n", train->id );
+			region_printf( &path_display, "Train %d path finding failed: buffer full\n", train->id );
+			Delay( 100 );
 			return ERR_FAIL;
 		}
 
 		i = parent[ i ];
-	} while( parent[ i ] >= 0 );
+	} while( i >= 0 );
 
 	return ERR_NONE;
 }
@@ -166,8 +197,9 @@ void train_planner()
 	int status;
 	Train_path path_node;
 	uint path_length;
-	Train_data* train;
+	volatile Train_data* train;
 	Rbuf path;
+	int distance;
 	Train_path path_buf[ PATH_BUFFER_SIZE ];
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
@@ -188,35 +220,20 @@ void train_planner()
 
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
-		/* Check size */
-
-		/* Copy required data */
-		/* !! Here !! */
-		
+		if( request.type == PLANNER_WAKEUP ){
+			distance = train->distance;
+		}
 		status = Reply( tid, ( char* )&status, sizeof( status ) );
 		assert( status == SYSCALL_SUCCESS );
 
-		track_node_id2name( name, request.dst->group, request.dst->id );
-
-		region_printf( &path_display, "Request to dst %s, dist %d for %d\n", name, request.dist_pass, train->id );
-
-		Delay( 100 );
-
 		switch( request.type ){
 		case PLANNER_PATH_PLAN:
-			status = train_planner_plan( request.dst, request.dist_pass, train, &path );
+			rbuf_reset( &path );
+			status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length );
 			assert( status == ERR_NONE );
-
-			region_clear( &path_display );
-			
-			while( ! rbuf_empty( &path ) ){
-				rbuf_get( &path, ( uchar* )&path_node ); 
-				track_node_id2name( name, path_node.group, path_node.id );
-
-				region_append( &path_display, "%s->", name );
-			}
 			break;
 		case PLANNER_WAKEUP:
+			
 			break;
 		}
 	}
@@ -230,12 +247,12 @@ static int train_planner_request( int tid, uint type, Planner_request* request, 
 	request->type = type;
 
 	status = Send( tid, ( char* )request, size, ( char* )&reply, sizeof( reply ) );
-	assert( status == sizeof( reply ) );
+	ASSERT_M( status == sizeof( reply ), "got %d\n", status );
 
 	return ERR_NONE;
 }
 
-int train_planner_path_plan( int tid, track_node* dst, uint dist_pass )
+int train_planner_path_plan( int tid, track_node* dst, int dist_pass )
 {
 	Planner_request request;
 

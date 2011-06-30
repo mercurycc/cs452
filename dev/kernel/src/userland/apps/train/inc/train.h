@@ -79,7 +79,7 @@ void tracking_ui();
 void train_planner();
 /* API */
 int train_planner_init( int tid, Train_data* train );
-int train_planner_path_plan( int tid, track_node* dst, uint dist_pass );
+int train_planner_path_plan( int tid, track_node* dst, int dist_pass );
 int train_planner_wakeup( int tid );
 
 #endif

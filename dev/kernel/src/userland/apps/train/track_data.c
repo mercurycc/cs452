@@ -32,7 +32,7 @@ int track_node_id2name( char* str, int group, int id )
 		group_name = "EN";
 		break;
 	default:
-		assert( 0 );
+		ASSERT_M( 0, "got %d, max %d\n", group, GROUPEN );
 	}
 
 	id_conv = id + 1;

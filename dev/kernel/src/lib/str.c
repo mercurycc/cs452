@@ -71,7 +71,20 @@ uint itos( int num, char* str )
 
 int stoi( const char* str )
 {
-	return 0;
+	int neg = 0;
+	int result;
+	
+	if( str[ 0 ] == '-' ){
+		neg = 1;
+	}
+
+	result = stou( str + 1 );
+
+	if( neg ){
+		result = -result;
+	}
+		
+	return result;
 }
 
 uint strlen( const char* str )

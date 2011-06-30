@@ -259,9 +259,26 @@ void train_auto()
 			}
 			break;
 		case TRAIN_AUTO_NEW_TRAIN:
-			current_train = trains + available_train;
-			train_map[ request.data.new_train.train_id ] = available_train;
-			available_train += 1;
+			if( ! train_map[ request.data.new_train.train_id ] ){
+				/* Map train */
+				current_train = trains + available_train;
+				train_map[ request.data.new_train.train_id ] = available_train;
+				available_train += 1;
+
+				/* Create planner */
+				current_train->planner_tid = Create( TRAIN_PLAN_PRIORITY, train_planner );
+				assert( current_train->planner_tid > 0 );
+
+				status = train_planner_init( current_train->planner_tid, current_train );
+				assert( status == ERR_NONE );
+
+				/* Update UI */
+				tracking_ui_new_train( tracking_ui_tid, current_train->id );
+			} else {
+				current_train = trains + train_map[ request.data.new_train.train_id ];
+			}
+
+			/* Set initial states */
 			current_train->id = request.data.new_train.train_id;
 			current_train->state = TRAIN_STATE_INIT;
 			current_train->pickup = request.data.new_train.pickup;
@@ -286,16 +303,8 @@ void train_auto()
 			current_train->track_graph = track_graph;
 			current_train->switch_table = switch_table;
 
-			current_train->planner_tid = Create( TRAIN_PLAN_PRIORITY, train_planner );
-			assert( current_train->planner_tid > 0 );
-
-			status = train_planner_init( current_train->planner_tid, current_train );
-			assert( status == ERR_NONE );
-
 			//WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
-
-			tracking_ui_new_train( tracking_ui_tid, current_train->id );
 			
 			break;
 		case TRAIN_AUTO_SET_TRAIN_SPEED:
@@ -506,6 +515,8 @@ void train_auto()
 
 					break;
 				}
+
+				train_planner_wakeup( current_train->planner_tid );
 			}
 		}
 		
