@@ -305,6 +305,7 @@ void train_auto()
 			current_train->auto_command = 0;
 			current_train->track_graph = track_graph;
 			current_train->switch_table = switch_table;
+			current_train->node_map = ( int* )node_map;
 
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
 			
@@ -549,7 +550,7 @@ void train_auto()
 						}
 						current_train->speed.numerator = c;
 						current_train->speed.denominator = d;
-						current_train->stop_distance = current_train->speed.numerator * 250 / current_train->speed.denominator;
+						current_train->stop_distance = current_train->speed.numerator * SPEED_CHANGE_TIME / current_train->speed.denominator;
 
 						//t = current_time - current_train->last_eta_time_stamp;
 						//current_train->distance =  * current_train->speed.numerator / current_train->speed.denominator;
@@ -628,8 +629,6 @@ void train_auto()
 
 					break;
 				}
-
-				train_planner_wakeup( current_train->planner_tid );
 			}
 		}
 		
