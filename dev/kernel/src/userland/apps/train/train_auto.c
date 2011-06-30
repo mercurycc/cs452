@@ -286,7 +286,7 @@ void train_auto()
 				}
 				current_train->speed_table[i].numerator = factor * i;
 				current_train->speed_table[i].denominator = 200;
-				current_train->speed_count[i] = 0;
+				current_train->speed_count[i] = INIT_SPEED_COUNT;
 			}
 			current_train->speed_table[0].numerator = 0;
 			current_train->speed_table[1].numerator = 0;
