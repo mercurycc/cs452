@@ -287,12 +287,15 @@ void train_auto()
 			current_train->speed.denominator = 1;
 			current_train->speed_level = 0;
 			current_train->old_speed_level = 0;
-			current_train->last_sensor_time = 0;
+			current_train->last_sensor_time = current_time;
 			for ( i = 0; i < NUM_SPEED_LEVEL; i++ ) {
-				current_train->speed_table[i].numerator = 0;
-				current_train->speed_table[i].denominator = 1;
+				current_train->speed_table[i].numerator = TRAIN_SPEED_PRED_FACTOR( i )*i;
+				current_train->speed_table[i].denominator = 2;
 				current_train->speed_count[i] = 0;
 			}
+			current_train->speed_table[0].numerator = 0;
+			current_train->speed_table[1].numerator = 0;
+
 
 			current_train->last_sensor = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
 			current_train->check_point = track_graph + node_map[ request.data.new_train.next_group ][ request.data.new_train.next_id ];
@@ -303,7 +306,6 @@ void train_auto()
 			current_train->track_graph = track_graph;
 			current_train->switch_table = switch_table;
 
-			//WAR_PRINT( "front sensor %c%d reverse sensor %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 			train_set_speed( module_tid, request.data.new_train.train_id, TRAIN_AUTO_REGISTER_SPEED );
 			
 			break;
@@ -313,14 +315,25 @@ void train_auto()
 				break;
 			}
 			current_train->old_speed_level = current_train->speed_level;
-			if ( current_train->old_speed_level < request.data.set_speed.speed_level ) {
+			if ( current_train->old_speed_level / 2 < request.data.set_speed.speed_level ) {
 				current_train->speed_level = request.data.set_speed.speed_level * 2;
 			}
 			else if ( current_train->old_speed_level > request.data.set_speed.speed_level ) {
 				current_train->speed_level = request.data.set_speed.speed_level * 2+1;
 			}
 			current_train->state = TRAIN_STATE_SPEED_CHANGE;
-			WAR_PRINT( "speed change from %d to %d\n", current_train->old_speed_level, current_train->speed_level );
+			if ( current_train->speed_count[ current_train->speed_level ] ) {
+				current_train->speed.numerator = current_train->speed_table[ current_train->speed_level ].numerator;
+				current_train->speed.denominator = current_train->speed_table[ current_train->speed_level ].denominator;
+			}
+			else {
+				current_train->speed.numerator = current_train->speed_table[ current_train->speed_level ].numerator;
+				current_train->speed.denominator = current_train->speed_table[ current_train->speed_level ].denominator;
+			}
+			current_train->speed_change_time_stamp = current_time;
+			current_train->speed_distance = current_train->distance;
+			current_train->speed_mark = current_train->check_point;
+			WAR_PRINT( "speed change from %d to %d, at dist %d\n", current_train->old_speed_level, current_train->speed_level, current_train->speed_distance );
 			break;
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 			current_train = trains + train_map[ request.data.set_speed.train_id ];
@@ -391,6 +404,17 @@ void train_auto()
 						break;
 					}
 
+					/* set change of speed */
+					if ( current_time - current_train->last_sensor_time > SPEED_CHANGE_TIME ) {
+						current_train->old_speed_level = TRAIN_AUTO_REGISTER_SPEED;
+					}
+					else {
+						current_train->old_speed_level = TRAIN_AUTO_REGISTER_SPEED * 2 * (current_time - current_train->last_sensor_time + SENSOR_AVERAGE_DELAY) / SPEED_CHANGE_TIME;
+					}
+					current_train->speed_level = 0;
+					current_train->state = TRAIN_STATE_SPEED_CHANGE;
+					current_train->speed_change_time_stamp = current_time;
+
 					current_train->last_sensor_time = sensor_data.last_sensor_time;
 					current_train->check_point = current_train->last_sensor;
 					current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
@@ -399,7 +423,7 @@ void train_auto()
 					current_train->last_eta_time_stamp = 0;
 					
 					train_set_speed( module_tid, current_train->id, 0 );
-					current_train->state = TRAIN_STATE_SPEED_CHANGE;
+
 
 					WAR_PRINT( "reg train %d pickup %x hit sensor %c%d next sensor %c%d\n", current_train->id, current_train->pickup, current_train->last_sensor->group+'A', current_train->last_sensor->id+1, current_train->next_sensor->group+'A', current_train->next_sensor->id+1 );
 					break;
@@ -410,46 +434,87 @@ void train_auto()
 						train_set_speed( module_tid, current_train->id, 0 );
 					}
 					if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
-
+						int changing = 0;
+						
 						if( current_train->state == TRAIN_STATE_TRACKING ){
 							/* Speed update for speed_change is handled by periodic update, sensor only helps with location */
 							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
 							assert( status == 0 );
+							current_train->stop_distance = current_train->speed.numerator * 250 / current_train->speed.denominator;
 						}
 						else { // speed change
-							// TODO: consider the speed change curve, modify the speed
-							status = update_train_speed( current_train, current_train->next_sensor, sensor_data.last_sensor_time );
-							assert( status == 0 );
-							current_train->state = TRAIN_STATE_TRACKING;
-							
 
+							if ( current_time - current_train->speed_change_time_stamp >= SPEED_CHANGE_TIME ) {
+								if ( current_train->speed_level > 1 ) {
+									current_train->state = TRAIN_STATE_TRACKING;
+								}
+								else {
+									current_train->state = TRAIN_STATE_STOP;
+								}
+							} else {
+								changing = 1;
+							}
 						}
+
+						WAR_PRINT( "train %d in state %x speed %d / %d, eta %d\n", current_train->id, current_train->state, current_train->speed.numerator, current_train->speed.denominator, current_train->next_sensor_eta );
+
 						current_train->distance = 0;
 						current_train->remaining_distance = 0;
 						current_train->last_sensor = current_train->next_sensor;
 						current_train->next_sensor = track_next_sensor( current_train->next_sensor, switch_table );
+						/* TODO: deal with when next sensor cannot find, meaning heading to an exit */
 						current_train->check_point = current_train->last_sensor;
 						current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 
-						/* Update UI */
+						/* update eta before update time diff */
+						if ( current_train->last_eta_time_stamp ) {
+							current_train->next_sensor_eta -= current_time - current_train->last_eta_time_stamp;
+						}
+
+						/* Update Time Diff */
 						tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
 								    current_train->last_sensor->group,
 								    current_train->last_sensor->id,
 								    sensor_data.last_sensor_time + current_train->next_sensor_eta,
 								    current_train->next_sensor_eta );
 						
-						current_train->next_sensor_eta = sensor_distance( current_train->last_sensor, current_train->next_sensor ) * current_train->speed.denominator / current_train->speed.numerator ;
+						/* Update eta */
+						if ( changing ) {
+							int dist = sensor_distance( current_train->last_sensor, current_train->next_sensor );
+							int modifier = 0;
+							int time_left = current_train->speed_change_time_stamp + SPEED_CHANGE_TIME - current_time;
+
+							int c = current_train->speed_table[ current_train->speed_level ].numerator;
+							int d = current_train->speed_table[ current_train->speed_level ].denominator;
+							int e = current_train->speed.numerator;
+							int f = current_train->speed.denominator;
+
+							unsigned long long int finish_top = ( e * d + c * f ) * time_left;
+							unsigned long long int finish_bot = 2 * d * f;
+							int finish = finish_top / finish_bot;
+							
+							if ( finish > dist ) {
+								// approximated
+								modifier = time_left * finish / dist;
+							}
+							else {
+								modifier = ( dist - finish ) * current_train->speed.denominator / current_train->speed.numerator;
+							}
+							current_train->next_sensor_eta = time_left + modifier;
+						}
+						else {
+							current_train->next_sensor_eta = sensor_distance( current_train->last_sensor, current_train->next_sensor ) * current_train->speed.denominator / current_train->speed.numerator ;
+						}
 						current_train->last_eta_time_stamp = current_time;
 
+						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
 
 						tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
 								     current_train->next_sensor->group, current_train->next_sensor->id,
-								     current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
-						/* Previous statement, eta/remaining distance not calculated */
-						//assert( 0 );
+								     //current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
+								     current_train->next_sensor_eta );
 
 						tracking_ui_speed( tracking_ui_tid, current_train->id,
 								   current_train->speed.numerator * 100 / current_train->speed.denominator );
@@ -463,23 +528,69 @@ void train_auto()
 			}
 		}
 		
-		if( request.type == TRAIN_AUTO_WAKEUP || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
+		if( request.type == TRAIN_AUTO_WAKEUP ){// || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
 			for( temp = 1; temp < available_train; temp += 1 ){
 				current_train = trains + temp;
+				int a = current_train->speed_table[ current_train->old_speed_level ].numerator;
+				int b = current_train->speed_table[ current_train->old_speed_level ].denominator;
+				int c = current_train->speed_table[ current_train->speed_level ].numerator;
+				int d = current_train->speed_table[ current_train->speed_level ].denominator;
+				int diff = current_time - current_train->speed_change_time_stamp;
+				unsigned long long int top;
+				unsigned long long int bottom;
+				int t;
+				Speed old_speed;
+
 				switch( current_train->state ){
+				case TRAIN_STATE_SPEED_CHANGE:
+					if ( diff >= SPEED_CHANGE_TIME ) {
+						if ( current_train->speed_level <= 1 ) {
+							current_train->state = TRAIN_STATE_STOP;
+						}
+						current_train->speed.numerator = c;
+						current_train->speed.denominator = d;
+						current_train->stop_distance = current_train->speed.numerator * 250 / current_train->speed.denominator;
+
+						//t = current_time - current_train->last_eta_time_stamp;
+						//current_train->distance =  * current_train->speed.numerator / current_train->speed.denominator;
+						current_train->distance = current_train->speed_distance + SPEED_CHANGE_TIME * a / b / 2 + ( diff - SPEED_CHANGE_TIME ) * c / d;
+						
+					}
+					else {
+						old_speed.numerator = current_train->speed.numerator;
+						old_speed.denominator = current_train->speed.denominator;
+
+						top = b * diff * c + a * SPEED_CHANGE_TIME * d - a * diff * d;
+						bottom = b * SPEED_CHANGE_TIME * d;
+
+						while (( top > 10000 )||( bottom > 10000 )) {
+							top = top / 10;
+							bottom = bottom / 10;
+						}
+						current_train->speed.numerator = top;
+						current_train->speed.denominator = bottom;
+						current_train->stop_distance = current_train->speed.numerator * 250 / current_train->speed.denominator;
+
+						top = a * bottom * diff + b * top * diff;
+						bottom = 2 * b * bottom;
+						current_train->distance = current_train->speed_distance + top / bottom;
+						//t = current_time - current_train->last_eta_time_stamp;
+						//current_train->distance += (old_speed.numerator * t * current_train->speed.denominator + current_train->speed.numerator * t * old_speed.denominator ) / 2 * old_speed.denominator * current_train->speed.denominator;
+					}
+					break;
 				case TRAIN_STATE_TRACKING:
 					current_train->distance = current_train->speed.numerator *
 						( current_time - current_train->last_check_point_time ) / current_train->speed.denominator;
+					current_distance = node_distance( current_train->check_point, switch_table );
+					if( current_train->distance > current_distance ){
+						current_train->check_point = current_train->next_check_point;
+						current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
+						current_train->last_check_point_time = current_time;
+						current_train->distance -= current_distance;
+					}
 					break;
 				case TRAIN_STATE_REVERSE:
 					/* TODO: Either update the distance here or up above */
-					break;
-				case TRAIN_STATE_SPEED_CHANGE:
-					// TODO: deal with speed change curve and time/location
-					// Ze's comment: probably just an integral to track the distance and update the speed.
-					// current_train->state = TRAIN_STATE_TRACKING;
-
-					/* Update speed */
 					break;
 				case TRAIN_STATE_SPEED_ERROR:
 					break;
@@ -490,15 +601,8 @@ void train_auto()
 				}
 
 				switch( current_train->state ){
-				case TRAIN_STATE_TRACKING:
 				case TRAIN_STATE_SPEED_CHANGE:
-					current_distance = node_distance( current_train->check_point, switch_table );
-					if( current_train->distance > current_distance ){
-						current_train->check_point = current_train->next_check_point;
-						current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
-						current_train->last_check_point_time = current_time;
-						current_train->distance -= current_distance;
-					}
+				case TRAIN_STATE_TRACKING:
 					// update eta
 					if ( current_train->last_eta_time_stamp ) {
 						current_train->next_sensor_eta -= current_time - current_train->last_eta_time_stamp;
@@ -508,10 +612,19 @@ void train_auto()
 					/* Update UI */	
 					tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 							     current_train->check_point->group, current_train->check_point->id );
-					tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
-							     current_train->next_sensor->group, current_train->next_sensor->id,
-							     current_train->check_point->edge[DIR_AHEAD].dist * current_train->speed.denominator / current_train->speed.numerator );
 					tracking_ui_dist( tracking_ui_tid, current_train->id, current_train->distance );
+					tracking_ui_speed( tracking_ui_tid, current_train->id,
+							   current_train->speed.numerator * 100 / current_train->speed.denominator );
+
+					break;
+				case TRAIN_STATE_STOP:
+					current_train->next_sensor_eta = 0;
+					/* Update UI */	
+					tracking_ui_landmrk( tracking_ui_tid, current_train->id,
+							     current_train->check_point->group, current_train->check_point->id );
+					tracking_ui_dist( tracking_ui_tid, current_train->id, current_train->distance );
+					tracking_ui_speed( tracking_ui_tid, current_train->id,
+							   current_train->speed.numerator * 100 / current_train->speed.denominator );
 
 					break;
 				}
