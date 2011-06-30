@@ -225,7 +225,9 @@ notify the user about the direction the train should go and the path it found.
 The user will either allow the train to move forward, or reverse the train
 before doing so, and the train is supposed to move to the destination and stop.
 
-The current implementation cannot guarantee proper stopping timing.
+The current implementation cannot guarantee proper stopping timing.  Sometimes
+the train just won't stop, and sometimes it will stop with decent error (~10 cm,
+usually stop earlier than required).
 
 The planner was also intended to carry out the path planned by sending commands
 to train module and train auto.  Currently the planner only sends stop command
@@ -234,6 +236,8 @@ when it thinks the target is with in the range.
 The planner is basically pulling the status of the train by waiting on signal
 from auto.  Since auto is pulling by being waken up every several ticks, the
 planner is pulling too.
+
+To plan a trip, see the user manual.
 
 
 Program User Manual
@@ -259,13 +263,22 @@ A train must be registered before it can be tracked by the system.
 
 
 Hit and Stop ( hit <train ID> <node ID> <distance> )
-------------------------------------------------------
+----------------------------------------------------
 
 This is a calibration command. When this command is entered, the train will try
 to stop at that location, which is <distance> millimeter passed the node. If the
 current switches are set in a state that the train will not going to that
 location, the train won't stop. When the train detects it can stop at, or it
 will pass that paticular point, the train tries to stops on the point.
+
+
+Plan trip ( plan <train Id> <node ID> <distance> )
+--------------------------------------------------
+
+Similar to hit, but plan will actually plan a trip for the user by setting the
+switches properly and tells the user if he should reverse the train by issuing a
+rv.  The user chan then let the train run and allow the train to hit the
+destinated target.
 
 
 Other
@@ -275,3 +288,153 @@ Other Commands are same commands available in Kernel 4. Except reverse now does
 not re-accelerate the train. This change would allow our program would not lose
 the train's position when reversing. And it should makes no different once we
 are able to let our program to fully control the train's action.
+
+
+Submitted files
+===============
+
+$ cd /u9/z2long/rt/rel/p1
+$ find . -type f | xargs md5sum
+29933296247039d58b28860f01fe1f32  ./doc/desc
+8f935647a400fbf25c08c442833a42c8  ./doc/KernelDesign
+b21cbb5f0385921324cb634a961d51da  ./doc/README
+df0b51e5b673fbbb35ec427b63ad0422  ./doc/desc_2
+c4aee076bd493800ee6139e47da9074d  ./doc/SendReceiveMesurement
+b8b17f7bb08134a5c020db44782d5cb5  ./doc/desc_3
+a41435999a3f388b1098f5f49fae391b  ./doc/user
+6c290e74dc90132ad90e6a3f23b61392  ./doc/desc_4
+8b6d1e20c09a3ddbbfe1c8de5bd50dcb  ./doc/UserlandDesign
+96454b7f9e6869dbf2a513c3ed865487  ./doc/doc_milestone_1
+f34657c5d31ae1d37ffbeff837f1a646  ./doc/pathFinding
+878ca4bb8f5f85f16235be92379bfea3  ./doc/pathFinding~
+20e340a977a2940f0f9d25eb6b2a6c50  ./doc/#pathFinding#
+1e75be250eb06b648d049a86a7735201  ./src/trap_handler.c
+d6348828c03944a62fdd92a16b205fac  ./src/lib/str.c
+b93ab2b91d8aea5710f11ee1d38e3d36  ./src/lib/rbuf.c
+4d9e149a10e132633e723895196fdb10  ./src/lib/list.c
+b5257919645efcbad316803de92bf3d7  ./src/lib/hashtable.c
+cc7c2b16764f36e55de0e0a652a78559  ./src/lib/strprintf.c
+092c25aead2469df95fa67ff3d51ac57  ./src/trap.s
+bf60b020f39f904c56b058de3fc7b1bb  ./src/kernel.mk
+29a353cb014c0434fb006796bde83a12  ./src/init.c
+ef839b83d37e9b6e1f44d5823d95afc8  ./src/entry.c
+e4da8cae9acb838a0527fc585f2d7055  ./src/session_start.s
+d73b46de71ffbe57390c148513c36524  ./src/devices/clock.c
+485f1a99e81baa5d5f27199a30ff3d38  ./src/devices/console.c
+5740f18810cd052b5633882123e20d06  ./src/devices/bwio.c
+40c73b20cfec47bb4e8f4cb964a473d7  ./src/userland/apps/init_user/main.c
+217f3ae063db63ae24e5c5296d42dbb3  ./src/userland/apps/noise/main.c
+5fa0e44c7168aa553c895eb924f99167  ./src/userland/apps/init/main.c
+dc5b88c7489b689354727f56091b63cf  ./src/userland/apps/rps_client/main.c
+5e1ca4caf7a173f7ee2fd5ce0003ebf5  ./src/userland/apps/RPSServer/main.c
+b0beb2a32a5cab61b50b614f3ed3f9b3  ./src/userland/apps/srr_timing/main.c
+572d79c362454eaa64b66e8c56fe238d  ./src/userland/apps/train/train_control.c
+8b5e50aa449b2a862c359db8fa086cac  ./src/userland/apps/train/train_module.c
+fb994ef3b980973f3551d6f87559bb2e  ./src/userland/apps/train/sensor.c
+8304fae136c83c473f1cdd2ce9815468  ./src/userland/apps/train/inc/train.h
+bf2689b8b6a2a0ca2bcb2d789a123ed6  ./src/userland/apps/train/inc/sensor_data.h
+744789b21aa77f1c97f601b5aa21f9ca  ./src/userland/apps/train/inc/track_data.h
+fc4aa561cb5c08f7e8f20dd3a5269071  ./src/userland/apps/train/inc/config.h
+1cd5d5077f84efce07719666d0c20b10  ./src/userland/apps/train/inc/warning.h
+5105d3d640741295eaca1afd41aad485  ./src/userland/apps/train/inc/train_location.h
+bed51d4fcd847a7f7f7f29d5cc83665a  ./src/userland/apps/train/inc/track_node.h
+51f33a60b6b99e3b6d9f11714f8c3e5a  ./src/userland/apps/train/inc/train_types.h
+f728e607b4cf9169da630e48afbb60d6  ./src/userland/apps/train/inc/timing.h
+3edb7a5a5a5624f795d9d7a057448d4f  ./src/userland/apps/train/import/track_data.c
+9e98181f13ede0c2942dd06b88d053b7  ./src/userland/apps/train/import/track_node.h
+1352f3743944badbb8c2399e6fb2ccd4  ./src/userland/apps/train/import/track_data.h
+de44bf8fe874566b6feced713870bde5  ./src/userland/apps/train/ui/clock.c
+2f21682c9ba720dac0c9bc8b9928dc73  ./src/userland/apps/train/ui/train_tracking.c
+d4957ac64569f0fb62bfbc48441067cb  ./src/userland/apps/train/ui/sensor_monitor.c
+7e820bf77b2f6a88d9a9e20549bc9daf  ./src/userland/apps/train/ui/switch_monitor.c
+25107dee55146c0efef25d82e92979ca  ./src/userland/apps/train/UIDesign
+bf3edec9a17bac883ce4b7c338a677a9  ./src/userland/apps/train/track_data.c
+51272b9352dbfa5b489b5237eaa75c23  ./src/userland/apps/train/train_auto.c
+da2bff55329671fcdf65897ffd3fad80  ./src/userland/apps/train/train_location.c
+2aa5b42c9aea7562c5f3ec22610375e3  ./src/userland/apps/train/train_data_edit.regexp
+bf8d95378d37ef8e82d0e48879c534ca  ./src/userland/apps/train/planner.c
+424197bc2ebc18706288fa0f8b86295a  ./src/userland/apps/train/planner.c~
+78d2ebd6f39ef3cc204434eefd0612c8  ./src/userland/apps/rps_game/main.c
+20327d4f4e6a71e33f33418eccbbc617  ./src/userland/apps/lazy_dog/main.c
+9b9cc4eeb2471737f65c414fd9fec11a  ./src/userland/lib/name_server.c
+2a21316c69dcffddd5f5198851e5f64a  ./src/userland/lib/syscall.c
+671f3ce76731e3dcdaa66a8558007c27  ./src/userland/lib/heap.c
+8062b65488e82042a43e0ff9dabefef2  ./src/userland/lib/prng.c
+bdd14a2f187303a274295e44fe9f34ae  ./src/userland/lib/sync.c
+225864f8879525e6276b84155615195b  ./src/userland/lib/event.c
+7157cd98a0abc82eb691b823881f2f86  ./src/userland/lib/uart.c
+4af80a70a6cf35be8646d030a135d5b8  ./src/userland/lib/cursor_control.c
+0463abfc0966ff809870dd836715f9eb  ./src/userland/lib/courier.c
+926bb52b9b3f699df3d8205821e0fb88  ./src/userland/lib/parser.c
+dfe40064e5e79a8ea89936fc7addfaac  ./src/userland/drivers/clock_drv.c
+88f281e31be3ddeb9abc5fb1238fa43a  ./src/userland/drivers/uart_drv.c
+69736dcb14aeb50335d7b19d697780f0  ./src/userland/server/display_server.c
+6c99cda0cf6bca495ff1afe721150222  ./src/userland/server/time_server.c
+7fc84523504601e6131cec4b340b3d10  ./src/sched.c
+99104d8cbfa2a5b2a7075f3abfafe63c  ./src/task_init.s
+650b264e1d9907492b0f093e60408a7a  ./src/task.c
+68ef8d87574d965db28e0a9525f62e05  ./src/kernel_shutdown.s
+5f4a8b6d75a267c2f275912e15ff40bc  ./src/interrupt.s
+fb0ab370d8cb7c49570f2412011998b5  ./src/interrupt_handler.c
+4278d60f8e7f1eb7e29871931a892468  ./src/watchdog.c
+b08067b13bb0b468d7f01951b4179a34  ./src/mem.c
+e05902d8eb928f7b7f4a68be4675a768  ./src/context.c
+a604fc29d70c75a9cd9a012a772ca549  ./src/kill.s
+8a6d6a20176bd3091dfa72d3eb00ee5f  ./src/perf.c
+d41d8cd98f00b204e9800998ecf8427e  ./bin/.gitignore
+266c2ea9028fe2bbb905ac1576ea7b76  ./bin/pinball_p1.elf
+8fcb2c5497488b730319011a05d09e3c  ./inc/user/apps_entry.h
+f3c62c30209f8098840f659bcde50fab  ./inc/user/syscall.h
+b464efd6454e0bb66db5e16dda52d34a  ./inc/user/name_server.h
+33c4e1c849f6261744b44225f6593d28  ./inc/user/RPS_game.h
+0c84deec0ad775d3ffcfac712da9ad37  ./inc/user/lib/heap.h
+6eb5716df43a5efd08372510d62954d8  ./inc/user/lib/prng.h
+2330a928b4de65252440fccd51c3a455  ./inc/user/lib/sync.h
+57be25c5c85e250c512570a09691bf61  ./inc/user/lib/cursor_control.h
+ab1071a14c3df5f78999cefafbc0b5b6  ./inc/user/lib/parser.h
+a9d7c713fa6a1e5d7a74c430ad9eae15  ./inc/user/servers_entry.h
+cb64e338d454c452343c560ebeee0f70  ./inc/user/devices/clock.h
+9559afbf455465941769de706a0a2a10  ./inc/user/devices/uart.h
+a7f38facae696a0857d5d2862ac63819  ./inc/user/protocals.h
+2a215744143e53f6a0314ea8efb5cbe4  ./inc/user/time.h
+5eb4d84e25105311513f7c1c4f1cc95a  ./inc/user/clock_server.h
+603fd157f217e9f4448269f9758c460b  ./inc/user/assert.h
+adad127968428f49cfed93548d4e35df  ./inc/user/event.h
+1eb73750bea1db94117865f57c331607  ./inc/user/display.h
+b73f5cfd37530dab63c57b7a2d6ff4d3  ./inc/user/drivers_entry.h
+fe8c271666bb936c6c399ef59d8438d3  ./inc/user/uart.h
+94cff5de6265ca2af724e832d1506b98  ./inc/user/courier.h
+22df14e5a1916f97c25c764c023de301  ./inc/task.h
+02c4361f40a7e2505bef66aa7cd4dc27  ./inc/kernel.h
+8eead4ce12a73222266300c83b7560c3  ./inc/types.h
+55aeb7f2171df672a43fb5f2ee866e2e  ./inc/lib/str.h
+44a3a5203d6d9a2254e60474e340f1a0  ./inc/lib/rbuf.h
+3ba52c2201f42cbc4c29dd5d7a7ac509  ./inc/lib/list.h
+aa840cf18b553492af00337740c0a589  ./inc/lib/hashtable.h
+c5c38d8ed1cd98feb911c74dcdc3f976  ./inc/lib/valist.h
+ff2cfda94638ea8b32f098d3cb002881  ./inc/panic.h
+08c90dc54ac5c2efe37ff672c1364c2f  ./inc/err.h
+e94693d20830a66f5f4d07fac0790ab4  ./inc/regopts.h
+d117423d6a1b0af67f41bcdfc6d85ac9  ./inc/trap.h
+2df39fa680be7e8ab0c2499be03f1d44  ./inc/bwio.h
+c8780fa82f6ddd0361209de86e674d3c  ./inc/config.h
+1d370f061cef5a04b47d0aa92366e189  ./inc/ts7200.h
+5295c901e1cdf8be78a7acc9370451e9  ./inc/devices/clock.h
+748a423fc63602fbc0bf0f19f3ba6fe6  ./inc/devices/console.h
+1b59fdaf2ccf1a72f418328151e66590  ./inc/sched.h
+b557805aeaa1dace38404995dab28b5c  ./inc/context.h
+29bea3aad55c6bb623279a3dbd6830b7  ./inc/trap_reason.h
+c43cfa95330540b4d28d90d93032d3ca  ./inc/watchdog.h
+c33fa0127b592dc024e50c754dda7dd5  ./inc/interrupt.h
+3fd4e32a82edc39a2703e4035a9ae2e2  ./inc/syscall.h
+4b74f2a49fcf513fca3352e168c9d384  ./inc/mem.h
+fe42a1e47a2a09050edbe4b69495688d  ./inc/session.h
+59f5d206fff94700c1288d57c6ff6f5a  ./inc/ep9302.h
+d32d3824ad7b8bede6a764f2298270e4  ./inc/perf.h
+37cfacf70840b1478775a1994629132e  ./Makefile
+4aa618b9753c5292e5d9e5c95d297f10  ./build/orex.ld
+d41d8cd98f00b204e9800998ecf8427e  ./built/.gitignore
+e4fdcce89a48fd3c5636deaecbc7c8dd  ./built/userland/apps/srr_timing/main.s
+14131aac9a9aea88ba0166740ec81953  ./built/userland/apps/srr_timing/main.o
+7d04f65d13c591b2ba906944ed3c0361  ./upload
+6e021427eb3cce150bc2e81eea9caf41  ./out

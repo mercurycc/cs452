@@ -1,6 +1,6 @@
                            ==========================
                            Pinball System for TS-7200
-                                   Release K4
+                                   Release P1
                                Installation Guide
                            ==========================
                                     cs452_08
@@ -11,12 +11,12 @@
 To install the kernel, boot the TS-7200 box into RedBoot and load the executable
 from the tftp server via
 
-> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_k4.elf"
+> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_p1.elf"
 
-A backup of pinball_k4.elf is located in /u9/z2long/rt/rel/k4/bin/pinball_k4.elf
+A backup of pinball_p1.elf is located in /u9/z2long/rt/rel/p1/bin/pinball_p1.elf
 
 MD5 of pinball:
-2ac21eb9aadb3b69cb888d0df46e5c85  pinball_k4.elf
+266c2ea9028fe2bbb905ac1576ea7b76  pinball_k4.elf
 
 2. Launch
 =========
@@ -27,14 +27,12 @@ On RedBoot prompt, run command
 
 The kernel should boot up.
 
-As of Kernel assignment 4, the kernel will show the train control application.
-See Assignment 0 for instructions.  Use command q to quit the application and,
-in turn, the system.
+As of Project milestone 1, the kernel will show the train control application.
+See Assignment 0 and attached document for instructions.  Use command q to quit
+the application and, in turn, the system.
 
 
 3. Known Problems
 =================
 
-- The UI draw might show some tearing effects.
-- When UI is redrawing the clock will stop to update.  The clock will not lose
-  tick though, when it recovers.
+- The plan command does not always stop the train at its destination.
