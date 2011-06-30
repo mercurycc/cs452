@@ -151,7 +151,7 @@ static int train_planner_plan( const track_node* dst, int dist_pass, volatile co
 		if( ! mark[ next_node->index ] ){
 			/* TODO: this 100 is not correct.  Should be around 2 stop distance at stop speed */
 			/* TODO: Disable reverse for now */
-			temp = min_cost + 100;
+			temp = ~0; // min_cost + 100;
 			train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 		}
 
