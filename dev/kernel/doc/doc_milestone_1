@@ -1,89 +1,277 @@
+                           ==========================
+                           Pinball System for TS-7200
+                                   Release P1
+                                Train Controller
+                           ==========================
+                                    cs452_08
+
+Overview
+========
+
+The train controller is a program that intends to provide a routining and
+tracking mechanism.
+
+At its present form it can only track the train, while although path finding is
+working, it does not allow the train to stop at the intended location.
+
+The application is formed with several functional units, such as train
+communication module, automation module, sensor module, and control module.
+Each train also owns a planner for path finding.
+
+Algorithms used are intended to use only integer operations to keep result
+as fast as possible while preserving sufficient accuracy.
+
+
 Data Structure
 ==============
 
 Train Data Structure
 --------------------
 
-Train Data is a large struct that stores many information needed by our program. All our program's knowledge about the train is in the train data structure, including id, position, speed, speed changing information, and route finding information.
+Train Data is a large struct that stores many information needed by our
+program. All our program's knowledge about the train is in the train data
+structure, including id, position, speed, speed changing information, and route
+finding information.
+
 
 Track Node Structure
 --------------------
 
-The track nodes are stored in the track structure offered on class webside. We did some minor modification, added a few data field needed for our own program.
+The track nodes are stored in the track structure offered on class webside. We
+did some minor modification, added a few data field using regular expressions.
+
 
 Speed Fraction
 ---------------
 
-The train's speed is recorded in form of fractions, which means we record a numerator and a denominator for speed data. The reason to do such a thing is that we want to keep the speed as accurate as possible, but we do not want to use floating point since it may be too slow. When we need to calculate numbers such as average speed or distance, we always transform the formula first so that it will do all the multiplication at the same time then division, thus to get accurate result.
+The train's speed is recorded in form of fractions, which means we record a
+numerator and a denominator for speed data. The reason to do such a thing is
+that we want to keep the speed as accurate as possible, but we do not want to
+use floating point since it may be too slow. When we need to calculate numbers
+such as average speed or distance, we always transform the formula first so that
+it will do all the multiplication at the same time then division, thus to get
+accurate result.
 
-Speed table
+
+Speed Table
 -----------
 
-the speed table records the speed of the train at each level. It has 30 different levels, since the train has different speed when accelerate into a speed level than when decelerate into that speed level. However, actually only 28 levels will be used, since the train would not accelerate into speed 0, or decelerate into speed 14( highest ). The speed table is supposed to record average speed a train has at certain speed level. Initially, it will automatically generate the speed for the new train according to a liner function. This linear function is measured and calculated so that it should predict a fairly good number for average speed at each level. When trains running on the track, everytime it hits a sensor, and if our program thinks it is running at a constant speed, it will update the speed table with an more accurate average speed.
+The speed table records the speed of the train at each level. It has 30
+different levels, since the train has different speed when accelerate into a
+speed level than when decelerate into that speed level. However, actually only
+28 levels will be used, since the train would not accelerate into speed 0, or
+decelerate into speed 14( highest ). The speed table is supposed to record
+average speed a train has at certain speed level. Initially, it will
+automatically generate the speed for the new train according to a liner
+function. This linear function is measured and calculated so that it should
+predict a fairly good number for average speed at each level. When trains
+running on the track, everytime it hits a sensor, and if our program thinks it
+is running at a constant speed, it will update the speed table with an more
+accurate average speed.
 
 
 Functional Units
 ================
 
-Train Auto
+Sensor Puller
+-------------
+
+The sensor puller pulls the sensor.
+
+The puller stay at a rather low priority in order to not to stop other
+components of the train application. It then sends the latest sensor report to
+auto for data collection and sensor ui for presentation.
+
+Pulling is done here in consideration of the case of multiple trains presenting
+on the track.  Pulling is simpler and more robust.
+
+
+Train Auto (Automation)
 ----------
 
+Train auto is a server module of the train application intended to carry out
+automated tasks, such as calibration, tracking, path finding and directing.
 
-Train Module
+In practice it is more like a pulling loop.  This is because in order to
+estimate and provide real time data to the train, auto has to run every several
+ticks in order to update these data.  This is accomplished by making a task
+sending wake up signals every several ticks.
+
+Train control will send all the commands it received to auto.  
+
+
+Train Module (Communication)
 ------------
 
-Notifier ( auto_wake_up )
---------
+The train_module is the task that communicates with the track. For any
+instruction needs to send to the track, the train_module will communicate with
+the UART server and send the corresponding bytes. Then the module will call
+Delay() to block for certain amount of time to make sure the instructions are
+not sent too fast. We make module to be the only task that will write to the
+track because we need to schedule the sending. Whenever an instruction is sent,
+the module will wait before send another one, and when the sensor task is
+gathering data from track, the module will be blocked, not sending any new
+instruction until all sensor data is gathered.
+
+
+Train Control (User Interface)
+-------------
+
+The train_control task is the task that communicates with the user. It has 2
+jobs: 1. read and parse user's input and send it to module (if necessary);
+2. draw the UI and display feedback to the user. The control task is in charge
+of the command line prompt. It reads input from the user, and buffer the input
+until user pulls the trigger (e.g. hit enter key). Then the control task parse
+the input, and do the corresponding work. If the command need any information
+from track or needs to send information from track, it will communicate with the
+module task. It also memorizes and displays the result up to last 5 commands.
 
 
 Calibration and Algorithms
 ==========================
 
-speed calculation
+Speed Calculation
 -----------------
 
-When hitting a sensor, the program would know 2 things about the train: the time that the train to hit the last sensor, and the time this train hit the current sensor. With the track information, the program can calculate the distance between the sensors, and thus calculate the speed of the train.
+When hitting a sensor, the program would know 2 things about the train: the time
+that the train to hit the last sensor, and the time this train hit the current
+sensor. With the track information, the program can calculate the distance
+between the sensors, and thus calculate the speed of the train.
 
-update speed table
+Update Speed Table
 ------------------
 
-we calculate average speed in such a way: avg = (old * k + new) / (k + 1). Beside the speed table, we have a variable called speed count. It is the k value in the formula. The meaning of this k value is that how reliable our old data is. Initially, k is 3, as all data are predicted. New speed readings has huge impact on the avg value. As we taking more and more samples form the track, we will get higher k values, and thus saying the old value are pretty concrete at this time. So new reading value is going to have less impact on the speed record. As mentioned earlier before, the speed is a fraction. What records in the speed table is also a fraction.
+We calculate average speed in such a way:
+
+avg = (old * k + new) / (k + 1)
+
+Beside the speed table, we have a variable called speed count. It is the k value
+in the formula. The meaning of this k value is that how reliable our old data
+is. Initially, k is 3, as all data are predicted. New speed readings has huge
+impact on the avg value. As we taking more and more samples form the track, we
+will get higher k values, and thus saying the old value are pretty concrete at
+this time. So new reading value is going to have less impact on the speed
+record. As mentioned earlier before, the speed is a fraction. What records in
+the speed table is also a fraction.
 
 
-sensor time prediction(ETA - estimated time for arrival)
---------------------------------------------------------
+Sensor Time Prediction (ETA - Estimated Time for Arrival)
+---------------------------------------------------------
 
-When a train hit a sensor, the train is going to update its own speed and predict its time to hit next sensor, record as ETA. On the UI, there is a field to display the difference between the actual arrive time at a sensor and the predicted time. It is showing in form such as "+1:2". The sign in front means how much is the prediction different from the actual time. "+" means prediction is longer than the actual, which is same as saying the train arrived early. "-" means arriving late. The first number is second, and the second number is milisecond. With this piece of information, we can easily check if our prediction of arrival is correct or not.
+When a train hit a sensor, the train is going to update its own speed and
+predict its time to hit next sensor, record as ETA. On the UI, there is a field
+to display the difference between the actual arrive time at a sensor and the
+predicted time. It is showing in form such as "+1:2". The sign in front means
+how much is the prediction different from the actual time. "+" means prediction
+is longer than the actual, which is same as saying the train arrived early. "-"
+means arriving late. The first number is second, and the second number is
+milisecond. With this piece of information, we can easily check if our
+prediction of arrival is correct or not.
 
-This value is very useful when doing calibration. When we are calibrating acceleration and deceleration, we know the values are good when we get low difference between ETA and actually hit time.
+This value is very useful when doing calibration. When we are calibrating
+acceleration and deceleration, we know the values are good when we get low
+difference between ETA and actually hit time.
 
-distance and landmark prediction
+
+Distance and Landmark Prediction
 --------------------------------
 
-The distance of the train means how long is it away from the last landmark it massed. Since we don't get readings from the track other than sensors, we has to predict where train is when train is not on a sensor. In our program, we use the speed information we had and the time information to predict if our train has passed a landmark or not, and how far has it gone since the last land mark.
+The distance of the train means how long is it away from the last landmark it
+massed. Since we don't get readings from the track other than sensors, we has to
+predict where train is when train is not on a sensor. In our program, we use the
+speed information we had and the time information to predict if our train has
+passed a landmark or not, and how far has it gone since the last land mark.
 
-positioning when speed is changing
+
+Positioning when Speed is Changing
 ----------------------------------
 
-in order to find the train's speed when speed is changing, we emulated the speed change procedure. Our emulation uses a linear function for simplisity. It records the time when the speed change is issued, and using init speed value and end speed value for the speed table to calculate the distance the train has traveled at a certain point of time. We planned to update ETA at the same time, but we now currently facing some calculation issue when working with the fractions. It will be modified and upgraded.
+In order to find the train's speed when speed is changing, we emulated the speed
+change procedure. Our emulation uses a linear function for simplicity. It
+records the time when the speed change is issued, and using init speed value and
+end speed value for the speed table to calculate the distance the train has
+traveled at a certain point of time. We planned to update ETA at the same time,
+but we now currently facing some calculation issue when working with the
+fractions. It will be modified and upgraded.
+
+
+Path Finding
+------------
+
+The path finding algorithm is based on the track data provided on the news group
+with simple O(|V|^2) Dijkstra's algorithm.  The goal was to find the shortest
+path in term of time.  The goal was reduced to find the shortest path in term of
+distance.  It is later reduced to the shortest forward distance, where no
+reverse is needed.
+
+The algorithm at its present form runs the Dijkstra's algorithm, and while
+updating neighbor's costs the parent is updated with the direction the children
+were at.
+
+Later when back tracing the parent list, from the direction recorded the
+switches were switched to the correct orientation, ready for the train to run.
+
+The algorithm, although sacrifices a lot of its original goals, kept one neat
+feature.  It attempts to give the train a chance to reverse at the beginning of
+its trip, so if the destination is closer to its back the algorithm will
+properly notify the user about it.
+
+The algorithm is carried out by a train planner task.  Each registered train
+will own a planner, which will take trip planning requests and make call to the
+Dijkstra's algorithm to resolve the request.
+
+Once the planner have a resolved path by properly setup the switches, it will
+notify the user about the direction the train should go and the path it found.
+The user will either allow the train to move forward, or reverse the train
+before doing so, and the train is supposed to move to the destination and stop.
+
+The current implementation cannot guarantee proper stopping timing.
+
+The planner was also intended to carry out the path planned by sending commands
+to train module and train auto.  Currently the planner only sends stop command
+when it thinks the target is with in the range.
+
+The planner is basically pulling the status of the train by waiting on signal
+from auto.  Since auto is pulling by being waken up every several ticks, the
+planner is pulling too.
 
 
 Program User Manual
 ===================
 
-Register command ( reg <train ID> <sensor ID> )
+Legend
+------
+
+A sensor ID is in this form: A15
+A node ID is in this form: BR153
+
+Register Command ( reg <train ID> <sensor ID> )
 -----------------------------------------------
 
-This command register a train into the system. The sensor ID is the sensor in the train's pickup direction. When command is entered, the train will start moving, until it hits a sensor on either side of it. If it is the sensor specified in the command, then we know the train's pickup is at train's front track. Otherwise we know the pickup is toward train's back track. Thus, we can easily calculate the head distance of the train, for later assignments.
+This command register a train into the system. The sensor ID is the sensor in
+the train's pickup direction. When command is entered, the train will start
+moving, until it hits a sensor on either side of it. If it is the sensor
+specified in the command, then we know the train's pickup is at train's front
+track. Otherwise we know the pickup is toward train's back track. Thus, we can
+easily calculate the head distance of the train, for later assignments.
+
+A train must be registered before it can be tracked by the system.
+
 
 Hit and Stop ( hit <train ID> <node ID> <distance> )
 ------------------------------------------------------
 
-This is a calibration command. When this command is entered, the train will try to stop at that location, which is <distance> millimeter passed the node. If the current switches are set in a state that the train will not going to that location, the train won't stop. When the train detects it can stop at, or it will pass that paticular point, the train tries to stops on the point.
+This is a calibration command. When this command is entered, the train will try
+to stop at that location, which is <distance> millimeter passed the node. If the
+current switches are set in a state that the train will not going to that
+location, the train won't stop. When the train detects it can stop at, or it
+will pass that paticular point, the train tries to stops on the point.
+
 
 Other
 -----
 
-Other Commands are same commands available in Kernel 4. Except reverse now works in a different way. This change would allow our program would not lose the train's position when reversing. And it should makes no different once we are able to let our program to fully control the train's action.
-
-
+Other Commands are same commands available in Kernel 4. Except reverse now does
+not re-accelerate the train. This change would allow our program would not lose
+the train's position when reversing. And it should makes no different once we
+are able to let our program to fully control the train's action.
