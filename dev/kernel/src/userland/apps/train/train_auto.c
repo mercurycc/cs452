@@ -667,9 +667,11 @@ void train_auto()
 							else {
 								modifier = time_left + ( dist - finish ) * current_train->speed.denominator / current_train->speed.numerator;
 							}
+							/*
 							if (( old_eta - modifier > 6000 )||( modifier - old_eta < 6000 )) {
 								modifier = old_eta;
 							}
+							*/
 							current_train->next_sensor_eta = modifier;
 							
 
