@@ -1,9 +1,11 @@
 #ifndef _TRAIN_TYPES_H_
 #define _TRAIN_TYPES_H_
 
+
 #include <lib/rbuf.h>
 #include "track_node.h"
 #include "config.h"
+#include "speed.h"
 
 /* number of speed levels of train */
 #define NUM_SPEED_LEVEL 30
@@ -29,11 +31,6 @@ typedef struct Train_stat_s {
 	uint total_time;
 	uint avg_speed;
 } Train_stat;
-
-typedef struct Speed_s {
-	uint numerator;
-	uint denominator;
-} Speed;
 
 typedef struct Train_path_s {
 	track_node* node;
