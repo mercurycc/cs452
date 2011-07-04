@@ -64,6 +64,7 @@ track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, 
 int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor );
 /* Test if the requested sensor is tripped */
 int train_loc_is_sensor_tripped( Sensor_data* sensor_data, track_node* sensor );
+int train_loc_dist( track_node* node, int* switch_table );
 
 /* find shortest route, and return the distance between 2 nodes on the track */
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route );

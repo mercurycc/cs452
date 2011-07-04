@@ -328,56 +328,9 @@ void train_auto()
 				current_train->speed_level = request.data.set_speed.speed_level * 2+1;
 			}
 			current_train->state = TRAIN_STATE_SPEED_CHANGE;
-
 			current_train->speed_change_time_stamp = current_time;
 			current_train->speed_distance = current_train->distance;
 			current_train->speed_mark = current_train->check_point;
-			/*
-			if ( current_train->next_sensor_eta ) {
-				int a = current_train->speed_table[ current_train->old_speed_level ].numerator;
-				int b = current_train->speed_table[ current_train->old_speed_level ].denominator;
-				int c = current_train->speed_table[ current_train->speed_level ].numerator;
-				int d = current_train->speed_table[ current_train->speed_level ].denominator;
-				int diff = current_train->next_sensor_eta;
-				unsigned long long int top;
-				unsigned long long int bottom;
-				Speed temp_speed;
-				uint temp_distance;
-
-				int indicator = 0;
-				if ( diff >= SPEED_CHANGE_TIME ){
-					top = ( diff - SPEED_CHANGE_TIME ) * a * d;
-					bottom = b * c;
-					current_train->next_sensor_eta = SPEED_CHANGE_TIME + top / bottom;
-					indicator = 1;
-				}
-				else {
-
-					top = b * diff * c + a * SPEED_CHANGE_TIME * d - a * diff * d;
-					bottom = b * SPEED_CHANGE_TIME * d;
-
-					while (( top > 10000 )||( bottom > 10000 )) {
-						top = top / 10;
-						bottom = bottom / 10;
-					}
-					if ( bottom == 0 ) {
-						top = 0;
-						bottom = 1;
-					}
-					temp_speed.numerator = top;
-					temp_speed.denominator = bottom;
-
-					top = a * bottom * diff + b * top * diff;
-					bottom = 2 * b * bottom;
-
-					temp_distance = sensor_distance( current_train->check_point, current_train->next_sensor ) - current_train->distance ;
-					assert( temp_distance > 0 );
-
-					current_train->next_sensor_eta = diff * temp_distance * bottom / top;
-				}
-
-			}
-			*/
 			WAR_PRINT( "speed change %d-%d, at dist %d\n", current_train->old_speed_level, current_train->speed_level, current_train->speed_distance);
 
 			break;
@@ -388,9 +341,8 @@ void train_auto()
 			} else if( current_train->pickup == TRAIN_PICKUP_BACK ){
 				current_train->pickup = TRAIN_PICKUP_FRONT;
 			}
-			/* TODO: This has not update the distance yet */
-			current_train->check_point = track_previous_node( current_train->check_point, switch_table );
-			current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
+			current_train->check_point = current_train->next_check_point->reverse;
+			current_train->next_check_point = current_train->check_point->reverse;
 			current_sensor = current_train->last_sensor;
 			current_train->last_sensor = current_train->next_sensor->reverse;
 			current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
@@ -767,14 +719,6 @@ void train_auto()
 							     current_train->next_sensor->group, current_train->next_sensor->id,
 							     current_train->next_sensor_eta );
 					break;
-				}
-
-				/* Wake up planner */
-				if( current_train->planner_ready && current_train->planner_stop ){
-					current_train->planner_ready = 0;
-					train_planner_wakeup( current_train->planner_tid );
-					/* The following line is only safe when planner is at lower priority, otherwise
-					   we could rewrite its 1 value making it forever unavailable */
 				}
 			}
 		}
