@@ -18,7 +18,7 @@ int get_inter_speed( Speed* spd1, Speed* spd2, Speed* ret, int factor, int total
 int get_distance( Speed* spd, int time );
 /* distance = (spd1 + spd2) * time / 2 */
 int get_distance_changing_speed( Speed* spd1, Speed* spd2, int time );
-/* distance = (spd1 - spd2) * changetime / 2 + spd2 * totaltime */
+/* distance = (spd1 + spd2) * changetime / 2 + spd2 * (totaltime - changetime) */
 int get_distance_changed_speed( Speed* spd1, Speed* spd2, int changetime, int totaltime );
 /* stop_distance = spd * stop_time / 2 */
 int get_stop_distance( Speed* spd );
