@@ -468,10 +468,8 @@ void train_auto()
 						current_train->stop_distance = current_train->speed.numerator * SPEED_CHANGE_TIME / current_train->speed.denominator / 2;
 
 						current_train->distance = current_train->speed_distance + SPEED_CHANGE_TIME * a / b / 2 + ( diff - SPEED_CHANGE_TIME ) * c / d;
-						
 					}
 					else {
-
 						top = b * diff * c + a * SPEED_CHANGE_TIME * d - a * diff * d;
 						bottom = b * SPEED_CHANGE_TIME * d;
 
@@ -487,7 +485,6 @@ void train_auto()
 						top = a * bottom * diff + b * top * diff;
 						bottom = 2 * b * bottom;
 						current_train->distance = current_train->speed_distance + top / bottom;
-						
 					}
 					
 					current_train->check_point = current_train->speed_mark;
@@ -538,7 +535,6 @@ void train_auto()
 					current_train->speed_distance = current_train->distance;
 					current_train->speed_mark = current_train->check_point;
 					train_set_speed( module_tid, current_train->id, 0 );
-					
 				}
 			}
 		}
@@ -769,7 +765,7 @@ void train_auto()
 				}
 
 				/* Wake up planner */
-				if( current_train->planner_ready && current_train->planner_stop ){
+				if( current_train->planner_ready ){
 					current_train->planner_ready = 0;
 					train_planner_wakeup( current_train->planner_tid );
 					/* The following line is only safe when planner is at lower priority, otherwise
