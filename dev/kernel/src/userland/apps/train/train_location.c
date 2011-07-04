@@ -33,8 +33,6 @@ int update_train_location( Train_data* train ) {
 
 int update_train_speed( Train_data* train, track_node* next_sensor, uint time_stamp )
 {
-	int status;
-
 	// get distance and time
 	track_node* last_sensor = train->last_sensor;
 	int distance = -1;
@@ -42,7 +40,6 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 	
 	if ( train->last_sensor_time ) {
 		distance = sensor_distance( last_sensor, next_sensor );
-		/* If this time is used then we could have atmost 70 ms of time error which could results in 4 cm of location error */
 		time = time_stamp - train->last_sensor_time;
 	}
 	
@@ -50,8 +47,15 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 		// calculate new speed with avg
 		uint level = train->speed_level;
 
-		//WAR_PRINT( "old speed %d / %d\n", train->speed_table[level].numerator, train->speed_table[level].denominator );
-
+		Speed current_speed;
+		Speed temp;
+		
+		current_speed.numerator = distance;
+		current_speed.denominator = time;
+		
+		get_inter_speed( &current_speed, train->speed_table + level, train->speed_table + level, train->speed_count[level], train->speed_count[level] + 1 );
+		
+		/*
 		unsigned long long int bottom = train->speed_table[level].denominator * time * (train->speed_count[level] + 1);
 		unsigned long long int top = distance * train->speed_table[level].denominator + train->speed_count[level] * time * train->speed_table[level].numerator;
 		
@@ -62,6 +66,8 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 		assert( bottom );
 		train->speed_table[level].numerator = top;
 		train->speed_table[level].denominator = bottom;
+		*/
+		
 		if ( train->speed_count[level] < NUM_SPEED_HISTORY ) {
 			train->speed_count[level] += 1;
 		}
@@ -348,7 +354,6 @@ track_node* track_previous_node( track_node* node, int* switch_table )
 
 track_node* track_next_sensor( track_node* sensor, int* switch_table ){
 	track_node* ptr = sensor;
-	int id;
 
 	do {
 		ptr = track_next_node( ptr, switch_table );
@@ -414,3 +419,8 @@ int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
 	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] & ~(0x80 >> id);
 	return 0;
 }
+
+
+
+
+
