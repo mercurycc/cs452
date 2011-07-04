@@ -541,7 +541,6 @@ void train_auto()
 					current_train->speed_distance = current_train->distance;
 					current_train->speed_mark = current_train->check_point;
 					train_set_speed( module_tid, current_train->id, 0 );
-					
 				}
 			}
 		}
@@ -665,9 +664,11 @@ void train_auto()
 							else {
 								modifier = time_left + ( dist - finish ) * current_train->speed.denominator / current_train->speed.numerator;
 							}
+							/*
 							if (( old_eta - modifier > 6000 )||( modifier - old_eta < 6000 )) {
 								modifier = old_eta;
 							}
+							*/
 							current_train->next_sensor_eta = modifier;
 							
 
