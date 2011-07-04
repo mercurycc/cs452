@@ -69,6 +69,7 @@ int update_train_speed( Train_data* train, track_node* next_sensor, uint time_st
 		train->speed.numerator = train->speed_table[level].numerator;
 		train->speed.denominator = train->speed_table[level].denominator;
 
+		train->speed_val = train->speed.numerator / train->speed.denominator;
 	}
 	// if distance == 1 no update of speed
 	
@@ -413,4 +414,20 @@ int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
 
 	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] & ~(0x80 >> id);
 	return 0;
+}
+
+int train_loc_dist( track_node* node, int* switch_table )
+{
+	switch( node->type ){
+	case NODE_BRANCH:
+		if( switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
+			return node->edge[ DIR_CURVED ].dist;
+		}
+	case NODE_SENSOR:
+	case NODE_MERGE:
+	case NODE_ENTER:
+		return node->edge[ DIR_AHEAD ].dist;
+	default:
+		return 0;
+	}
 }

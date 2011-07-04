@@ -36,8 +36,7 @@ typedef struct Speed_s {
 } Speed;
 
 typedef struct Train_path_s {
-	int group;
-	int id;
+	track_node* node;
 	int direction;
 } Train_path;
 
@@ -50,6 +49,7 @@ typedef struct Train_data_s {
 	//uint speed_numerator;
 	//uint speed_denominator;
 	Speed speed;                     /* Speed currently at, in mm/10ms */
+	uint speed_val;
 	uint speed_level;
 	uint old_speed_level;
 	uint last_sensor_time;
