@@ -203,7 +203,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 	return ERR_NONE;
 }
 
-static void train_forward_stop( Train_data* train, Rbuf* path, int* switch_table, int stop_dist )
+static void train_forward_stop( const Train_data* train, Rbuf* path, const int* switch_table, int stop_dist )
 {
 	const track_node* temp_node;
 	uint look_ahead = 0;
@@ -308,31 +308,38 @@ void train_planner()
 		assert( status == SYSCALL_SUCCESS );
 		train->planner_control = 1;
 
-		/* switch( request.type ){ */
-		/* case PLANNER_PATH_PLAN: */
-		/* 	planning = 1; */
-		/* 	rbuf_reset( path ); */
-		/* 	rbuf_reset( forward_path ); */
-		/* 	status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length, &plan_direction, module_tid, auto_tid, &final_node ); */
-		/* 	assert( status == ERR_NONE ); */
-		/* 	dist_pass = request.dist_pass; */
+		switch( request.type ){
+		case PLANNER_PATH_PLAN:
+			path_length = request.dist_pass;
+			planning = 1;
+			rbuf_reset( path );
+			rbuf_reset( forward_path );
+			status = train_planner_plan( request.dst, &path_length, train, path, &plan_direction );
+			assert( status == ERR_NONE );
+			dist_pass = request.dist_pass;
 
-		/* 	train->auto_command = 1; */
+			previous_node = 0;
 
-		/* 	while( ! empty( path ) ){ */
-		/* 		/\* Obtain the next forward path, i.e. till path is empty or a merger reverse*\/ */
-		/* 		rbuf_get( path, ( uchar* )path_node ); */
-
-		/* 		if( path_node->node->reverse == previous_node ){ */
-		/* 		} */
+			while( ! rbuf_empty( path ) ){
+				while( ! rbuf_empty( path ) ){
+					/* Obtain the next forward path, i.e. till path is empty or a merger reverse*/
+					rbuf_get( path, ( uchar* )path_node );
+					if( path_node->node->reverse == previous_node ){
+						rbuf_put_front( path, ( uchar* )path_node );
+						break;
+					} else {
+						rbuf_put( forward_path, ( uchar* )path_node );
+					}
+				}
 				
-		/* 		while( 1 ){ */
-		/* 		if( train->auto_command ){ */
-		/* 		} */
-		/* 		Delay( 2 ); */
-		/* 	} */
-		/* 	break; */
-		/* } */
+				while( 1 ){
+					if( train->planner_control ){
+					}
+				}
+				Delay( 2 );
+			}
+			break;
+		}
 	}
 
 }

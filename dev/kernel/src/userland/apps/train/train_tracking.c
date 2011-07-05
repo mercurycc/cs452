@@ -16,6 +16,10 @@
 
 static void train_tracking_update_check_point( Train* train, int check_point_time, int curtime )
 {
+	int old_trav_distance;
+	
+	old_trav_distance = train->tracking.distance + train->tracking.remaining_distance;
+	
 	/* Update check point */
 	train->check_point = train->next_check_point;
 	train->next_check_point = track_next_node( train->check_point, train->switch_table );
@@ -23,7 +27,14 @@ static void train_tracking_update_check_point( Train* train, int check_point_tim
 
 	/* Initialize distance */
 	train->tracking.remaining_distance = node_distance( train->check_point, train->switch_table );
-	train->tracking.distance = ( int )( ( curtime - check_point_time ) * train->tracking.speed );
+	switch( train->state ){
+	case TRAIN_STATE_TRACKING:
+		train->tracking.distance = ( int )( ( curtime - check_point_time ) * train->tracking.speed );
+		break;
+	default:
+		train->tracking.distance -= old_trav_distance;
+		break;
+	}
 	train->tracking.remaining_distance -= train->tracking.distance;
 
 	/* Update speed change meta data */
@@ -139,13 +150,13 @@ int train_tracking_update_position( Train* train, int curtime )
 	case TRAIN_STATE_SPEED_CHANGE:
 		if( curtime < train->tracking.speed_change_end_time ){
 			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-			train->tracking.speed_change_start_time = curtime;
 		} else {
 			dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
 					     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
 			dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
-			train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
 		}
+		train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
+		train->tracking.old_speed = train->tracking.speed;
 		break;
 	case TRAIN_STATE_TRACKING:
 		dist_diff = ( int )( ( curtime - train->tracking.check_point_time ) * train->tracking.speed ) - train->tracking.distance;
@@ -210,6 +221,10 @@ int train_tracking_reverse( Train* train )
 	temp = train->tracking.remaining_distance;
 	train->tracking.remaining_distance = train->tracking.distance;
 	train->tracking.distance = temp;
+	train->check_point = train->next_check_point->reverse;
+	train->next_check_point = train->check_point->reverse;
+	train->tracking.speed = 0;
+	train->tracking.speed_level = 0;
 
 	return ERR_NONE;
 }
