@@ -86,3 +86,5 @@ int sensor_find_possible( track_node* sensor, int* switch_table, track_node** pr
 
 	return 0;
 }
+
+
