@@ -43,12 +43,6 @@ int node_distance( const track_node* src, const int* switch_table )
 	return length;
 }
 
-/* find the expected target to hit by a train */
-int train_detective( Train_data* train, track_node** next_sensor_ahead, track_node** next_sensor_skipped, track_node** next_sensor_curved ){
-	// TODO
-	return 0;
-}
-
 int track_next_sensor_distance( const track_node* ptr, const int* switch_table )
 {
 	int length = 0;
@@ -127,6 +121,15 @@ int clear_sensor_data( Sensor_data* sensor_data, const track_node* current_senso
 
 	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] & ~(0x80 >> id);
 	return 0;
+}
+
+int mark_sensor_data( Sensor_data* sensor_data, const track_node* current_sensor ){
+	int group = current_sensor->group * 2 + current_sensor->id / 8;
+	int id = current_sensor->id % 8;
+
+	sensor_data->sensor_raw[group] = sensor_data->sensor_raw[group] | (0x80 >> id);
+	return 0;
+
 }
 
 int train_loc_dist( const track_node* node, const int* switch_table )

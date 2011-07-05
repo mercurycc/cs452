@@ -1,7 +1,12 @@
 #ifndef _TRAIN_ERROR_TOLERANCE_H_
 #define _TRAIN_ERROR_TOLERANCE_H_
 
+#include "train_location.h"
+#include "train_types.h"
+
+
 #define SENSOR_NOT_TRUSTABLE 3
+#define ETA_WINDOW_SIZE 100
 
 /* check if a sensor is trustable
  * trustable returns true if sensor is trustable
@@ -12,12 +17,11 @@ int sensor_trustable( track_node* sensor );
 int sensor_error( track_node* sensor );
 int sensor_trust( track_node* sensor );
 
-/* find possible sensors
- * primary is next expected sensor
- * secondary is the expected sensor if primary is malfunctioned
- * tertiary is the expected sensor if the switch is malfunctioned
- */
-int sensor_find_possible( track_node* sensor, int* switch_table, track_node** primary, track_node** secondary, track_node** tertiary );
+/* check if train get to an untrustable sensor */
+int train_hit_untrustable( Train_data* train );
+
+/* find possible sensors for train */
+int train_next_possible( Train_data* train, int* switch_table );
 
 #endif
 

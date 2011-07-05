@@ -21,6 +21,7 @@
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
+#include "inc/error_tolerance.h"
 
 #define LOCAL_DEBUG
 #include <user/dprint.h>
@@ -386,6 +387,8 @@ void train_auto()
 						} else {
 							current_train->last_sensor = current_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							train_next_possible( current_train, switch_table );
+
 							current_train->init_retry = 0;
 
 							/* Let tracking update the train states corresponding to the first sensor */
@@ -409,10 +412,21 @@ void train_auto()
 						}
 						break;
 					default:
-						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+						/*
+						if( train_tracking_eta( current_train ) > ETA_WINDOW_SIZE || train_tracking_eta( current_train ) < -ETA_WINDOW_SIZE ) {
+							break;
+						}
+						else */if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+							train_next_possible( current_train, switch_table );
+						}
+						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+							// TODO: secondary sensor is hit
+						}
+						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+							// TODO: tertiary sensor is hit
 						}
 						break;
 					}
@@ -425,6 +439,7 @@ void train_auto()
 					current_train = trains + temp;
 					switch( current_train->init_state ){
 					default:
+						// TODO: if sensor has not hit any sensor for a long time => lost the train
 						train_tracking_update( current_train, current_time );
 					case TRAIN_STATE_INIT_1:
 					case TRAIN_STATE_INIT_2:
