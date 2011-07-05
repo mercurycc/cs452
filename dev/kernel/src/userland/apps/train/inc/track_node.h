@@ -46,6 +46,7 @@ struct track_node {
 	int group;
 	int id;
 	int index;
+	int broken;
 	node_type type;
 	int num;              /* sensor or switch number */
 	track_node *reverse;  /* same location, but opposite direction */
