@@ -25,6 +25,7 @@ int display_init();
 int region_init( Region* region );
 int region_printf( Region* region, char* fmt, ... );
 int region_append( Region* region, char* fmt, ... );
+int scroll_printf( char* fmt, ... );
 int region_clear( Region* region );
 int display_quit();
 

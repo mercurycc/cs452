@@ -28,7 +28,7 @@ void clock_ui()
 
 		time_tick_to_spec( &spec, ticks );
 
-		status = region_printf( clock_region, "%02u:%02u:%02u:%02u:%u", spec.day, spec.hour, spec.minute, spec.second, spec.fraction );
+		status = region_printf( clock_region, "%02u:%02u:%02u:%02u:%u", spec.day, spec.hour, spec.minute, spec.second, spec.fraction / 10 );
 		assert( status == 0 );
 
 	}

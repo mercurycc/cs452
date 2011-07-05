@@ -5,6 +5,7 @@
 #include <user/time.h>
 #include <user/lib/cursor_control.h>
 #include <lib/str.h>
+#include <lib/rbuf.h>
 #include <lib/valist.h>
 #include <user/uart.h>
 #include <err.h>
@@ -234,6 +235,10 @@ void display_server()
 	char* staging = commited + DISPLAY_SIZE;	
 	char* editing = staging + DISPLAY_SIZE;
 	char* temp_buf;
+	char scroll_content[ 20 * 80 ];
+	char ch;
+	Rbuf scroll_buf_body;
+	Rbuf* scroll_buf = &scroll_buf_body;
 	int edited = 1;
 	int drawer_tid;
 	int can_draw = 0;
@@ -265,6 +270,9 @@ void display_server()
 
 	/* Set initial cursor position */
 	display_drawer_cursor_request( DRAWER_SETPOSN, 1, 40 + 1 );
+
+	status = rbuf_init( scroll_buf, ( uchar* )scroll_content, sizeof( char ), sizeof( scroll_content ) );
+	assert( status == ERR_NONE );
 
 	while( execute ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -308,9 +316,20 @@ void display_server()
 		case DISPLAY_DRAWER_READY:
 			can_draw = 1;
 			break;
+		case DISPLAY_SCROLL_PRINT:
+			for( chc = 0; request.msg[ chc ]; chc += 1 ){
+				rbuf_put( scroll_buf, ( ( uchar* )request.msg ) + chc );
+			}
+			break;	
 		case DISPLAY_QUIT:
 			execute = 0;
 			break;
+		}
+
+		while( can_draw && !( rbuf_empty( scroll_buf ) ) ){
+			status = rbuf_get( scroll_buf, ( uchar * )&ch );
+			assert( status == ERR_NONE );
+			Putc( COM2, ch );
 		}
 
 		/* Reply drawer tid */
@@ -461,21 +480,21 @@ int display_quit()
 	return display_request( DISPLAY_QUIT, 0, 0, 0, 0 );
 }
 
-int display_scroll_printf( char* fmt, ... )
+static int display_drawer_ready( char** screen )
+{
+	return display_request( DISPLAY_DRAWER_READY, 0, 0, 0, screen );
+}
+
+int scroll_printf( char* fmt, ... )
 {
 	va_list va;
 	int size;
 	char dst[ DISPLAY_MAX_MSG ];
+	Region fake;
 
 	va_start( va, fmt );
-	assert( region );
 	size = sformat( dst, fmt, va );
 	va_end( va );
 
-	return display_request( DISPLAY_SCROLL_PRINT, 0, dst, size, 0 );
-}
-
-static int display_drawer_ready( char** screen )
-{
-	return display_request( DISPLAY_DRAWER_READY, 0, 0, 0, screen );
+	return display_request( DISPLAY_SCROLL_PRINT, &fake, dst, size, 0 );
 }

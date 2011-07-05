@@ -11,6 +11,7 @@
 #include <user/time.h>
 #include <user/name_server.h>
 #include <config.h>
+#include <user/display.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -20,6 +21,9 @@
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
+
+#define LOCAL_DEBUG
+#include <user/dprint.h>
 
 enum Train_pickup {
 	TRAIN_PICKUP_FRONT,
@@ -106,6 +110,13 @@ static void train_auto_alarm()
 	}
 }
 
+static inline void train_auto_recompose_set_speed( Train_auto_request* request, int train_id, int speed_level )
+{
+	request->type = TRAIN_AUTO_SET_TRAIN_SPEED;
+	request->data.set_speed.train_id = train_id;
+	request->data.set_speed.speed_level = speed_level;
+}
+
 void train_auto()
 {
 	Train_auto_request request;
@@ -131,7 +142,7 @@ void train_auto()
 	int module_tid;
 	uint current_time;
 	uint current_distance;
-	uint reprocess;
+	uint reprocess = 0;
 	int status;
 
 	/* Receive initialization data */
@@ -232,6 +243,10 @@ void train_auto()
 		}
 
 		do {
+			if( reprocess ){
+				dnotice( "Reprocessing...\n" );
+			}
+			
 			reprocess = 0;
 			/* Process request */
 			switch( request.type ){
@@ -287,12 +302,12 @@ void train_auto()
 				train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
 
 				/* Compose speed change request */
-				request.type = TRAIN_AUTO_SET_TRAIN_SPEED;
-				request.data.set_speed.train_id = current_train->id;
-				request.data.set_speed.speed_level = TRAIN_AUTO_REG_SPEED_1;
+				train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
 
 				/* Process the composed request */
 				reprocess = 1;
+
+				dprintf( "Train %d register\n", current_train->id );
 				
 				break;
 			case TRAIN_AUTO_SET_TRAIN_SPEED:
@@ -344,37 +359,53 @@ void train_auto()
 						current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 						current_train->init_retry = 0;
 						current_train->init_state = TRAIN_STATE_INIT_2;
+						dprintf( "Train %d init_1 pass\n", current_train->id );
 						break;
 					case TRAIN_STATE_INIT_2:
 						current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
 						if( current_sensor != current_train->next_sensor ){
 							current_train->init_retry += 1;
+							dprintf( "Train %d init_2 fail %d\n", current_train->id, current_train->init_retry );
 						} else {
 							current_train->last_sensor = current_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 							current_train->init_retry = 0;
 							current_train->init_state = TRAIN_STATE_INIT_3;
+							dprintf( "Train %d init_2 pass\n", current_train->id );
 						}
 						if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
 							current_train->init_state = TRAIN_STATE_INIT_1;
+							dprintf( "Train %d init_2 revert to init_1\n", current_train->id );
 						}
 						break;
 					case TRAIN_STATE_INIT_3:
 						current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
 						if( current_sensor != current_train->next_sensor ){
 							current_train->init_retry += 1;
+							dprintf( "Train %d init_3 fail %d\n", current_train->id, current_train->init_retry );
 						} else {
 							current_train->last_sensor = current_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 							current_train->init_retry = 0;
 
+							/* Let tracking update the train states corresponding to the first sensor */
+							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+
+							/* Compose speed change request */
+							train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
+
+							/* Process the composed request */
+							reprocess = 1;
+
 							/* Allow tracking to track the train */
-							current_train->state = TRAIN_STATE_TRACKING;
 							current_train->init_state = TRAIN_STATE_INIT_4;
 							current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
+
+							dprintf( "Train %d init_3 pass\n", current_train->id );
 						}
 						if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
 							current_train->init_state = TRAIN_STATE_INIT_1;
+							dprintf( "Train %d init_3 revert to init_1\n", current_train->id );
 						}
 						break;
 					default:
@@ -410,15 +441,15 @@ void train_auto()
 							train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
 							
 							/* Compose speed change request */
-							request.type = TRAIN_AUTO_SET_TRAIN_SPEED;
-							request.data.set_speed.train_id = current_train->id;
-							request.data.set_speed.speed_level = TRAIN_AUTO_REG_SPEED_2;
-							
+							train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
+
 							/* Process the composed request */
 							reprocess = 1;
 
 							/* Break the loop */
 							temp = available_train;
+
+							dprintf( "Train %d init_4 pass\n", current_train->id );
 						}
 						break;
 					case TRAIN_STATE_INIT_5:
@@ -427,17 +458,17 @@ void train_auto()
 
 							train_tracking_init_calib( current_train );
 							train_set_speed( module_tid, current_train->id, 0 );
-							
+
 							/* Compose speed change request */
-							request.type = TRAIN_AUTO_SET_TRAIN_SPEED;
-							request.data.set_speed.train_id = current_train->id;
-							request.data.set_speed.speed_level = 0;
-							
+							train_auto_recompose_set_speed( &request, current_train->id, 0 );
+
 							/* Process the composed request */
 							reprocess = 1;
 
 							/* Break the loop */
 							temp = available_train;
+
+							dprintf( "Train %d init_5 pass\n", current_train->id );
 						}
 						break;
 					}

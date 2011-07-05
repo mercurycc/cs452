@@ -204,10 +204,8 @@ int DelayUntil( int ticks ) {
 
 int time_tick_to_spec( Timespec* spec, int time )
 {
-	time /= 10;
-	
-	spec->fraction = time % 10;
-	time /= 10;
+	spec->fraction = time % 100;
+	time /= 100;
 
 	spec->second = time % 60;
 	time /= 60;

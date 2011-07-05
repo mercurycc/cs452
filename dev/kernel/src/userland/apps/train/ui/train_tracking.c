@@ -75,7 +75,7 @@ void tracking_ui()
 	region_printf( &title_reg, "Train Tracking / d.(mm), t.(10ms), v.(mm/s)\n" );
 	region_init( &data_reg );
 	region_printf( &data_reg,
-		       " #|Chk|   Pred   |Diff| Mrk |Dist|Nxt| ETA|Spd" );
+		       " #|Chk| Pred  |Diff | Mrk |Dist| Nxt | ETA|Spd" );
 
 	entry.col = 30;
 	entry.height = 1;
@@ -85,7 +85,7 @@ void tracking_ui()
 	for( i = 0; i < 5; i += 1 ){
 		entry.row = 6 + i;
 		region_init( &entry );
-		region_printf( &entry, "  |   |          |    |     |    |   |    |" );
+		region_printf( &entry, "  |   |       |     |     |    |     |    |   " );
 	}
 	
 	while( 1 ){
@@ -143,29 +143,29 @@ void tracking_ui()
 			track_node_id2name( mark_name, request.data.chkpnt.group, request.data.chkpnt.id );
 			region_printf( &entry, "%s\n", mark_name );
 			entry.col = 37;
-			entry.width = 10;
+			entry.width = 44 - 37;
 			time_tick_to_spec( &time, request.data.chkpnt.predict );
-			region_printf( &entry, "%02u:%02u:%02u:%u\n", time.hour, time.minute, time.second, time.fraction );
-			entry.col = 48;
-			entry.width = 4;
+			region_printf( &entry, "%02u:%02u:%02u\n", time.minute, time.second, time.fraction );
+			entry.col = 45;
+			entry.width = 5;
 			time_tick_to_spec( &time, request.data.chkpnt.diff < 0 ? - request.data.chkpnt.diff : request.data.chkpnt.diff );
 			region_printf( &entry, "%c%u:%u\n", request.data.chkpnt.diff < 0 ? '-' : '+', time.second, time.fraction );
 			assert( ! time.minute );
 			break;
 		case TRACKING_UI_LANDMRK:
-			entry.col = 53;
+			entry.col = 51;
 			entry.width = 5;
 			track_node_id2name( mark_name, request.data.landmrk.group, request.data.landmrk.id );
 			region_printf( &entry, "%s\n", mark_name );
 			break;
 		case TRACKING_UI_DIST:
-			entry.col = 59;
+			entry.col = 57;
 			entry.width = 4;
 			region_printf( &entry, "%4d\n", request.data.dist.dist );
 			break;
 		case TRACKING_UI_NEXT:
-			entry.col = 64;
-			entry.width = 3;
+			entry.col = 62;
+			entry.width = 5;
 			track_node_id2name( mark_name, request.data.nextmrk.group, request.data.nextmrk.id );
 			region_printf( &entry, "%s\n", mark_name );
 			entry.col = 68;
