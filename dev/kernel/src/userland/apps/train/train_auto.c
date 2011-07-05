@@ -412,6 +412,10 @@ void train_auto()
 						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
+									    current_train->last_sensor->group, current_train->last_sensor->id,
+									    current_time + train_tracking_eta( current_train ),
+									    train_tracking_eta( current_train ) );
 							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 						}
 						break;
