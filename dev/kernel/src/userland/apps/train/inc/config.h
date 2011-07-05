@@ -17,7 +17,7 @@
 #define TRAIN_AUTO_REG_SPEED_2  12
 
 #define TRAIN_AUTO_REG_RETRY    3
-#define TRAIN_AUTO_REG_SPEED_CALIB_TIME   5000
+#define TRAIN_AUTO_REG_SPEED_CALIB_TIME   2000
 
 /* Error bounds */
 #define DIST_ERROR           40       /* in mm */

@@ -149,8 +149,11 @@ void tracking_ui()
 			entry.col = 45;
 			entry.width = 5;
 			time_tick_to_spec( &time, request.data.chkpnt.diff < 0 ? - request.data.chkpnt.diff : request.data.chkpnt.diff );
-			region_printf( &entry, "%c%u:%u\n", request.data.chkpnt.diff < 0 ? '-' : '+', time.second, time.fraction );
-			assert( ! time.minute );
+			if( time.minute ){
+				region_printf( &entry, "-----\n" );
+			} else {
+				region_printf( &entry, "%c%u:%02u\n", request.data.chkpnt.diff < 0 ? '-' : '+', time.second, time.fraction );
+			}
 			break;
 		case TRACKING_UI_LANDMRK:
 			entry.col = 51;
