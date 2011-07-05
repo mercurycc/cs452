@@ -16,7 +16,7 @@
 #include "inc/train_types.h"
 
 
-int node_distance( track_node* src, int* switch_table )
+int node_distance( const track_node* src, const int* switch_table )
 {
 	int swid;
 	int length;
@@ -49,13 +49,7 @@ int train_detective( Train_data* train, track_node** next_sensor_ahead, track_no
 	return 0;
 }
 
-int train_next_sensor( Train_data* train, int* switch_table ){
-	train->next_sensor = track_next_sensor( train->last_sensor, switch_table );
-	if ( train->next_sensor ) return 0;
-	return -1;
-}
-
-int track_next_sensor_distance( track_node* ptr, int* switch_table )
+int track_next_sensor_distance( const track_node* ptr, const int* switch_table )
 {
 	int length = 0;
 
@@ -71,7 +65,7 @@ int track_next_sensor_distance( track_node* ptr, int* switch_table )
 	return length;
 }
 
-track_node* track_next_node( track_node* node, int* switch_table )
+track_node* track_next_node( const track_node* node, const int* switch_table )
 {
 	int id;
 	
@@ -99,14 +93,14 @@ track_node* track_next_node( track_node* node, int* switch_table )
 	return node;
 }
 
-track_node* track_previous_node( track_node* node, int* switch_table )
+track_node* track_previous_node( const track_node* node, const int* switch_table )
 {
 	track_node* reverse_next = track_next_node( node->reverse, switch_table );
 	
 	return reverse_next ? reverse_next->reverse : 0;
 }
 
-track_node* track_next_sensor( track_node* sensor, int* switch_table ){
+track_node* track_next_sensor( const track_node* sensor, const int* switch_table ){
 	track_node* ptr = sensor;
 
 	do {
@@ -116,7 +110,7 @@ track_node* track_next_sensor( track_node* sensor, int* switch_table ){
 	return ptr;
 }
 
-int train_loc_is_sensor_tripped( Sensor_data* sensor_data, track_node* sensor )
+int train_loc_is_sensor_tripped( const Sensor_data* sensor_data, const track_node* sensor )
 {
 	uint group;
 	uint id;
@@ -127,7 +121,7 @@ int train_loc_is_sensor_tripped( Sensor_data* sensor_data, track_node* sensor )
 	return ( ( sensor_data->sensor_raw[ group ] ) & ( 0x80 >> id ) );
 }
 
-int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
+int clear_sensor_data( Sensor_data* sensor_data, const track_node* current_sensor ){
 	int group = current_sensor->group * 2 + current_sensor->id / 8;
 	int id = current_sensor->id % 8;
 
@@ -135,7 +129,7 @@ int clear_sensor_data( Sensor_data* sensor_data, track_node* current_sensor ){
 	return 0;
 }
 
-int train_loc_dist( track_node* node, int* switch_table )
+int train_loc_dist( const track_node* node, const int* switch_table )
 {
 	switch( node->type ){
 	case NODE_BRANCH:

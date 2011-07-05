@@ -4,6 +4,7 @@
 #include <user/syscall.h>
 #include <user/time.h>
 #include <user/devices/clock.h>     /* For CLOCK_COUNT_DOWN_MS_PER_TICK */
+#include <lib/str.h>
 #include "inc/train_types.h"
 #include "inc/train.h"
 #include "inc/train_tracking.h"
@@ -31,9 +32,6 @@ int train_tracking_init( Train* train )
 {
 	memset( &train->tracking, 0, sizeof( train->tracking ) );
 	
-	train->tracking.speed.stat_time = 1;
-	train->tracking.old_speed.stat_dist = 1;
-
 	return ERR_NONE;
 }
 
@@ -44,15 +42,15 @@ int train_tracking_init_calib( Train* train )
 	float factor;
 	int i;
 
-	factor_1 = train->speed[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
-	factor_2 = train->speed[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
+	factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
+	factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
 	factor = ( factor_1 + factor_2 ) / 2;
 
-	train->speed[ 0 ] = 0;
-	train->speed[ 1 ] = 0;
+	train->tracking.speed_stat_table[ 0 ] = 0;
+	train->tracking.speed_stat_table[ 1 ] = 0;
 
 	for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
-		train->speed[ i ] = ( float )( int )( ( i + 1 ) / 2 ) * factor;
+		train->tracking.speed_stat_table[ i ] = ( float )( int )( ( i + 1 ) / 2 ) * factor;
 	}
 
 	return 0;
@@ -69,16 +67,16 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 	assert( status == ERR_NONE );
 
 	assert( train->next_check_point->type == NODE_SENSOR );
-	status = train_tracking_update_check_point( train, curtime );
-	assert( status == ERR_NONE );
 
+	train_tracking_update_check_point( train, curtime );
+	
 	switch( train->state ){
 	case TRAIN_STATE_TRACKING:
 		/* Update speed */
-		train->tracking.speed = ( ( train->tracking.speed_stat_table[ train->speed_level ] *
-					    train->tracking.speed_stat_count[ train->speed_level ] +
-					    ( float )train->trav_distance / ( float )( sensor_time - train->trav_time_stamp ) ) /
-					  ( train->tracking.speed_stat_table[ train->speed_level ] + 1 ) );
+		train->tracking.speed = ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] *
+					    train->tracking.speed_stat_count[ train->tracking.speed_level ] +
+					    ( float )train->tracking.trav_distance / ( float )( sensor_time - train->tracking.trav_time_stamp ) ) /
+					  ( train->tracking.speed_stat_table[ train->tracking.speed_level ] + 1 ) );
 		train->tracking.speed_stat_table[ train->tracking.speed_level ] = train->tracking.speed;
 
 		if( train->tracking.speed_stat_count[ train->tracking.speed_level ] < NUM_SPEED_HISTORY ){
@@ -131,7 +129,7 @@ int train_tracking_update_position( Train* train, int curtime )
 		}
 		break;
 	case TRAIN_STATE_TRACKING:
-		dist_diff = ( int )( ( curtime - train->tracking.last_check_point_time ) * train->tracking.speed );
+		dist_diff = ( int )( ( curtime - train->tracking.check_point_time ) * train->tracking.speed );
 		break;
 	default:
 		break;
@@ -149,7 +147,7 @@ int train_tracking_update_position( Train* train, int curtime )
 
 int train_tracking_update_eta( Train* train, int curtime )
 {
-	train->tracking.eta = ( int )( train->tracking.remaining_distance / train->speed );
+	train->tracking.eta = ( int )( train->tracking.remaining_distance / train->tracking.speed );
 
 	return ERR_NONE;
 }
@@ -165,7 +163,7 @@ int train_tracking_update( Train* train, int curtime )
 	status = train_tracking_update_eta( train, curtime );
 	assert( status == ERR_NONE );
 
-	if( train->speed == 0 ){
+	if( train->tracking.speed == 0 ){
 		train->state = TRAIN_STATE_STOP;
 	}
 
@@ -203,27 +201,37 @@ int train_tracking_speed_change( Train* train, int new_speed_level, int curtime 
 	return ERR_NONE;
 }
 
-int train_tracking_trav_dist( Train* train, int ticks )
+int train_tracking_trav_dist( const Train* train, int ticks )
 {
 	return ( int )( train->tracking.speed * ticks );
 }
 
-int train_tracking_trav_time( Train* train, int dist )
+int train_tracking_trav_time( const Train* train, int dist )
 {
 	return ( int )( dist / train->tracking.speed );
 }
 
-int train_tracking_speed_in_sec( Train* train )
+int train_tracking_speed_in_sec( const Train* train )
 {
 	return train->tracking.speed * ( 1000 / CLOCK_COUNT_DOWN_MS_PER_TICK );
 }
 
-int train_tracking_position( Train* train )
+int train_tracking_position( const Train* train )
 {
 	return train->tracking.distance;
 }
 
-int train_tracking_eta( Train* train )
+int train_tracking_remaining_distance( const Train* train )
+{
+	return train->tracking.remaining_distance;
+}
+
+int train_tracking_eta( const Train* train )
 {
 	return train->tracking.eta;
+}
+
+int train_tracking_stop_distance( const Train* train )
+{
+	return ( int )( train->tracking.speed * SPEED_CHANGE_TIME / 2 );
 }

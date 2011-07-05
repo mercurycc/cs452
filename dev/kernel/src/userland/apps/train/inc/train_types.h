@@ -42,7 +42,7 @@ typedef struct Train_stat_s {
 } Train_stat;
 
 typedef struct Train_path_s {
-	track_node* node;
+	const track_node* node;
 	int direction;
 } Train_path;
 

@@ -15,6 +15,7 @@
 #include "inc/train_location.h"
 #include "inc/warning.h"
 #include "inc/train_types.h"
+#include "inc/train_tracking.h"
 #include <perf.h>
 
 enum Train_planner_request_type {
@@ -48,7 +49,7 @@ static inline int train_planner_is_dst( const track_node* current, const track_n
 	return  DST_DIRECT( current, dst ) || DST_REVERSE( current, dst ) || DST_REVERSE_BR( current, dst );
 }
 
-static int train_planner_plan( const track_node* dst, int* dist_pass, volatile const Train_data* train, Rbuf* path, uint* direction )
+static int train_planner_plan( const track_node* dst, int* dist_pass, const Train_data* train, Rbuf* path, uint* direction )
 {
 	uint cost[ TRACK_NUM_NODES ];                /* ~0 for infinity */
 	int parent[ TRACK_NUM_NODES ][ 2 ];          /* -1 for no parent, second element for direction */
@@ -79,7 +80,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, volatile c
 		dst = dst->reverse;
 	}
 	
-	while( dst->type != NODE_EXIT && dist_pass > dst->edge[ DIR_AHEAD ].dist ){
+	while( dst->type != NODE_EXIT && *dist_pass > dst->edge[ DIR_AHEAD ].dist ){
 		switch( dst->type ){
 		case NODE_SENSOR:
 		case NODE_MERGE:
@@ -102,9 +103,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, volatile c
 	}
 	
 	/* Assign initial cost */
-	cost[ check_point->reverse->index ] = train->distance;
+	cost[ check_point->reverse->index ] = train_tracking_position( train );
 	parent[ check_point->reverse->index ][ 0 ] = -1;
-	cost[ next_check_point->index ] = train->remaining_distance;
+	cost[ next_check_point->index ] = train_tracking_remaining_distance( train );
 	parent[ next_check_point->index ][ 0 ] = -1;
 
 	/* Find path */
@@ -125,11 +126,8 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, volatile c
 
 		current_node = track_graph + min_index;
 		if( train_planner_is_dst( current_node, dst ) ){
-			*final_node = current_node;
-			if( DST_DIRECT( current_node, dst ) ){
-				*path_length = dist_pass;
-			} else {
-				*path_length = current_node->edge[ DIR_AHEAD ].dist - dist_pass;
+			if( ! DST_DIRECT( current_node, dst ) ){
+				*dist_pass = current_node->edge[ DIR_AHEAD ].dist - *dist_pass;
 			}
 			if( current_node->type == NODE_BRANCH ){
 				if( current_node->edge[ DIR_AHEAD ].dest == dst ){
@@ -211,37 +209,37 @@ static void train_forward_stop( Train_data* train, Rbuf* path, int* switch_table
 	uint look_ahead = 0;
 	int i;
 	
-	temp_node = train->check_point;
-	if( temp_node == stop_node ){
-		i = -train->distance;
-	} else {
-		temp_node == train->next_check_point;
-		i = train->remaining_distance;
-	}
+	/* temp_node = train->check_point; */
+	/* if( temp_node == stop_node ){ */
+	/* 	i = -train->distance; */
+	/* } else { */
+	/* 	temp_node == train->next_check_point; */
+	/* 	i = train->remaining_distance; */
+	/* } */
 				
-	while( look_ahead < PATH_LOOK_AHEAD_HIGH && ( i < PATH_LOOK_AHEAD_TIME * train->speed || look_ahead < PATH_LOOK_AHEAD_LOW ) ){
-		if( temp_node == train->planner_stop_node ){
-			region_printf( &path_display, "Reaching dest\n" );
-			i += stop_dist;
-			if( i <= train->stop_distance * 4 ){
-				i -= train->stop_distance;
-				region_append( &path_display, "Delay for %d ticks\n", i * train->speed.denominator / train->speed.numerator );
-				Delay( i * train->speed.denominator / train->speed.numerator );
-				train->auto_command = 0;
-				train->planner_stop = 0;
-				status = train_set_speed( module_tid, train->id, 0 );
-				assert( status == ERR_NONE );
-				status = train_auto_set_speed( auto_tid, train->id, 0 );
-				assert( status == ERR_NONE );
-				region_printf( &path_display, "Stoping\n" );
-			}
-			break;
-		} else {
-			i += temp_node->edge[ DIR_AHEAD ].dist;
-		}
-		temp_node = temp_node->edge[ DIR_AHEAD ].dest;
-	}
-	region_printf( &path_display, "Getting i = %d, stop = %d\n", i, train->stop_distance );
+	/* while( look_ahead < PATH_LOOK_AHEAD_HIGH && ( i < PATH_LOOK_AHEAD_TIME * train->speed || look_ahead < PATH_LOOK_AHEAD_LOW ) ){ */
+	/* 	if( temp_node == train->planner_stop_node ){ */
+	/* 		region_printf( &path_display, "Reaching dest\n" ); */
+	/* 		i += stop_dist; */
+	/* 		if( i <= train->stop_distance * 4 ){ */
+	/* 			i -= train->stop_distance; */
+	/* 			region_append( &path_display, "Delay for %d ticks\n", i * train->speed.denominator / train->speed.numerator ); */
+	/* 			Delay( i * train->speed.denominator / train->speed.numerator ); */
+	/* 			train->auto_command = 0; */
+	/* 			train->planner_stop = 0; */
+	/* 			status = train_set_speed( module_tid, train->id, 0 ); */
+	/* 			assert( status == ERR_NONE ); */
+	/* 			status = train_auto_set_speed( auto_tid, train->id, 0 ); */
+	/* 			assert( status == ERR_NONE ); */
+	/* 			region_printf( &path_display, "Stoping\n" ); */
+	/* 		} */
+	/* 		break; */
+	/* 	} else { */
+	/* 		i += temp_node->edge[ DIR_AHEAD ].dist; */
+	/* 	} */
+	/* 	temp_node = temp_node->edge[ DIR_AHEAD ].dest; */
+	/* } */
+	/* region_printf( &path_display, "Getting i = %d, stop = %d\n", i, train->stop_distance ); */
 }
 
 void train_planner()
@@ -261,10 +259,10 @@ void train_planner()
 	Rbuf* path = &path_body;
 	Train_path path_buf[ PATH_BUFFER_SIZE ];
 	Rbuf forward_path_body;
-	Rbuf forward_path = &forward_path_body;
+	Rbuf* forward_path = &forward_path_body;
 	track_node* previous_node = 0;
 	Train_path path_node_body;
-	Train_paht* path_node = &path_node_body;
+	Train_path* path_node = &path_node_body;
 	Train_path forward_path_buf[ PATH_BUFFER_SIZE ];
 	uint plan_direction;
 	uint remain_distance;
@@ -304,37 +302,37 @@ void train_planner()
 	assert( status == ERR_NONE );
 
 	while( 1 ){
-		train->planner_ready = 1;
+		train->planner_control = 0;
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		status = Reply( tid, ( char* )&status, sizeof( status ) );
 		assert( status == SYSCALL_SUCCESS );
-		train->planner_ready = 0;
+		train->planner_control = 1;
 
-		switch( request.type ){
-		case PLANNER_PATH_PLAN:
-			planning = 1;
-			rbuf_reset( path );
-			rbuf_reset( forward_path );
-			status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length, &plan_direction, module_tid, auto_tid, &final_node );
-			assert( status == ERR_NONE );
-			dist_pass = request.dist_pass;
+		/* switch( request.type ){ */
+		/* case PLANNER_PATH_PLAN: */
+		/* 	planning = 1; */
+		/* 	rbuf_reset( path ); */
+		/* 	rbuf_reset( forward_path ); */
+		/* 	status = train_planner_plan( request.dst, request.dist_pass, train, &path, &path_length, &plan_direction, module_tid, auto_tid, &final_node ); */
+		/* 	assert( status == ERR_NONE ); */
+		/* 	dist_pass = request.dist_pass; */
 
-			train->auto_command = 1;
+		/* 	train->auto_command = 1; */
 
-			while( ! empty( path ) ){
-				/* Obtain the next forward path, i.e. till path is empty or a merger reverse*/
-				rbuf_get( path, ( uchar* )path_node );
+		/* 	while( ! empty( path ) ){ */
+		/* 		/\* Obtain the next forward path, i.e. till path is empty or a merger reverse*\/ */
+		/* 		rbuf_get( path, ( uchar* )path_node ); */
 
-				if( path_node->node->reverse == previous_node ){
-				}
+		/* 		if( path_node->node->reverse == previous_node ){ */
+		/* 		} */
 				
-				while( 1 ){
-				if( train->auto_command ){
-				}
-				Delay( 2 );
-			}
-			break;
-		}
+		/* 		while( 1 ){ */
+		/* 		if( train->auto_command ){ */
+		/* 		} */
+		/* 		Delay( 2 ); */
+		/* 	} */
+		/* 	break; */
+		/* } */
 	}
 
 }

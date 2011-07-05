@@ -281,7 +281,7 @@ void train_auto()
 
 				/* Set initial states */
 				current_train->state = TRAIN_STATE_INIT_1;
-				current_train->init_state = TRAIN_STATE_INIT_1;				
+				current_train->init_state = TRAIN_STATE_INIT_1;
 				current_train->pickup = TRAIN_PICKUP_FRONT;
 
 				train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
@@ -399,6 +399,9 @@ void train_auto()
 					case TRAIN_STATE_INIT_2:
 					case TRAIN_STATE_INIT_3:
 						break;
+					}
+
+					switch( current_train->init_state ){
 					case TRAIN_STATE_INIT_4:
 						if( current_time >= current_train->init_speed_timeout ){
 							current_train->init_state = TRAIN_STATE_INIT_5;

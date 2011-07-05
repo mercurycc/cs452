@@ -26,6 +26,7 @@ enum Display_request_type {
 	DISPLAY_REGION_DRAW,
 	DISPLAY_REGION_CLEAR,
 	DISPLAY_DRAWER_READY,
+	DISPLAY_SCROLL_PRINT,
 	DISPLAY_QUIT
 };
 
@@ -33,7 +34,8 @@ enum Display_drawer_cursor {
 	DRAWER_CLS,
 	DRAWER_SAVE,
 	DRAWER_RESTORE,
-	DRAWER_SETPOSN
+	DRAWER_SETPOSN,
+	DISPLAY_SCROLL
 };
 
 
@@ -79,6 +81,9 @@ static inline int display_drawer_cursor_request( uint type, uint col, uint row )
 		break;
 	case DRAWER_SETPOSN:
 		size = cursor_control_setposn( cmdbuf, row, col );
+		break;
+	case DISPLAY_SCROLL:
+		size = cursor_control_scroll( cmdbuf, col, row );
 		break;
 	}
 
@@ -245,12 +250,21 @@ void display_server()
 	reply.magic = DISPLAY_MAGIC;
 #endif
 
+	/* Initialize screen */
+	display_drawer_cursor_request( DRAWER_CLS, 0, 0 );
+
 	/* Initialize editing buffer to cls */
 	for( chc = 0; chc < DISPLAY_SIZE; chc += 1 ){
 		commited[ chc ] = 0;
 		staging[ chc ] = 0;
 		editing[ chc ] = DISPLAY_BACKGROUND;
 	}
+
+	/* Initialize scrolling area for debugging */
+	display_drawer_cursor_request( DISPLAY_SCROLL, 24 + 1, 40 + 1 );
+
+	/* Set initial cursor position */
+	display_drawer_cursor_request( DRAWER_SETPOSN, 1, 40 + 1 );
 
 	while( execute ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -268,6 +282,7 @@ void display_server()
 		case DISPLAY_REGION_INIT:
 		case DISPLAY_REGION_CLEAR:
 		case DISPLAY_REGION_DRAW:
+		case DISPLAY_SCROLL_PRINT:
 		case DISPLAY_QUIT:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
@@ -275,7 +290,6 @@ void display_server()
 			break;
 		}
 
-		
 		switch( request.metadata.type ){
 		case DISPLAY_INIT:
 			/* Create drawer */
@@ -445,6 +459,20 @@ int region_clear( Region* region )
 int display_quit()
 {
 	return display_request( DISPLAY_QUIT, 0, 0, 0, 0 );
+}
+
+int display_scroll_printf( char* fmt, ... )
+{
+	va_list va;
+	int size;
+	char dst[ DISPLAY_MAX_MSG ];
+
+	va_start( va, fmt );
+	assert( region );
+	size = sformat( dst, fmt, va );
+	va_end( va );
+
+	return display_request( DISPLAY_SCROLL_PRINT, 0, dst, size, 0 );
 }
 
 static int display_drawer_ready( char** screen )
