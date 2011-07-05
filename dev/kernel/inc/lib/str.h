@@ -19,6 +19,7 @@ int stoi( const char* str );
 uint strlen( const char* str );
 int strcmp( const char* str1, const char* str2 );
 
+void *memset( void *s, int c, unsigned int n );
 int memcpy( uchar* dst, const uchar* src, uint size );
 
 int sprintf( char* dst, const char* fmt, ... );

@@ -91,6 +91,7 @@ int track_node_name2id( const char* str, int* group, int* id )
 }
 
 void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
+	memcpy( (char*)track, 0, sizeof(track_node)*TRACK_NUM_NODES );
 	track[0].name = "A1";
 	track[0].index = 0;
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
@@ -1849,6 +1850,7 @@ void init_tracka(track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP 
 }
 
 void init_trackb( track_node *track, int node_map[][ TRACK_GRAPH_NODES_PER_GROUP ] ) {
+	memcpy( (char*)track, 0, sizeof(track_node)*TRACK_NUM_NODES );
 	track[0].name = "A1";
 	track[0].index = 0;
 	node_map[ GROUPA ][ 1 - 1 ] = 0;
