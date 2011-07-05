@@ -101,6 +101,7 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 			if( train->tracking.speed_level / 2 ){
 				train->state = TRAIN_STATE_TRACKING;
 			} else {
+				train->tracking.speed = 0;
 				train->state = TRAIN_STATE_STOP;
 			}
 		}
@@ -138,10 +139,12 @@ int train_tracking_update_position( Train* train, int curtime )
 	case TRAIN_STATE_SPEED_CHANGE:
 		if( curtime < train->tracking.speed_change_end_time ){
 			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
+			train->tracking.speed_change_start_time = curtime;
 		} else {
 			dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
 					     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
 			dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
+			train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
 		}
 		break;
 	case TRAIN_STATE_TRACKING:
@@ -151,11 +154,17 @@ int train_tracking_update_position( Train* train, int curtime )
 		break;
 	}
 
-	train->tracking.distance += dist_diff;
-	train->tracking.remaining_distance -= dist_diff;
-
-	while( train->tracking.remaining_distance <= 0 && ( train->next_check_point->type != NODE_SENSOR ) ){
-		train_tracking_update_check_point( train, curtime, curtime );
+	switch( train->state ){
+	case TRAIN_STATE_SPEED_CHANGE:
+	case TRAIN_STATE_TRACKING:
+		train->tracking.distance += dist_diff;
+		train->tracking.remaining_distance -= dist_diff;
+		while( train->tracking.remaining_distance <= 0 && ( train->next_check_point->type != NODE_SENSOR ) ){
+			train_tracking_update_check_point( train, curtime, curtime );
+		}
+		break;
+	default:
+		break;
 	}
 
 	return ERR_NONE;
@@ -186,7 +195,8 @@ int train_tracking_update( Train* train, int curtime )
 	assert( status == ERR_NONE );
 
 	/* Set train to stop if speed level is 0 and speed change has completed */
-	if( train->tracking.speed_level / 2 == 0 && curtime < train->tracking.speed_change_end_time ){
+	if( train->tracking.speed_level / 2 == 0 && curtime >= train->tracking.speed_change_end_time ){
+		train->tracking.speed = 0;
 		train->state = TRAIN_STATE_STOP;
 	}
 
