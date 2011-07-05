@@ -3,12 +3,6 @@
 
 #include <types.h>
 
-typedef struct Speed_s {
-	int numerator;
-	uint denominator;
-} Speed;
-
-
 /* ret = (spd1 + spd2) / 2 */
 int get_avg_speed( Speed* spd1, Speed* spd2, Speed* ret );
 /* ret = (spd2 - spd1) * factor / total + spd1 */

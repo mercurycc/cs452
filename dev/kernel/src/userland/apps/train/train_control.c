@@ -261,21 +261,12 @@ void train_control()
 			}
 		} else if( ! strcmp( token_buf[ 0 ], "reg" ) ){
 			int train_id;
-			int pickup_sensor_group;
-			int pickup_sensor_id;
-			if( token_filled == 3 ){
+			if( token_filled == 2 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
-				status = track_node_name2id( token_buf[ 2 ], &pickup_sensor_group, &pickup_sensor_id );
-				if( status != ERR_NONE ){
-					region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] );
-					fail = 1;
-				}
-				if( ! fail ){
-					train_auto_new_train( auto_tid, train_id, pickup_sensor_group, pickup_sensor_id );
-					region_printf( &result_reg, "Register train %d\n", train_id );
-				}
+				train_auto_new_train( auto_tid, train_id );
+				region_printf( &result_reg, "Register train %d\n", train_id );
 			} else {
-				region_printf( &result_reg, "%s <train id> <sensor pickup heading towards>\n", token_buf[ 0 ] );
+				region_printf( &result_reg, "%s <train id>\n", token_buf[ 0 ] );
 			}
 		} else if( ! strcmp( token_buf[ 0 ], "plan" ) ){
 			int train_id;

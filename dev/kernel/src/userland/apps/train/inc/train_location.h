@@ -57,6 +57,7 @@ track_node* track_next_node( track_node* node, int* switch_table );
 track_node* track_previous_node( track_node* node, int* switch_table );
 /* find next sensor from a known sensor */
 track_node* track_next_sensor( track_node* sensor, int* switch_table );
+int track_next_sensor_distance( track_node* ptr, int* switch_table );
 
 /* parse sensor data, find the triggered sensor after the given one */
 track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] );

@@ -143,7 +143,8 @@ int memcpy( uchar* dst, const uchar* src, uint size )
 	return ERR_NONE;
 }
 
-void *memset(void *s, int c, unsigned int n) {
+void *memset(void *s, int c, unsigned int n)
+{
 	unsigned char *p = s;
 	while(n --> 0) { *p++ = (unsigned char)c; }
 	return s;

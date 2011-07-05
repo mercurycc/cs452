@@ -13,7 +13,11 @@
 #define PATH_LOOK_AHEAD_LOW  6
 #define PATH_LOOK_AHEAD_HIGH 10
 
-#define TRAIN_AUTO_REGISTER_SPEED 10
+#define TRAIN_AUTO_REG_SPEED_1  8
+#define TRAIN_AUTO_REG_SPEED_2  12
+
+#define TRAIN_AUTO_REG_RETRY    3
+#define TRAIN_AUTO_REG_SPEED_CALIB_TIME   1000
 
 /* Error bounds */
 #define DIST_ERROR           40       /* in mm */

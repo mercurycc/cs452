@@ -75,7 +75,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, volatile c
 
 	/* Find true destination */
 	if( dist_pass < 0 ){
-		dist_pass = -dist_pass;
+		*dist_pass = -*dist_pass;
 		dst = dst->reverse;
 	}
 	
