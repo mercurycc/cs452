@@ -151,15 +151,17 @@ int train_tracking_update_position( Train* train, int curtime )
 	case TRAIN_STATE_SPEED_CHANGE:
 		if( curtime < train->tracking.speed_change_end_time ){
 			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-			train->tracking.speed_change_start_time = curtime;
 		} else {
-			if( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) ){
+			if( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) > 0 ){
 				dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
 						     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-				dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
 			}
-			train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
+			else {
+				dist_diff = 0;
+			}
+			dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
 		}
+		train->tracking.speed_change_start_time = curtime;
 		train->tracking.old_speed = train->tracking.speed;
 		break;
 	case TRAIN_STATE_TRACKING:
