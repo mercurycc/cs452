@@ -84,6 +84,7 @@ typedef struct Train_data_s {
 	track_node* next_check_point;
 	track_node* secondary_sensor;    /* Sensor for error tolerance */
 	track_node* tertiary_sensor;
+	int secondary_eta;
 
 	const track_node* track_graph;
 	const int* switch_table;

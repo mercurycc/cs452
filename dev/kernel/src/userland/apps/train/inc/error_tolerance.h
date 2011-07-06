@@ -23,5 +23,15 @@ int train_hit_untrustable( Train_data* train );
 /* find possible sensors for train */
 int train_next_possible( Train_data* train, int* switch_table );
 
+/* mark if a sensor is being expected by a train
+ * mark single ones or
+ * mark several of a train
+ */
+int expect_sensor( uchar* sensor_expect, track_node* current_sensor );
+int forget_sensor( uchar* sensor_expect, track_node* current_sensor );
+int train_expect_sensors( Train_data* train, uchar* sensor_expect );
+int train_forget_sensors( Train_data* train, uchar* sensor_expect );
+
+
 #endif
 

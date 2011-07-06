@@ -123,6 +123,8 @@ void train_auto()
 	Train_auto_request request;
 	Train_auto_reply reply;
 	Sensor_data sensor_data;
+	// uchar sensor_expect[ SENSOR_BYTE_COUNT ] = { 0 };
+	uchar sensor_expect[ SENSOR_BYTE_COUNT ];
 	int last_sensor_group = -1;
 	int last_sensor_id = -1;
 	int tracking_ui_tid;
@@ -145,6 +147,11 @@ void train_auto()
 	uint current_distance;
 	uint reprocess = 0;
 	int status;
+
+	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
+		sensor_expect[i] = 0;
+	}
+
 
 	/* Receive initialization data */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -263,6 +270,9 @@ void train_auto()
 							if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
 								last_sensor_group = temp / 2;
 								last_sensor_id = i + ( temp % 2 ) * 8;
+								if ( !( sensor_expect[ temp ] & ( ( 1 << 7 ) >> i ) ) ){
+									sensor_error( track_graph + node_map[ last_sensor_group ][ last_sensor_id ] );
+								}
 							}
 						}
 					}
@@ -412,11 +422,8 @@ void train_auto()
 						}
 						break;
 					default:
-						/*
-						if( train_tracking_eta( current_train ) > ETA_WINDOW_SIZE || train_tracking_eta( current_train ) < -ETA_WINDOW_SIZE ) {
-							break;
-						}
-						else */if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+							train_forget_sensors( current_train, sensor_expect );
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
@@ -425,9 +432,23 @@ void train_auto()
 									    train_tracking_eta( current_train ) );
 							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+
 						}
 						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
 							// TODO: secondary sensor is hit
+							train_forget_sensors( current_train, sensor_expect );
+							sensor_error( current_train->next_sensor );
+							current_train->last_sensor = current_train->secondary_sensor;
+							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
+									    current_train->last_sensor->group, current_train->last_sensor->id,
+									    current_time + train_tracking_eta( current_train ),
+									    train_tracking_eta( current_train ) );
+							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+
 						}
 						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
 							// TODO: tertiary sensor is hit
