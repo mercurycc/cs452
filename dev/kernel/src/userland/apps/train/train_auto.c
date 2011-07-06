@@ -251,6 +251,29 @@ void train_auto()
 			break;
 		}
 
+		/* Skip if train is not registered */
+		switch( request.type ){
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+			temp = train_map[ request.data.set_speed.train_id ];
+			break;
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+			temp = train_map[ request.data.set_reverse.train_id ];
+			break;
+		case TRAIN_AUTO_PLAN:
+			temp = train_map[ request.data.plan.train_id ];
+			break;
+		}
+
+		switch( request.type ){
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+		case TRAIN_AUTO_PLAN:
+			if( ! temp ){
+				continue;
+			}
+		}
+
+
 		do {
 			if( reprocess ){
 				dnotice( "Reprocessing...\n" );
@@ -361,6 +384,7 @@ void train_auto()
 				current_train = trains + train_map[ request.data.plan.train_id ];
 				current_sensor = track_graph + node_map[ request.data.plan.group ][ request.data.plan.id ];
 				if( ! current_train->planner_control ){
+					dprintf( "Train 
 					train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
 				}
 				break;
