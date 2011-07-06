@@ -21,6 +21,7 @@
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
+#include "inc/error_tolerance.h"
 
 #define LOCAL_DEBUG
 #include <user/dprint.h>
@@ -122,6 +123,8 @@ void train_auto()
 	Train_auto_request request;
 	Train_auto_reply reply;
 	Sensor_data sensor_data;
+	// uchar sensor_expect[ SENSOR_BYTE_COUNT ] = { 0 };
+	int sensor_expect[ SENSOR_GROUP_COUNT ][ SENSOR_COUNT_PER_GROUP ] = { { 0 } };
 	int last_sensor_group = -1;
 	int last_sensor_id = -1;
 	int tracking_ui_tid;
@@ -144,6 +147,12 @@ void train_auto()
 	uint current_distance;
 	uint reprocess = 0;
 	int status;
+
+	/*
+	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
+		sensor_expect[i] = 0;
+	}
+	*/
 
 	/* Receive initialization data */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -262,6 +271,9 @@ void train_auto()
 							if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
 								last_sensor_group = temp / 2;
 								last_sensor_id = i + ( temp % 2 ) * 8;
+								if ( !( sensor_expect[ last_sensor_group ][ last_sensor_id ] ) ){
+									sensor_error( track_graph + node_map[ last_sensor_group ][ last_sensor_id ] );
+								}
 							}
 						}
 					}
@@ -391,6 +403,9 @@ void train_auto()
 						} else {
 							current_train->last_sensor = current_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+
 							current_train->init_retry = 0;
 
 							/* Let tracking update the train states corresponding to the first sensor */
@@ -415,6 +430,19 @@ void train_auto()
 						break;
 					default:
 						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+							/*
+							if ( current_train->state == TRAIN_STATE_TRACKING ) {
+								int eta = train_tracking_eta( current_train );
+								track_node* next_check_point = current_train->next_check_point;
+								if ( next_check_point != current_train->next_sensor || eta > ETA_WINDOW_SIZE ) {
+									// should not hit primary sensor yet
+									sensor_error( current_train->next_sensor );
+									break;
+								}
+							}
+							*/
+							sensor_trust( current_train->next_sensor );
+							train_forget_sensors( current_train, sensor_expect );
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
@@ -422,6 +450,34 @@ void train_auto()
 									    current_time + train_tracking_eta( current_train ),
 									    train_tracking_eta( current_train ) );
 							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+
+						}
+						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+							/*
+							if ( current_train->state == TRAIN_STATE_TRACKING && current_train->next_check_point != current_train->next_sensor ) {
+								// should not hit secondary sensor yet
+								sensor_error( current_train->secondary_sensor );
+								break;
+							}
+							*/
+							sensor_trust( current_train->secondary_sensor );
+							sensor_error( current_train->next_sensor );
+							train_forget_sensors( current_train, sensor_expect );
+							current_train->last_sensor = current_train->secondary_sensor;
+							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
+									    current_train->last_sensor->group, current_train->last_sensor->id,
+									    current_time + train_tracking_eta( current_train ),
+									    train_tracking_eta( current_train ) );
+							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+
+						}
+						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+							// TODO: tertiary sensor is hit
 						}
 						break;
 					}
@@ -435,6 +491,8 @@ void train_auto()
 					switch( current_train->init_state ){
 					default:
 						train_tracking_update( current_train, current_time );
+						// TODO: if sensor has not hit any sensor for a long time => lost the train
+
 					case TRAIN_STATE_INIT_1:
 					case TRAIN_STATE_INIT_2:
 					case TRAIN_STATE_INIT_3:

@@ -51,6 +51,7 @@ KERNELSRC += userland/apps/train/train_location.c
 # KERNELSRC += userland/apps/train/speed.c
 KERNELSRC += userland/apps/train/planner.c
 KERNELSRC += userland/apps/train/train_tracking.c
+KERNELSRC += userland/apps/train/error_tolerance.c
 KERNELSRC += userland/apps/train/ui/clock.c
 KERNELSRC += userland/apps/train/ui/sensor_monitor.c
 KERNELSRC += userland/apps/train/ui/switch_monitor.c

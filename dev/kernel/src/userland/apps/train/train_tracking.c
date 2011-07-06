@@ -10,6 +10,7 @@
 #include "inc/train_tracking.h"
 #include "inc/track_node.h"
 #include "inc/train_location.h"
+#include "inc/error_tolerance.h"
 
 #define LOCAL_DEBUG
 #include <user/dprint.h>
@@ -173,7 +174,7 @@ int train_tracking_update_position( Train* train, int curtime )
 	case TRAIN_STATE_TRACKING:
 		train->tracking.distance += dist_diff;
 		train->tracking.remaining_distance -= dist_diff;
-		while( train->tracking.remaining_distance <= 0 && ( train->next_check_point->type != NODE_SENSOR ) ){
+		while( train->tracking.remaining_distance <= 0 && ( !sensor_trustable( train->next_check_point ) || train->next_check_point->type != NODE_SENSOR ) ){
 			train_tracking_update_check_point( train, curtime, curtime );
 		}
 		break;

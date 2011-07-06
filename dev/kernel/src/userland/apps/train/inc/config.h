@@ -25,6 +25,9 @@
 #define TRAIN_AUTO_REG_RETRY      3
 #define TRAIN_AUTO_REG_SPEED_CALIB_TIME   2000
 
+#define SENSOR_GROUP_COUNT      5
+#define SENSOR_COUNT_PER_GROUP  16
+
 /* Error bounds */
 #define DIST_ERROR           40       /* in mm */
 #define TIME_ERROR           0        /* TODO: Undefined yet */
@@ -43,6 +46,7 @@
 
 /* Timing, in ticks */
 #define SENSOR_XMIT_TIME    8
+#define TRAIN_AUTO_WAKEUP_PERIOD 2
 
 #define WARNING_REGION       { 14, 23, 1, 78 - 14, 1, 0 }
 #define SWID_TO_ARRAYID( i ) ( i < 19 ? i - 1 : i - 135 )

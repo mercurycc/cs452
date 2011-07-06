@@ -63,6 +63,8 @@ int track_next_sensor_distance( const track_node* ptr, const int* switch_table )
 track_node* parse_sensor( Sensor_data* sensor_data, track_node* current_sensor, track_node* track_graph, int node_map[ GROUP_COUNT ][ TRACK_GRAPH_NODES_PER_GROUP ] );
 /* clear a specific sensor report in sensor_data */
 int clear_sensor_data( Sensor_data* sensor_data, const track_node* current_sensor );
+/* mark a specific sensor being triggered in sensor_data */
+int mark_sensor_data( Sensor_data* sensor_data, const track_node* current_sensor );
 /* Test if the requested sensor is tripped */
 int train_loc_is_sensor_tripped( const Sensor_data* sensor_data, const track_node* sensor );
 int train_loc_dist( const track_node* node, const int* switch_table );
@@ -71,9 +73,6 @@ int train_loc_dist( const track_node* node, const int* switch_table );
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route );
 
 
-
-/* find the expected target to hit by a train */
-int train_detective( Train_data* train, track_node** next_sensor_ahead, track_node** next_sensor_skipped, track_node** next_sensor_curved );
 
 #endif
 
