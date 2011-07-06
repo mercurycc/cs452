@@ -436,7 +436,6 @@ void train_auto()
 
 						}
 						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-							// TODO: secondary sensor is hit
 							train_forget_sensors( current_train, sensor_expect );
 							sensor_error( current_train->next_sensor );
 							current_train->last_sensor = current_train->secondary_sensor;
