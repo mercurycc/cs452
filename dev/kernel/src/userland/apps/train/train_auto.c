@@ -428,6 +428,7 @@ void train_auto()
 						break;
 					default:
 						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+							sensor_trust( current_train->next_sensor );
 							train_forget_sensors( current_train, sensor_expect );
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
@@ -441,6 +442,7 @@ void train_auto()
 
 						}
 						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+							sensor_trust( current_train->secondary_sensor );
 							train_forget_sensors( current_train, sensor_expect );
 							sensor_error( current_train->next_sensor );
 							current_train->last_sensor = current_train->secondary_sensor;

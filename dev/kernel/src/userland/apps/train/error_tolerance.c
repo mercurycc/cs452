@@ -93,6 +93,7 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	train->secondary_sensor = secondary;
 	train->tertiary_sensor = tertiary;
 /*
+	// need to do this if we need to calculate the time window for secondary sensor
 	if ( secondary ) {
 		int primary_eta = train_tracking_eta( train );
 		int primary_distance = train_tracking_remaining_distance( train );
@@ -103,7 +104,7 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	}
 */
 
-	dprintf( "primary %c%d secondary %c%d tertiary %c%d secondary eta %d\n", primary->group+'A', primary->id+1, secondary->group+'A', secondary->id+1, tertiary->group+'A', tertiary->id+1, train->secondary_eta );
+	// dprintf( "primary %c%d secondary %c%d tertiary %c%d secondary eta %d\n", primary->group+'A', primary->id+1, secondary->group+'A', secondary->id+1, tertiary->group+'A', tertiary->id+1, train->secondary_eta );
 	return 0;
 }
 
