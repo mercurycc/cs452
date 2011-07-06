@@ -5,18 +5,24 @@
 #define SENSOR_NAME_LENGTH    3
 #define NUM_SWITCHES         22
 #define MAX_NUM_TRAINS       10
-#define TRAIN_TRAVEL_SPEED   14
 #define MAX_TRAIN_ID         128
 #define PATH_BUFFER_SIZE     128
 #define TARGET_BUFFER_SIZE   20     /* First for current chk pnt, others for future */
-#define PATH_LOOK_AHEAD_TIME 200
-#define PATH_LOOK_AHEAD_LOW  6
-#define PATH_LOOK_AHEAD_HIGH 10
+#define PATH_LOOK_AHEAD_TIME    200
+#define PATH_LOOK_AHEAD_LOW     6
+#define PATH_LOOK_AHEAD_HIGH    10
+#define PATH_LOOK_AHEAD_BUFFER  32
+#define PATH_LOOK_AHEAD_DIST    2000
+#define PATH_LOOK_AHEAD_ADJUST_DIST 1000
+#define PATH_LOOK_AHEAD_DEFAULT_STOP 150
 
 #define TRAIN_AUTO_REG_SPEED_1  8
 #define TRAIN_AUTO_REG_SPEED_2  12
 
-#define TRAIN_AUTO_REG_RETRY    3
+#define TRAIN_TRAVEL_SPEED        10
+#define TRAIN_CLOSE_TRAVEL_SPEED  4
+
+#define TRAIN_AUTO_REG_RETRY      3
 #define TRAIN_AUTO_REG_SPEED_CALIB_TIME   2000
 
 /* Error bounds */
