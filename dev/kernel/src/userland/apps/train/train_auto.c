@@ -360,7 +360,7 @@ void train_auto()
 			case TRAIN_AUTO_PLAN:
 				current_train = trains + train_map[ request.data.plan.train_id ];
 				current_sensor = track_graph + node_map[ request.data.plan.group ][ request.data.plan.id ];
-				if( current_train->planner_control ){
+				if( ! current_train->planner_control ){
 					train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
 				}
 				break;
