@@ -25,6 +25,9 @@
 #define TRAIN_AUTO_REG_RETRY      3
 #define TRAIN_AUTO_REG_SPEED_CALIB_TIME   2000
 
+#define SENSOR_GROUP_COUNT      5
+#define SENSOR_COUNT_PER_GROUP  16
+
 /* Error bounds */
 #define DIST_ERROR           40       /* in mm */
 #define TIME_ERROR           0        /* TODO: Undefined yet */
