@@ -16,9 +16,9 @@
 
 static void train_tracking_update_check_point( Train* train, int check_point_time, int curtime )
 {
-	int old_trav_distance;
+	int old_remaining;
 	
-	old_trav_distance = train->tracking.distance + train->tracking.remaining_distance;
+	old_remaining = train->tracking.remaining_distance;
 	
 	/* Update check point */
 	train->check_point = train->next_check_point;
@@ -32,7 +32,7 @@ static void train_tracking_update_check_point( Train* train, int check_point_tim
 		train->tracking.distance = ( int )( ( curtime - check_point_time ) * train->tracking.speed );
 		break;
 	default:
-		train->tracking.distance -= old_trav_distance;
+		train->tracking.distance = -old_remaining;
 		break;
 	}
 	train->tracking.remaining_distance -= train->tracking.distance;
@@ -46,7 +46,7 @@ int train_tracking_init( Train* train )
 {
 	int i;
 	
-	memset( &train->tracking, 0, sizeof( train->tracking ) );
+	memset( ( uchar* )&train->tracking, 0, sizeof( train->tracking ) );
 
 	for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
 		train->tracking.speed_stat_table[ i ] = 100;
@@ -67,13 +67,13 @@ int train_tracking_init_calib( Train* train )
 	factor = ( factor_1 + factor_2 ) / 2;
 
 	train->tracking.speed_stat_table[ 0 ] = 0;
-	train->tracking.speed_stat_count[ 0 ] = 5;
+	train->tracking.speed_stat_count[ 0 ] = 1;
 	train->tracking.speed_stat_table[ 1 ] = 0;
-	train->tracking.speed_stat_count[ 1 ] = 5;
+	train->tracking.speed_stat_count[ 1 ] = 1;
 
 	for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
 		train->tracking.speed_stat_table[ i ] = ( float )i * factor;
-		train->tracking.speed_stat_count[ i ] = 5;
+		train->tracking.speed_stat_count[ i ] = 1;
 	}
 
 	return 0;
@@ -150,12 +150,15 @@ int train_tracking_update_position( Train* train, int curtime )
 	case TRAIN_STATE_SPEED_CHANGE:
 		if( curtime < train->tracking.speed_change_end_time ){
 			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
+			train->tracking.speed_change_start_time = curtime;
 		} else {
-			dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
-					     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-			dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
+			if( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) ){
+				dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
+						     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
+				dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
+			}
+			train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
 		}
-		train->tracking.speed_change_start_time = train->tracking.speed_change_end_time;
 		train->tracking.old_speed = train->tracking.speed;
 		break;
 	case TRAIN_STATE_TRACKING:

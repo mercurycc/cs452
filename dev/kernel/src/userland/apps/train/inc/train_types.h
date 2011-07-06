@@ -87,10 +87,10 @@ typedef struct Train_data_s {
 	const int* switch_table;
 	const int* node_map;
 
-	Train_tracking tracking;
+	volatile Train_tracking tracking;
 
 	int planner_tid;                 /* Planner */
-	int planner_control;
+	volatile int planner_control;
 } Train_data;
 
 typedef Train_data Train;
