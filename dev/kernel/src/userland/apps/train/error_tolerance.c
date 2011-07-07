@@ -43,7 +43,7 @@ int sensor_error( track_node* sensor ){
 		dprintf( "sensor %c%d is less trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	else {
-		dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
+		// dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	return 0;
 }

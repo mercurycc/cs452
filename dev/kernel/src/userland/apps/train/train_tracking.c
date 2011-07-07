@@ -33,7 +33,7 @@ static void train_tracking_update_check_point( Train* train, int check_point_tim
 		train->tracking.distance = ( int )( ( curtime - check_point_time ) * train->tracking.speed );
 		break;
 	default:
-		train->tracking.distance = -old_remaining;
+		train->tracking.distance = ( old_remaining ) >= 0 ? 0 : -old_remaining;
 		break;
 	}
 	train->tracking.remaining_distance -= train->tracking.distance;
@@ -41,6 +41,9 @@ static void train_tracking_update_check_point( Train* train, int check_point_tim
 	/* Update speed change meta data */
 	train->tracking.old_speed = train->tracking.speed;
 	train->tracking.speed_change_start_time = curtime;
+
+	/* Notify whoever is waiting for an update */
+	sem_release( train->update );
 }
 
 int train_tracking_init( Train* train )
@@ -227,8 +230,6 @@ int train_tracking_reverse( Train* train )
 	temp = train->tracking.remaining_distance;
 	train->tracking.remaining_distance = train->tracking.distance;
 	train->tracking.distance = temp;
-	train->check_point = train->next_check_point->reverse;
-	train->next_check_point = train->check_point->reverse;
 	train->tracking.speed = 0;
 	train->tracking.speed_level = 0;
 

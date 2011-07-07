@@ -76,3 +76,4 @@ KERNELSRC += userland/drivers/uart_drv.c
 # Services
 KERNELSRC += userland/server/time_server.c
 KERNELSRC += userland/server/display_server.c
+KERNELSRC += userland/server/semaphore_server.c
