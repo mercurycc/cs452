@@ -347,7 +347,6 @@ void train_auto()
 				break;
 			case TRAIN_AUTO_SET_TRAIN_SPEED:
 				current_train = trains + train_map[ request.data.set_speed.train_id ];
-				current_train->planner_control = 0;
 				current_train->state = TRAIN_STATE_SPEED_CHANGE;
 				train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
 				break;
@@ -384,8 +383,10 @@ void train_auto()
 				current_train = trains + train_map[ request.data.plan.train_id ];
 				current_sensor = track_graph + node_map[ request.data.plan.group ][ request.data.plan.id ];
 				if( ! current_train->planner_control ){
-					dprintf( "Train 
+					dprintf( "Train %d received planning request successfully\n", current_train->id );
 					train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
+				} else {
+					dprintf( "Train %d received planning request failed\n", current_train->id );
 				}
 				break;
 			}
@@ -435,11 +436,8 @@ void train_auto()
 							/* Let tracking update the train states corresponding to the first sensor */
 							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 
-							/* Compose speed change request */
-							train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
-
-							/* Process the composed request */
-							reprocess = 1;
+							/* Force tracking */
+							current_train->state = TRAIN_STATE_TRACKING;
 
 							/* Allow tracking to track the train */
 							current_train->init_state = TRAIN_STATE_INIT_4;
