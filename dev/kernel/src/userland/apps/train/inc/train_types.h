@@ -85,9 +85,9 @@ typedef struct Train_data_s {
 	track_node* next_check_point;    /* Shared.  Next check point */
 	track_node* secondary_sensor;    /* Sensor for error tolerance */
 	track_node* tertiary_sensor;
-	int next_time_pred;              /* expected arrive time for sensors */
-	int secondary_time_pred;
-	int tertiary_time_pred;
+	uint next_time_pred;             /* expected arrive time for sensors */
+	uint secondary_time_pred;
+	uint tertiary_time_pred;
 	int going_to_secondary;
 
 	/* Shared data lock */

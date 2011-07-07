@@ -62,6 +62,7 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	track_node* tertiary = 0;
 	track_node* last = train->last_sensor;
 	track_node* temp = train->last_sensor;
+	assert( last );
 	
 	int dist;
 
@@ -99,18 +100,39 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	train->secondary_sensor = secondary;
 	train->tertiary_sensor = tertiary;
 	
-	/* update pred time 
+	/* update pred time */
 	if ( primary ) {
 		temp = last;
-		dist = 0;
-		do {
-			
-		} while ( temp != primary );
+		dist = track_next_sensor_distance( temp, switch_table );
+		
+		switch ( train->state ){
+		case TRAIN_STATE_SPEED_CHANGE:
+			break;
+		case TRAIN_STATE_TRACKING:
+			train->next_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
+			break;
+		default:
+			assert(0);
+		}
 	}
-	*/
+	
 
+	if ( secondary ) {
+		temp = primary;
+		dist += track_next_sensor_distance( temp, switch_table );
+		
+		switch ( train->state ){
+		case TRAIN_STATE_SPEED_CHANGE:
+			break;
+		case TRAIN_STATE_TRACKING:
+			train->secondary_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
+			break;
+		default:
+			assert(0);
+		}
+	}
 
-	// dprintf( "primary %c%d secondary %c%d tertiary %c%d secondary eta %d\n", primary->group+'A', primary->id+1, secondary->group+'A', secondary->id+1, tertiary->group+'A', tertiary->id+1, train->secondary_eta );
+	dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
 	return 0;
 }
 
