@@ -104,9 +104,6 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 		if( train->tracking.speed_stat_count[ train->tracking.speed_level ] < NUM_SPEED_HISTORY ){
 			train->tracking.speed_stat_count[ train->tracking.speed_level ] += 1;
 		}
-
-		train->tracking.trav_distance = track_next_sensor_distance( train->last_sensor, train->switch_table );
-		train->tracking.trav_time_stamp = sensor_time;
 		break;
 	case TRAIN_STATE_SPEED_CHANGE:
 		if( curtime >= train->tracking.speed_change_end_time ){
@@ -121,6 +118,9 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 	default:
 		break;
 	}
+
+	train->tracking.trav_distance = track_next_sensor_distance( train->last_sensor, train->switch_table );
+	train->tracking.trav_time_stamp = sensor_time;
 
 	return 0;
 }
