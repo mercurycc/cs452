@@ -14,6 +14,7 @@
 #include "inc/train_location.h"
 #include "inc/warning.h"
 #include "inc/train_types.h"
+#include "inc/error_tolerance.h"
 
 
 int node_distance( const track_node* src, const int* switch_table )
@@ -54,7 +55,7 @@ int track_next_sensor_distance( const track_node* ptr, const int* switch_table )
 			length += ptr->edge[ DIR_AHEAD ].dist;
 		}
 		ptr = track_next_node( ptr, switch_table );
-	} while ( ptr && ptr->type != NODE_SENSOR );
+	} while ( ptr && ( ptr->type != NODE_SENSOR || !sensor_trustable( ptr ) ) );
 
 	return length;
 }

@@ -269,10 +269,19 @@ void train_auto()
 						last_sensor_group = temp;
 						for( i = 0; i < BITS_IN_BYTE; i += 1 ){
 							if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
-								last_sensor_group = temp / 2;
-								last_sensor_id = i + ( temp % 2 ) * 8;
-								if ( !( sensor_expect[ last_sensor_group ][ last_sensor_id ] ) ){
-									sensor_error( track_graph + node_map[ last_sensor_group ][ last_sensor_id ] );
+								int group = temp / 2;
+								int id = i + ( temp % 2 ) * 8;
+								current_sensor = track_graph + node_map[ group ][ id ];
+
+								if ( !sensor_trustable( current_sensor ) ) {
+									clear_sensor_data( &sensor_data, current_sensor );
+								}
+								else {
+									last_sensor_group = group;
+									last_sensor_id = id;
+									if ( !( sensor_expect[ group ][ id ] ) ){
+										sensor_error( current_sensor );
+									}
 								}
 							}
 						}
