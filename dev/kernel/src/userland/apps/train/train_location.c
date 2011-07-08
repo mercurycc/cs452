@@ -183,7 +183,7 @@ uint train_time_to_distance( Train_data* train, int distance ) {
 	
 	if ( change_dist <= distance ) {
 		time = ( distance - change_dist ) / train->tracking.speed_stat_table[ train->tracking.speed_level ];
-		result = time;
+		result = time + train->tracking.speed_change_end_time - train->tracking.speed_change_start_time;
 	}
 	else {
 		accel = ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time );

@@ -229,7 +229,6 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 	int path_matched;
 	enum { TRAVEL, STOP } state;
 	char name[ 6 ];
-	int done = 0;
 	
 	rbuf_init( local_path, ( uchar* )path_buf[ 0 ], sizeof( Train_path ), sizeof( path_buf[ 0 ] ) );
 	rbuf_init( local_path_stack, ( uchar* )path_buf[ 1 ], sizeof( Train_path ), sizeof( path_buf[ 1 ] ) );
@@ -239,7 +238,7 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 
 	state = STOP;
 
-	while( ! done ){
+	while( 1 ){
 		while( look_ahead < PATH_LOOK_AHEAD_DIST && ! rbuf_empty( path ) ){
 			rbuf_get( path, ( uchar* )path_node );
 			rbuf_put( local_path, ( uchar* )path_node );
@@ -272,12 +271,7 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 
 		matched_dist = 0;
 
-		/* Wait for update */
-		sem_acquire_all( train->update );
-		
-		sem_acquire( train->sem );
 		match_node = train->check_point;
-		
 		do {
 			rbuf_get( local_path, ( uchar* )path_node );
 			rbuf_put_front( local_path_stack, ( uchar* )path_node );
@@ -306,7 +300,7 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 			look_ahead -= matched_dist;
 		}
 
-		if( train_tracking_trav_time( train, look_ahead ) < PATH_LOOK_AHEAD_ADJUST_TIME && state == TRAVEL ){
+		if( look_ahead < PATH_LOOK_AHEAD_ADJUST_DIST && state == TRAVEL ){
 			assert( ! rbuf_empty( local_path ) );
 			dprintf( "Train %d reaching dest\n", train->id );
 			state = STOP;
@@ -320,10 +314,10 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 			train_auto_set_speed( auto_tid, train->id, 0 );
 
 			/* Execution should be completed */
-			done = 1;
+			break;
 		}
 
-		sem_release( train->sem );
+		Delay( train_tracking_trav_time( train, train_tracking_position( train ) ) );
 	}
 }
 

@@ -8,6 +8,7 @@
 #define SENSOR_NOT_TRUSTABLE 3
 #define ETA_WINDOW_SIZE 100
 
+#define TIME_WINDOW_RANGE_FACTOR 1/3
 
 /* check if a sensor is trustable
  * trustable returns true if sensor is trustable
@@ -23,6 +24,8 @@ int train_hit_untrustable( Train_data* train );
 
 /* find possible sensors for train */
 int train_next_possible( Train_data* train, int* switch_table );
+/* get time prediction to next sensor */
+int train_update_time_pred( Train_data* train, int* switch_table );
 
 /* mark if a sensor is being expected by a train
  * mark single ones or
