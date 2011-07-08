@@ -10,6 +10,7 @@
 #include <user/uart.h>
 #include <user/display.h>
 #include <user/lib/sync.h>
+#include <user/semaphore.h>
 #include <bwio.h>
 #include <err.h>
 
@@ -54,6 +55,10 @@ void user_init()
 	assert( status == ERR_NONE );
 
 	DEBUG_NOTICE( DBG_USER, "uart init done\n" );
+
+	/* Semaphore server */
+	tid = Create( SERVICE_PRIORITY, sem_server );
+	assert( tid > 0 );
 
 	status = display_init();
 	assert( status == ERR_NONE );

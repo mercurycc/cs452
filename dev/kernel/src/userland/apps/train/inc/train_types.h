@@ -3,6 +3,7 @@
 
 
 #include <lib/rbuf.h>
+#include <user/semaphore.h>
 #include "track_node.h"
 #include "config.h"
 
@@ -76,12 +77,12 @@ typedef struct Train_data_s {
 	uint init_state;
 	uint init_retry;
 	uint init_speed_timeout;
-	
+
 	uint pickup;                     /* Traveling with pick up at the front is forward, backward o/w */
 	track_node* last_sensor;         /* Sensor */
 	track_node* next_sensor;
-	track_node* check_point;         /* Check point */
-	track_node* next_check_point;
+	track_node* check_point;         /* Shared.  Check point */
+	track_node* next_check_point;    /* Shared.  Next check point */
 	track_node* secondary_sensor;    /* Sensor for error tolerance */
 	track_node* tertiary_sensor;
 	uint next_time_pred;             /* expected arrive time for sensors */
@@ -89,11 +90,19 @@ typedef struct Train_data_s {
 	uint tertiary_time_pred;
 	int going_to_secondary;
 
+	/* Shared data lock */
+	Semaphore sem_body;
+	Semaphore* sem;
+
+	/* Update event notifier, only one task can be waiting on this */
+	Semaphore update_body;
+	Semaphore* update;
+	
 	const track_node* track_graph;
 	const int* switch_table;
 	const int* node_map;
 
-	volatile Train_tracking tracking;
+	volatile Train_tracking tracking; /* Shared. */
 
 	int planner_tid;                 /* Planner */
 	volatile int planner_control;
