@@ -72,8 +72,7 @@ int train_loc_dist( const track_node* node, const int* switch_table );
 /* find shortest route, and return the distance between 2 nodes on the track */
 int track_route( track_node* src, track_node* dst, track_node* track_graph, Map_route* route );
 
-/* find time to run the distance when speed is changing */
-uint train_time_to_distance( Train_data* train, int distance );
+
 
 #endif
 

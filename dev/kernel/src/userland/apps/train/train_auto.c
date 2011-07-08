@@ -12,6 +12,7 @@
 #include <user/name_server.h>
 #include <config.h>
 #include <user/display.h>
+#include <user/semaphore.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -325,6 +326,18 @@ void train_auto()
 
 					current_train->id = request.data.new_train.train_id;
 
+					/* Initialize semaphore */
+					current_train->sem = &current_train->sem_body;
+
+					status = sem_init( current_train->sem, 1 );
+					assert( status == ERR_NONE );
+
+					/* Initialize update notifier */
+					current_train->update = &current_train->update_body;
+
+					status = sem_init( current_train->update, 0 );
+					assert( status == ERR_NONE );
+
 					current_train->track_graph = track_graph;
 					current_train->switch_table = switch_table;
 					current_train->node_map = ( int* )node_map;
@@ -358,7 +371,6 @@ void train_auto()
 				current_train = trains + train_map[ request.data.set_speed.train_id ];
 				current_train->state = TRAIN_STATE_SPEED_CHANGE;
 				train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
-				train_update_time_pred( current_train, switch_table );
 				break;
 			case TRAIN_AUTO_SET_TRAIN_REVERSE:
 				current_train = trains + train_map[ request.data.set_reverse.train_id ];
@@ -382,6 +394,7 @@ void train_auto()
 				for( i = 0; i < NUM_SWITCHES; i += 1 ){
 					switch_table[ i ] = request.data.set_switch_all.direction;
 				}
+				break;
 			case TRAIN_AUTO_QUERY_SWITCH_DIR:
 				reply.group = switch_table[ SWID_TO_ARRAYID( request.data.set_switch.switch_id ) ];
 				break;
@@ -401,10 +414,32 @@ void train_auto()
 				break;
 			}
 
+			/* If the switch table is updated, the sensor prediction has to be updated as well */
+			if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ){
+				for( temp = 1; temp < available_train; temp += 1 ){
+					current_train = trains + temp;
+
+					/* Critical section */
+					sem_acquire( current_train->sem );
+
+					/* The reason that the next check point does not need to be updated is because,
+					   if the next check point is before the switch then the next check point should
+					   be the switch, and if the train is on the switch the switch should not be
+					   switched, and if the train is off the switch then it does not matter */
+					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+					
+					sem_release( current_train->sem );
+				}
+			}
+
 			/* Process train states */
 			if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
 				for( temp = 1; temp < available_train; temp += 1 ){
 					current_train = trains + temp;
+
+					/* Critical section */
+					sem_acquire( current_train->sem );
+					
 					switch( current_train->init_state ){
 					case TRAIN_STATE_INIT_1:
 						current_train->last_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
@@ -462,22 +497,37 @@ void train_auto()
 						break;
 					default:
 						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-
+							/*
+							if ( current_train->state == TRAIN_STATE_TRACKING ) {
+								int eta = train_tracking_eta( current_train );
+								track_node* next_check_point = current_train->next_check_point;
+								if ( next_check_point != current_train->next_sensor || eta > ETA_WINDOW_SIZE ) {
+									// should not hit primary sensor yet
+									sensor_error( current_train->next_sensor );
+									break;
+								}
+							}
+							*/
 							sensor_trust( current_train->next_sensor );
 							train_forget_sensors( current_train, sensor_expect );
 							current_train->last_sensor = current_train->next_sensor;
 							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
 									    current_train->last_sensor->group, current_train->last_sensor->id,
 									    current_time + train_tracking_eta( current_train ),
 									    train_tracking_eta( current_train ) );
-							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 							train_next_possible( current_train, switch_table );
 							train_expect_sensors( current_train, sensor_expect );
 
-						}
-						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-
+						} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+							/*
+							if ( current_train->state == TRAIN_STATE_TRACKING && current_train->next_check_point != current_train->next_sensor ) {
+								// should not hit secondary sensor yet
+								sensor_error( current_train->secondary_sensor );
+								break;
+							}
+							*/
 							sensor_trust( current_train->secondary_sensor );
 							sensor_error( current_train->next_sensor );
 							train_forget_sensors( current_train, sensor_expect );
@@ -491,19 +541,22 @@ void train_auto()
 							train_next_possible( current_train, switch_table );
 							train_expect_sensors( current_train, sensor_expect );
 
-						}
-						else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+						} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
 							// TODO: tertiary sensor is hit
 						}
 						break;
 					}
-				
+
+					sem_release( current_train->sem );
 				}
 			}
 
 			if( request.type == TRAIN_AUTO_WAKEUP ){
 				for( temp = 1; temp < available_train; temp += 1 ){
 					current_train = trains + temp;
+					
+					sem_acquire( current_train->sem );
+					
 					switch( current_train->init_state ){
 					default:
 						train_tracking_update( current_train, current_time );
@@ -555,6 +608,8 @@ void train_auto()
 						}
 						break;
 					}
+					
+					sem_release( current_train->sem );
 				}
 			}
 
