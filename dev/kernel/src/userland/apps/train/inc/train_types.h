@@ -88,6 +88,7 @@ typedef struct Train_data_s {
 	uint next_time_pred;             /* expected arrive time for sensors */
 	uint secondary_time_pred;
 	uint tertiary_time_pred;
+	uint next_time_range;
 	int going_to_secondary;
 
 	/* Shared data lock */

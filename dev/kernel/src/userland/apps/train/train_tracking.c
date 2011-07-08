@@ -90,10 +90,10 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 	/* Force next check point to be the current sensor triggered */
 	train->next_check_point = train->last_sensor;
 	
+	train_tracking_update_check_point( train, sensor_time, curtime );
+	
 	status = train_tracking_update( train, curtime );
 	assert( status == ERR_NONE );
-
-	train_tracking_update_check_point( train, sensor_time, curtime );
 	
 	switch( train->state ){
 	case TRAIN_STATE_TRACKING:
@@ -117,6 +117,10 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 				train->state = TRAIN_STATE_STOP;
 			}
 		}
+		else {
+			train->tracking.speed_change_start_time = curtime;
+			train->tracking.old_speed = train->tracking.speed;
+		}
 		break;
 	default:
 		break;
@@ -136,6 +140,9 @@ int train_tracking_update_speed( Train* train, int curtime )
 			train->tracking.speed = ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) *
 						  ( curtime - train->tracking.speed_change_start_time )
 						  / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) + train->tracking.old_speed );
+		}
+		else {
+			train->tracking.speed = train->tracking.speed_stat_table[ train->tracking.speed_level ];
 		}
 		break;
 	case TRAIN_STATE_TRACKING:
@@ -193,7 +200,13 @@ int train_tracking_update_position( Train* train, int curtime )
 int train_tracking_update_eta( Train* train, int curtime )
 {
 	if( train->tracking.speed ){
-		train->tracking.eta = ( int )( train->tracking.remaining_distance / train->tracking.speed );
+		if ( train->state == TRAIN_STATE_TRACKING ) {
+			train->tracking.eta = ( int )( train->tracking.remaining_distance / train->tracking.speed );
+		}
+		else if ( train->state == TRAIN_STATE_SPEED_CHANGE ){
+			train->tracking.eta = train_time_to_distance( train, train->tracking.remaining_distance );
+			//dprintf( "eta %d\n", train->tracking.eta );
+		}
 	} else {
 		train->tracking.eta = 0;
 	}

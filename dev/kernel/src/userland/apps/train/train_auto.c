@@ -371,6 +371,7 @@ void train_auto()
 				current_train = trains + train_map[ request.data.set_speed.train_id ];
 				current_train->state = TRAIN_STATE_SPEED_CHANGE;
 				train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
+				train_update_time_pred( current_train, switch_table );
 				break;
 			case TRAIN_AUTO_SET_TRAIN_REVERSE:
 				current_train = trains + train_map[ request.data.set_reverse.train_id ];
@@ -497,17 +498,7 @@ void train_auto()
 						break;
 					default:
 						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-							/*
-							if ( current_train->state == TRAIN_STATE_TRACKING ) {
-								int eta = train_tracking_eta( current_train );
-								track_node* next_check_point = current_train->next_check_point;
-								if ( next_check_point != current_train->next_sensor || eta > ETA_WINDOW_SIZE ) {
-									// should not hit primary sensor yet
-									sensor_error( current_train->next_sensor );
-									break;
-								}
-							}
-							*/
+
 							sensor_trust( current_train->next_sensor );
 							train_forget_sensors( current_train, sensor_expect );
 							current_train->last_sensor = current_train->next_sensor;
@@ -521,13 +512,7 @@ void train_auto()
 							train_expect_sensors( current_train, sensor_expect );
 
 						} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-							/*
-							if ( current_train->state == TRAIN_STATE_TRACKING && current_train->next_check_point != current_train->next_sensor ) {
-								// should not hit secondary sensor yet
-								sensor_error( current_train->secondary_sensor );
-								break;
-							}
-							*/
+
 							sensor_trust( current_train->secondary_sensor );
 							sensor_error( current_train->next_sensor );
 							train_forget_sensors( current_train, sensor_expect );

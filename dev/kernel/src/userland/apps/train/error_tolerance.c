@@ -43,7 +43,7 @@ int sensor_error( track_node* sensor ){
 		dprintf( "sensor %c%d is less trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	else {
-		// dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
+		//dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	return 0;
 }
@@ -63,8 +63,6 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	track_node* last = train->last_sensor;
 	track_node* temp = train->last_sensor;
 	assert( last );
-	
-	int dist;
 
 	/* find a trustable primary */
 	while ( primary && !sensor_trustable( primary ) ) {
@@ -101,39 +99,59 @@ int train_next_possible( Train_data* train, int* switch_table ){
 	train->tertiary_sensor = tertiary;
 	
 	/* update pred time */
+	train_update_time_pred( train, switch_table );
+	
+	uint range = train->next_time_range;
+	uint a = train->next_time_pred - range;
+	uint b = train->next_time_pred + range;
+	
+	
+	dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, a, b, range );
+	//dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
+
+	return 0;
+}
+
+int train_update_time_pred( Train_data* train, int* switch_table ){
+	track_node* primary = train->next_sensor;
+	track_node* secondary = train->secondary_sensor;
+	track_node* tertiary = train->tertiary_sensor;
+	track_node* temp = 0;
+	int dist = 0;
+
 	if ( primary ) {
-		temp = last;
+		temp = train->check_point;
 		dist = track_next_sensor_distance( temp, switch_table );
 		
 		switch ( train->state ){
 		case TRAIN_STATE_SPEED_CHANGE:
+			train->next_time_pred = train_time_to_distance( train, ( dist - train->tracking.distance ) ) + train->tracking.speed_change_start_time;
 			break;
 		case TRAIN_STATE_TRACKING:
 			train->next_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
 			break;
 		default:
-			assert(0);
+			train->next_time_pred = 0;
 		}
+		dprintf( "range is 1/3 of %d - %d\n", train->next_time_pred, train->tracking.speed_change_start_time );
+		train->next_time_range = ( train->next_time_pred - train->tracking.speed_change_start_time ) * TIME_WINDOW_RANGE_FACTOR;
+	}
+	else {
+		train->next_time_pred = 0;
 	}
 	
-
-	if ( secondary ) {
-		temp = primary;
-		dist += track_next_sensor_distance( temp, switch_table );
-		
-		switch ( train->state ){
-		case TRAIN_STATE_SPEED_CHANGE:
-			break;
-		case TRAIN_STATE_TRACKING:
-			train->secondary_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
-			break;
-		default:
-			assert(0);
-		}
-	}
-
-	dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
 	return 0;
+}
+
+int train_arrive_on_time( Train_data* train, uint sensor_time  ){
+	uint range = train->next_time_range;
+	if ( !range ) {
+		return 1;
+	}
+	uint low = train->next_time_pred - range;
+	uint high = train->next_time_pred + range;
+	
+	return ( sensor_time <= high && sensor_time >= low );
 }
 
 int train_expect_sensors( Train_data* train, int sensor_expect[ SENSOR_GROUP_COUNT ][ SENSOR_COUNT_PER_GROUP ] ) {
