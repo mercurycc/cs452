@@ -114,6 +114,10 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 				train->state = TRAIN_STATE_STOP;
 			}
 		}
+		else {
+			train->tracking.speed_change_start_time = curtime;
+			train->tracking.old_speed = train->tracking.speed;
+		}
 		break;
 	default:
 		break;
@@ -134,6 +138,9 @@ int train_tracking_update_speed( Train* train, int curtime )
 						  ( curtime - train->tracking.speed_change_start_time )
 						  / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) + train->tracking.old_speed );
 		}
+		else {
+			train->tracking.speed = train->tracking.speed_stat_table[ train->tracking.speed_level ];
+		}
 		break;
 	case TRAIN_STATE_TRACKING:
 	default:
@@ -152,17 +159,10 @@ int train_tracking_update_position( Train* train, int curtime )
 		if( curtime < train->tracking.speed_change_end_time ){
 			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
 		} else {
-			if( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) > 0 ){
-				dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) *
-						     ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-			}
-			else {
-				dist_diff = 0;
-			}
+			dist_diff = ( int )( ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
 			dist_diff += ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
 		}
-		train->tracking.speed_change_start_time = curtime;
-		train->tracking.old_speed = train->tracking.speed;
+		dist_diff -= train->tracking.distance;
 		break;
 	case TRAIN_STATE_TRACKING:
 		dist_diff = ( int )( ( curtime - train->tracking.check_point_time ) * train->tracking.speed ) - train->tracking.distance;
@@ -190,7 +190,13 @@ int train_tracking_update_position( Train* train, int curtime )
 int train_tracking_update_eta( Train* train, int curtime )
 {
 	if( train->tracking.speed ){
-		train->tracking.eta = ( int )( train->tracking.remaining_distance / train->tracking.speed );
+		if ( train->state == TRAIN_STATE_TRACKING ) {
+			train->tracking.eta = ( int )( train->tracking.remaining_distance / train->tracking.speed );
+		}
+		else if ( train->state == TRAIN_STATE_SPEED_CHANGE ){
+			train->tracking.eta = train_time_to_distance( train, train->tracking.remaining_distance );
+			//dprintf( "eta %d\n", train->tracking.eta );
+		}
 	} else {
 		train->tracking.eta = 0;
 	}

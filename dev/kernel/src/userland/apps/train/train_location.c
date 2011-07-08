@@ -16,6 +16,8 @@
 #include "inc/train_types.h"
 #include "inc/error_tolerance.h"
 
+#define LOCAL_DEBUG
+#include <user/dprint.h>
 
 int node_distance( const track_node* src, const int* switch_table )
 {
@@ -149,6 +151,51 @@ int train_loc_dist( const track_node* node, const int* switch_table )
 	}
 }
 
+float frsqrt( float number ){
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking [sic]
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck? [sic]
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+	// y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}
+
+float fsqrt( float number ) {
+	return 1 / frsqrt( number );
+}
+
+uint train_time_to_distance( Train_data* train, int distance ) {
+
+	assert( train->state == TRAIN_STATE_SPEED_CHANGE );
+
+	float speed;
+	float accel;
+	uint time;
+	uint result = 0;
+	int change_dist = ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) * ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] + train->tracking.old_speed ) / 2 );
+	
+	if ( change_dist <= distance ) {
+		time = ( distance - change_dist ) / train->tracking.speed_stat_table[ train->tracking.speed_level ];
+		result = time;
+	}
+	else {
+		accel = ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time );
+		speed = fsqrt( train->tracking.speed * train->tracking.speed + 2 * accel * distance );
+		time = ( speed - train->tracking.speed ) / accel;
+		result = time;
+	}
+	
+	
+	//dprintf( "time to get to %c%d distance %d is time %d\n", train->next_sensor->group+'A', train->next_sensor->id+1, distance, time );
+	return result;
+}
 
 #if 0
 int update_train_location( Train_data* train ) {

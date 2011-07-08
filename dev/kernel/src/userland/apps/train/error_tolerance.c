@@ -107,13 +107,17 @@ int train_next_possible( Train_data* train, int* switch_table ){
 		
 		switch ( train->state ){
 		case TRAIN_STATE_SPEED_CHANGE:
+			train->next_time_pred = train_time_to_distance( train, ( dist - train->tracking.distance ) ) + train->tracking.speed_change_start_time;
 			break;
 		case TRAIN_STATE_TRACKING:
 			train->next_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
 			break;
 		default:
-			assert(0);
+			train->next_time_pred = 0;
 		}
+	}
+	else {
+		train->next_time_pred = 0;
 	}
 	
 
@@ -131,8 +135,13 @@ int train_next_possible( Train_data* train, int* switch_table ){
 			assert(0);
 		}
 	}
+	else {
+		train->secondary_time_pred = 0;
+	}
 
-	dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
+	dprintf( "last %c%d @ %d primary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred );
+	//dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
+
 	return 0;
 }
 
