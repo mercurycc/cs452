@@ -252,6 +252,7 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 
 			if( path_node->node->type == NODE_BRANCH ){
 				train_switch( module_tid, path_node->node->id + 1, path_node->direction );
+				train_auto_set_switch( auto_tid, path_node->node->id + 1, path_node->direction );
 			}
 		}
 
@@ -274,6 +275,10 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 
 		/* Wait for update */
 		sem_acquire_all( train->update );
+
+		if( ! train->planner_control ){
+			break;
+		}
 		
 		sem_acquire( train->sem );
 		match_node = train->check_point;
@@ -307,17 +312,13 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 		}
 
 		if( train_tracking_trav_time( train, look_ahead ) < PATH_LOOK_AHEAD_ADJUST_TIME && state == TRAVEL ){
-			assert( ! rbuf_empty( local_path ) );
 			dprintf( "Train %d reaching dest\n", train->id );
 			state = STOP;
 
 			dprintf( "Train %d stop distance: %d, wait %d ticks\n", train->id,
 				 train_tracking_stop_distance( train ),
-				 train_tracking_trav_time( train, look_ahead + stop_dist - train_tracking_stop_distance( train ) ) );
-			Delay( train_tracking_trav_time( train, look_ahead + stop_dist - train_tracking_stop_distance( train ) ) );
-
-			train_set_speed( module_tid, train->id, 0 );
-			train_auto_set_speed( auto_tid, train->id, 0 );
+				 train_tracking_trav_time( train, look_ahead - stop_dist - train_tracking_stop_distance( train ) ) );
+			Delay( train_tracking_trav_time( train, look_ahead - stop_dist - train_tracking_stop_distance( train ) ) );
 
 			/* Execution should be completed */
 			done = 1;
@@ -325,6 +326,13 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 
 		sem_release( train->sem );
 	}
+
+	dprintf( "Train %d wait done, will stop\n", train->id );
+	train_set_speed( module_tid, train->id, 0 );
+	train_auto_set_speed( auto_tid, train->id, 0 );
+	dprintf( "Train %d stop\n", train->id );
+
+	dprintf( "Train %d forward execution completed\n", train->id );
 }
 
 void train_planner()
@@ -409,14 +417,13 @@ void train_planner()
 
 			assert( ! rbuf_empty( path ) );
 
-			dprintf( "Planner path planned for %d\n", train->id );
-
-			while( ! rbuf_empty( path ) ){
+			while( train->planner_control && ( ! rbuf_empty( path ) ) ){
 				dprintf( "Planner filling forward path for train %d\n", train->id );
 			
 				if( plan_direction == PLANNER_BACKWARD ){
 					train_reverse( module_tid, train->id );
 					train_auto_set_reverse( auto_tid, train->id );
+					dprintf( "Reverse for %d\n", train->id );
 				}
 
 				previous_node = 0;
@@ -439,7 +446,7 @@ void train_planner()
 						rbuf_put( forward_path, ( uchar* )path_node );
 					}
 
-					dnotice( " <- " );
+					dnotice( " -> " );
 
 					previous_node = path_node->node;
 				}

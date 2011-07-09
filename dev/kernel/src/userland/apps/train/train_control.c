@@ -52,6 +52,9 @@ void train_control()
 	
 	int status;
 
+	status = RegisterAs( CONTROL_NAME );
+	assert( status == REGISTER_AS_SUCCESS );
+
 	status = region_init( &prompt_reg );
 	assert( status == ERR_NONE );
 	status = region_init( &result_reg );

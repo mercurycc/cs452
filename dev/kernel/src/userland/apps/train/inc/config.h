@@ -15,7 +15,11 @@
 #define PATH_LOOK_AHEAD_DIST    4000
 #define PATH_LOOK_AHEAD_ADJUST_DIST 2000
 #define PATH_LOOK_AHEAD_ADJUST_TIME 200
-#define PATH_LOOK_AHEAD_DEFAULT_STOP 100
+#define PATH_LOOK_AHEAD_DEFAULT_STOP 200
+
+/* number of ticks needed to change speed */
+#define SPEED_CHANGE_TIME 280
+#define COMMAND_DELAY_TIME  7
 
 #define TRAIN_AUTO_REG_SPEED_1  8
 #define TRAIN_AUTO_REG_SPEED_2  12
@@ -43,6 +47,7 @@
 #define TRAIN_MODULE_NAME   "train_mod"
 #define SENSOR_QUERY_NAME   "sensor_qu"
 #define TRACKING_UI_NAME    "tracking_ui"
+#define CONTROL_NAME        "train_ctl"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */

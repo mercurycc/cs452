@@ -82,7 +82,11 @@ void time_main(){
 			assert( status == 0 );
 			break;
 		case TIME_DELAY:
-			msg.interval += result;
+			if( msg.interval > 0 ){
+				msg.interval += result;
+			} else {
+				msg.interval = 0;
+			}
 		case TIME_DELAY_UNTIL:
 
 			if ( msg.interval <= result ) {

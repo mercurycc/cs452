@@ -130,6 +130,7 @@ void train_auto()
 	int last_sensor_id = -1;
 	int tracking_ui_tid;
 	int alarm_tid;
+	int control_tid;
 	int tid;
 	int i;
 	int temp;
@@ -180,6 +181,9 @@ void train_auto()
 
 	tracking_ui_tid = WhoIs( TRACKING_UI_NAME );
 	assert( tracking_ui_tid > 0 );
+
+	control_tid = WhoIs( CONTROL_NAME );
+	assert( control_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
@@ -369,19 +373,27 @@ void train_auto()
 				break;
 			case TRAIN_AUTO_SET_TRAIN_SPEED:
 				current_train = trains + train_map[ request.data.set_speed.train_id ];
-				current_train->state = TRAIN_STATE_SPEED_CHANGE;
-				train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
-				train_update_time_pred( current_train, switch_table );
-				break;
+				if( request.data.set_speed.speed_level != 15 ){
+					current_train->state = TRAIN_STATE_SPEED_CHANGE;
+					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
+					train_update_time_pred( current_train, switch_table );
+					break;
+				}
 			case TRAIN_AUTO_SET_TRAIN_REVERSE:
 				current_train = trains + train_map[ request.data.set_reverse.train_id ];
+
+				/* Clear planner control if the request is from user */
+				if( tid == control_tid ){
+					current_train->planner_control = 0;
+				}
+				
 				if( current_train->pickup == TRAIN_PICKUP_FRONT ){
 					current_train->pickup = TRAIN_PICKUP_BACK;
 				} else if( current_train->pickup == TRAIN_PICKUP_BACK ){
 					current_train->pickup = TRAIN_PICKUP_FRONT;
 				}
 				current_train->check_point = current_train->next_check_point->reverse;
-				current_train->next_check_point = current_train->check_point->reverse;
+				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
 				current_train->last_sensor = current_train->next_sensor->reverse;
 				current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
@@ -415,206 +427,184 @@ void train_auto()
 				break;
 			}
 
-			/* If the switch table is updated, the sensor prediction has to be updated as well */
-			if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ){
+			if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ||
+			    request.type == TRAIN_AUTO_WAKEUP || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
 				for( temp = 1; temp < available_train; temp += 1 ){
 					current_train = trains + temp;
-
 					/* Critical section */
 					sem_acquire( current_train->sem );
 
-					/* The reason that the next check point does not need to be updated is because,
-					   if the next check point is before the switch then the next check point should
-					   be the switch, and if the train is on the switch the switch should not be
-					   switched, and if the train is off the switch then it does not matter */
-					current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-					
-					sem_release( current_train->sem );
-				}
-			}
-
-			/* Process train states */
-			if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
-				for( temp = 1; temp < available_train; temp += 1 ){
-					current_train = trains + temp;
-
-					/* Critical section */
-					sem_acquire( current_train->sem );
-					
-					switch( current_train->init_state ){
-					case TRAIN_STATE_INIT_1:
-						current_train->last_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
+					/* If the switch table is updated, the sensor prediction has to be updated as well */
+					if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ){
+						/* The reason that the next check point does not need to be updated is because,
+						   if the next check point is before the switch then the next check point should
+						   be the switch, and if the train is on the switch the switch should not be
+						   switched, and if the train is off the switch then it does not matter */
 						current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-						current_train->init_retry = 0;
-						current_train->init_state = TRAIN_STATE_INIT_2;
-						dprintf( "Train %d init_1 pass\n", current_train->id );
-						break;
-					case TRAIN_STATE_INIT_2:
-						current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
-						if( current_sensor != current_train->next_sensor ){
-							current_train->init_retry += 1;
-							dprintf( "Train %d init_2 fail %d\n", current_train->id, current_train->init_retry );
-						} else {
-							current_train->last_sensor = current_sensor;
-							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-							current_train->init_retry = 0;
-							current_train->init_state = TRAIN_STATE_INIT_3;
-							dprintf( "Train %d init_2 pass\n", current_train->id );
-						}
-						if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
-							current_train->init_state = TRAIN_STATE_INIT_1;
-							dprintf( "Train %d init_2 revert to init_1\n", current_train->id );
-						}
-						break;
-					case TRAIN_STATE_INIT_3:
-						current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
-						if( current_sensor != current_train->next_sensor ){
-							current_train->init_retry += 1;
-							dprintf( "Train %d init_3 fail %d\n", current_train->id, current_train->init_retry );
-						} else {
-							current_train->last_sensor = current_sensor;
-							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-							train_next_possible( current_train, switch_table );
-							train_expect_sensors( current_train, sensor_expect );
-
-							current_train->init_retry = 0;
-
-							/* Let tracking update the train states corresponding to the first sensor */
-							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
-
-							/* Force tracking */
-							current_train->state = TRAIN_STATE_TRACKING;
-
-							/* Allow tracking to track the train */
-							current_train->init_state = TRAIN_STATE_INIT_4;
-							current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
-
-							dprintf( "Train %d init_3 pass\n", current_train->id );
-						}
-						if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
-							current_train->init_state = TRAIN_STATE_INIT_1;
-							dprintf( "Train %d init_3 revert to init_1\n", current_train->id );
-						}
-						break;
-					default:
-						if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
-
-							sensor_trust( current_train->next_sensor );
-							train_forget_sensors( current_train, sensor_expect );
-							current_train->last_sensor = current_train->next_sensor;
-							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
-							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
-									    current_train->last_sensor->group, current_train->last_sensor->id,
-									    current_time + train_tracking_eta( current_train ),
-									    train_tracking_eta( current_train ) );
-							train_next_possible( current_train, switch_table );
-							train_expect_sensors( current_train, sensor_expect );
-
-						} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-
-							sensor_trust( current_train->secondary_sensor );
-							sensor_error( current_train->next_sensor );
-							train_forget_sensors( current_train, sensor_expect );
-							current_train->last_sensor = current_train->secondary_sensor;
-							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-							tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
-									    current_train->last_sensor->group, current_train->last_sensor->id,
-									    current_time + train_tracking_eta( current_train ),
-									    train_tracking_eta( current_train ) );
-							train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
-							train_next_possible( current_train, switch_table );
-							train_expect_sensors( current_train, sensor_expect );
-
-						} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
-							// TODO: tertiary sensor is hit
-						}
-						break;
 					}
 
-					sem_release( current_train->sem );
-				}
-			}
+					/* Process train states */
+					if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
+						switch( current_train->init_state ){
+						case TRAIN_STATE_INIT_1:
+							current_train->last_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
+							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							current_train->init_retry = 0;
+							current_train->init_state = TRAIN_STATE_INIT_2;
+							dprintf( "Train %d init_1 pass\n", current_train->id );
+							break;
+						case TRAIN_STATE_INIT_2:
+							current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
+							if( current_sensor != current_train->next_sensor ){
+								current_train->init_retry += 1;
+								dprintf( "Train %d init_2 fail %d\n", current_train->id, current_train->init_retry );
+							} else {
+								current_train->last_sensor = current_sensor;
+								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+								current_train->init_retry = 0;
+								current_train->init_state = TRAIN_STATE_INIT_3;
+								dprintf( "Train %d init_2 pass\n", current_train->id );
+							}
+							if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
+								current_train->init_state = TRAIN_STATE_INIT_1;
+								dprintf( "Train %d init_2 revert to init_1\n", current_train->id );
+							}
+							break;
+						case TRAIN_STATE_INIT_3:
+							current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
+							if( current_sensor != current_train->next_sensor ){
+								current_train->init_retry += 1;
+								dprintf( "Train %d init_3 fail %d\n", current_train->id, current_train->init_retry );
+							} else {
+								current_train->last_sensor = current_sensor;
+								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+								train_next_possible( current_train, switch_table );
+								train_expect_sensors( current_train, sensor_expect );
 
-			if( request.type == TRAIN_AUTO_WAKEUP ){
-				for( temp = 1; temp < available_train; temp += 1 ){
-					current_train = trains + temp;
-					
-					sem_acquire( current_train->sem );
-					
+								current_train->init_retry = 0;
+
+								/* Let tracking update the train states corresponding to the first sensor */
+								train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+
+								/* Force tracking */
+								current_train->state = TRAIN_STATE_TRACKING;
+
+								/* Allow tracking to track the train */
+								current_train->init_state = TRAIN_STATE_INIT_4;
+								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
+
+								dprintf( "Train %d init_3 pass\n", current_train->id );
+							}
+							if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
+								current_train->init_state = TRAIN_STATE_INIT_1;
+								dprintf( "Train %d init_3 revert to init_1\n", current_train->id );
+							}
+							break;
+						default:
+							if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+								sensor_trust( current_train->next_sensor );
+								train_forget_sensors( current_train, sensor_expect );
+								current_train->last_sensor = current_train->next_sensor;
+								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+								train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+								tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
+										    current_train->last_sensor->group, current_train->last_sensor->id,
+										    current_time + train_tracking_eta( current_train ),
+										    train_tracking_eta( current_train ) );
+								train_next_possible( current_train, switch_table );
+								train_expect_sensors( current_train, sensor_expect );
+
+							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+								sensor_trust( current_train->secondary_sensor );
+								sensor_error( current_train->next_sensor );
+								train_forget_sensors( current_train, sensor_expect );
+								current_train->last_sensor = current_train->secondary_sensor;
+								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+								tracking_ui_chkpnt( tracking_ui_tid, current_train->id,
+										    current_train->last_sensor->group, current_train->last_sensor->id,
+										    current_time + train_tracking_eta( current_train ),
+										    train_tracking_eta( current_train ) );
+								train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
+								train_next_possible( current_train, switch_table );
+								train_expect_sensors( current_train, sensor_expect );
+
+							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+								// TODO: tertiary sensor is hit
+							}
+							break;
+						}
+					}
+
+					if( request.type == TRAIN_AUTO_WAKEUP ){
+						switch( current_train->init_state ){
+						default:
+							train_tracking_update( current_train, current_time );
+							// TODO: if sensor has not hit any sensor for a long time => lost the train
+
+						case TRAIN_STATE_INIT_1:
+						case TRAIN_STATE_INIT_2:
+						case TRAIN_STATE_INIT_3:
+							break;
+						}
+
+						switch( current_train->init_state ){
+						case TRAIN_STATE_INIT_4:
+							if( current_time >= current_train->init_speed_timeout ){
+								current_train->init_state = TRAIN_STATE_INIT_5;
+								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
+							
+								train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
+							
+								/* Compose speed change request */
+								train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
+
+								/* Process the composed request */
+								reprocess = 1;
+
+								/* Break the loop */
+								temp = available_train;
+
+								dprintf( "Train %d init_4 pass\n", current_train->id );
+							}
+							break;
+						case TRAIN_STATE_INIT_5:
+							if( current_time >= current_train->init_speed_timeout ){
+								current_train->init_state = TRAIN_STATE_INIT_DONE;
+
+								train_tracking_init_calib( current_train );
+								train_set_speed( module_tid, current_train->id, 0 );
+
+								/* Compose speed change request */
+								train_auto_recompose_set_speed( &request, current_train->id, 0 );
+
+								/* Process the composed request */
+								reprocess = 1;
+
+								/* Break the loop */
+								temp = available_train;
+
+								dprintf( "Train %d init_5 pass\n", current_train->id );
+							}
+							break;
+						}
+					}
+
 					switch( current_train->init_state ){
 					default:
-						train_tracking_update( current_train, current_time );
-						// TODO: if sensor has not hit any sensor for a long time => lost the train
-
+						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
+								     current_train->check_point->group, current_train->check_point->id );
+						tracking_ui_dist( tracking_ui_tid, current_train->id, train_tracking_position( current_train ) );
+						tracking_ui_speed( tracking_ui_tid, current_train->id, train_tracking_speed_in_sec( current_train ) );
+						tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
+								     current_train->next_check_point->group, current_train->next_check_point->id,
+								     train_tracking_eta( current_train ) );
 					case TRAIN_STATE_INIT_1:
 					case TRAIN_STATE_INIT_2:
 					case TRAIN_STATE_INIT_3:
 						break;
 					}
 
-					switch( current_train->init_state ){
-					case TRAIN_STATE_INIT_4:
-						if( current_time >= current_train->init_speed_timeout ){
-							current_train->init_state = TRAIN_STATE_INIT_5;
-							current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
-							
-							train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
-							
-							/* Compose speed change request */
-							train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
-
-							/* Process the composed request */
-							reprocess = 1;
-
-							/* Break the loop */
-							temp = available_train;
-
-							dprintf( "Train %d init_4 pass\n", current_train->id );
-						}
-						break;
-					case TRAIN_STATE_INIT_5:
-						if( current_time >= current_train->init_speed_timeout ){
-							current_train->init_state = TRAIN_STATE_INIT_DONE;
-
-							train_tracking_init_calib( current_train );
-							train_set_speed( module_tid, current_train->id, 0 );
-
-							/* Compose speed change request */
-							train_auto_recompose_set_speed( &request, current_train->id, 0 );
-
-							/* Process the composed request */
-							reprocess = 1;
-
-							/* Break the loop */
-							temp = available_train;
-
-							dprintf( "Train %d init_5 pass\n", current_train->id );
-						}
-						break;
-					}
-					
 					sem_release( current_train->sem );
-				}
-			}
-
-			if( request.type == TRAIN_AUTO_WAKEUP || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
-				for( temp = 1; temp < available_train; temp += 1 ){
-					current_train = trains + temp;
-					switch( current_train->init_state ){
-					default:
-					tracking_ui_landmrk( tracking_ui_tid, current_train->id,
-							     current_train->check_point->group, current_train->check_point->id );
-					tracking_ui_dist( tracking_ui_tid, current_train->id, train_tracking_position( current_train ) );
-					tracking_ui_speed( tracking_ui_tid, current_train->id, train_tracking_speed_in_sec( current_train ) );
-					tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
-							     current_train->next_check_point->group, current_train->next_check_point->id,
-							     train_tracking_eta( current_train ) );
-					case TRAIN_STATE_INIT_1:
-					case TRAIN_STATE_INIT_2:
-					case TRAIN_STATE_INIT_3:
-						break;
-					}
 				}
 			}
 		} while( reprocess );

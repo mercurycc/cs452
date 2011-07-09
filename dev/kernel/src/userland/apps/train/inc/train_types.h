@@ -105,8 +105,10 @@ typedef struct Train_data_s {
 
 	volatile Train_tracking tracking; /* Shared. */
 
+	/* Planner */
 	int planner_tid;                 /* Planner */
 	volatile int planner_control;
+	volatile int mark_dist;          /* Variable updated by tracking, used by planner to track amount of distance travelled to track stop distance */
 } Train_data;
 
 typedef Train_data Train;

@@ -29,9 +29,6 @@ typedef struct Map_node_s {
 /* for path search */
 #define INFINITY 2147483647
 
-/* number of ticks needed to change speed */
-#define SPEED_CHANGE_TIME 270
-
 /* 999 means not measured yet */
 #define TRAIN_HEAD_LENGTH( i ) ( i > 21 ? ( i == 23 ? 30 : 999 ) : ( i == 21 ? 20 : 999 ) )
 #define TRAIN_TAIL_LENGTH( i ) ( i > 21 ? ( i == 23 ? 140 : 999 ) : ( i == 21 ? 120 : 999 ) )
