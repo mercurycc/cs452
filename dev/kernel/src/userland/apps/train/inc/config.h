@@ -18,7 +18,7 @@
 #define PATH_LOOK_AHEAD_LOW     6
 #define PATH_LOOK_AHEAD_HIGH    10
 #define PATH_LOOK_AHEAD_BUFFER  32
-#define PATH_LOOK_AHEAD_DIST    800
+#define PATH_LOOK_AHEAD_DIST    1000
 // #define PATH_LOOK_AHEAD_ADJUST_DIST 800
 #define PATH_LOOK_AHEAD_DEFAULT_STOP    250
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
@@ -34,8 +34,13 @@
 #define TRAIN_AUTO_REG_SPEED_1  8
 #define TRAIN_AUTO_REG_SPEED_2  12
 
-#define TRAIN_TRAVEL_SPEED        10
-#define TRAIN_CLOSE_TRAVEL_SPEED  4
+#define TRAIN_TRAVEL_SPEED_1        10
+#define TRAIN_TRAVEL_SPEED_2_LENGTH 2000
+#define TRAIN_TRAVEL_SPEED_2        8
+#define TRAIN_TRAVEL_SPEED_3_LENGTH 1000
+#define TRAIN_TRAVEL_SPEED_3        6
+#define TRAIN_TRAVEL_SPEED_4_LENGTH 500
+#define TRAIN_TRAVEL_SPEED_4        4
 
 #define TRAIN_AUTO_REG_RETRY      2
 #define TRAIN_AUTO_REG_SPEED_CALIB_TIME   500
