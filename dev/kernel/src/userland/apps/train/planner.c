@@ -272,6 +272,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 	int path_matched;
 	int all_matched;
 	uint state;
+	int temp;
 	char name[ 6 ];
 	int done = 0;
 	
@@ -308,7 +309,11 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		}
 
 		/* Update speed */
-		train_forward_set_speed( train, &state, path_length, module_tid, auto_tid );
+		sem_acquire_all( train->sem );
+		temp = train->mark_dist;
+		sem_release( train->sem );
+		
+		train_forward_set_speed( train, &state, temp, module_tid, auto_tid );
 
 		path_matched = 0;
 		matched_dist = 0;
@@ -366,7 +371,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 				dprintf( "Train %d last matched %s, %d mm\n", train->id, name, matched_dist );
 				look_ahead -= matched_dist;
 				path_length -= matched_dist;
-				train->mark_dist = path_length;
+				train->mark_dist = path_length - train_tracking_position( train );
 			}
 
 			sem_release( train->sem );
