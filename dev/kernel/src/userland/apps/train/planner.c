@@ -213,6 +213,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		*direction = PLANNER_BACKWARD;
 	} else if( current_node == next_check_point ){
 		*direction = PLANNER_FORWARD;
+
 	}
 
 	return ERR_NONE;
@@ -235,17 +236,17 @@ static inline void train_forward_set_speed( volatile Train_data* train, uint* st
 		*state = TRAVEL_1;
 	}
 
-	if( ( path_length < TRAIN_TRAVEL_SPEED_2_LENGTH && init_state == TRAVEL_1 ) || init_state == STOP ){
+	if( path_length < TRAIN_TRAVEL_SPEED_2_LENGTH && ( init_state == TRAVEL_1 || init_state == STOP ) ){
 		speed_level = TRAIN_TRAVEL_SPEED_2;
 		*state = TRAVEL_2;
 	}
 
-	if( ( path_length < TRAIN_TRAVEL_SPEED_3_LENGTH && init_state == TRAVEL_2 ) || init_state == STOP ){
+	if( path_length < TRAIN_TRAVEL_SPEED_3_LENGTH && ( init_state == TRAVEL_2 || init_state == STOP ) ){
 		speed_level = TRAIN_TRAVEL_SPEED_3;
 		*state = TRAVEL_3;
 	}
 
-	if( ( path_length < TRAIN_TRAVEL_SPEED_4_LENGTH && init_state == TRAVEL_3 ) || init_state == STOP ){
+	if( path_length < TRAIN_TRAVEL_SPEED_4_LENGTH && ( init_state == TRAVEL_3 || init_state == STOP ) ){
 		speed_level = TRAIN_TRAVEL_SPEED_4;
 		*state = TRAVEL_4;
 	}
@@ -283,6 +284,10 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 	state = STOP;
 
+	sem_acquire_all( train->sem );
+	train->mark_dist = path_length;
+	sem_release( train->sem );
+
 	while( ! done ){
 		while( look_ahead < PATH_LOOK_AHEAD_DIST && ! rbuf_empty( path ) ){
 			rbuf_get( path, ( uchar* )path_node );
@@ -302,7 +307,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 			}
 		}
 
-		/* Initial set speed */
+		/* Update speed */
 		train_forward_set_speed( train, &state, path_length, module_tid, auto_tid );
 
 		path_matched = 0;
@@ -367,12 +372,10 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 			sem_release( train->sem );
 		}
 
-		/* Update the train speed */
-		train_forward_set_speed( train, &state, path_length, module_tid, auto_tid );
-
 		sem_acquire_all( train->sem );
 		/* Stop when applicable */
 		if( train_tracking_stop_distance( train ) >= train->mark_dist ){
+			dprintf( "Train %d will stop, stop dist %d\n", train_tracking_stop_distance( train ) );
 			done = 1;
 		}
 		sem_release( train->sem );
@@ -383,7 +386,6 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 	}
 
 	if( train->planner_control ){
-		dprintf( "Train %d wait done, will stop\n", train->id );
 		train_set_speed( module_tid, train->id, 0 );
 		train_auto_set_speed( auto_tid, train->id, 0 );
 		dprintf( "Train %d stop\n", train->id );
