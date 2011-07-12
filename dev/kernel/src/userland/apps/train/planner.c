@@ -395,7 +395,11 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		train_auto_set_speed( auto_tid, train->id, 0 );
 		dprintf( "Train %d stop\n", train->id );
 
-		Delay( 500 );
+		Delay( 100 );
+		Delay( 100 );
+		Delay( 100 );
+		Delay( 100 );
+		Delay( 100 );
 
 		dprintf( "Train %d forward execution completed\n", train->id );
 	}
