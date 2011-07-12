@@ -1,7 +1,7 @@
 #include <types.h>
 #include <user/lib/heap.h>
 
-static void swap_int( int *a, int *b ) {
+static inline void swap_int( int *a, int *b ) {
 	int temp = *a;
 	*a = *b;
 	*b = temp;
@@ -28,8 +28,7 @@ int heap_insert( Heap* heap, Heap_node* elem ){
 			swap_int( (int*)&(heap->data[i].key), (int*)&(heap->data[p].key) );
 			swap_int( (int*)&(heap->data[i].value), (int*)&(heap->data[p].value) );
 			i = p;
-		}
-		else {
+		} else {
 			i = 0;
 		}
 	}

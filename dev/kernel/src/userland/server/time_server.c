@@ -49,7 +49,7 @@ void time_main(){
 	int status;
 	uint result = 0;
 	int clock_tid;
-	uint cur_time;
+	int cur_time;
 	int stop = 0;
 	Heap heap;
 	struct Time_tid_node node;
@@ -88,7 +88,6 @@ void time_main(){
 				msg.interval = 0;
 			}
 		case TIME_DELAY_UNTIL:
-
 			if ( msg.interval <= result ) {
 				reply.result = 0;
 				status = Reply( tid, (char*)&reply, sizeof(reply) );
@@ -130,6 +129,7 @@ void time_main(){
 					break;
 				}
 				assert( status == 0 );
+				ASSERT_M( node.time >= cur_time, "expect %d, get %d\n", cur_time, node.time );
 			}
 
 			DEBUG_PRINT( DBG_TIME, "status = 0x%x\n", status );

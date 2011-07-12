@@ -143,34 +143,30 @@ void clock_main()
 			reply.data = CLOCK_SYSTEM_TICK_TO_USER_TICK( current_time );
 			break;
 		case CLOCK_COUNT_DOWN:
-			status = clk_value( &clock_1, &current_cd );
-			assert( status == ERR_NONE );
-
 			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data );
-			if( cd_ticks < current_time ){
-				cd_ticks = 1;
-			} else {
+			if( cd_ticks >= current_time ){
 				cd_ticks -= current_time;
-			}
-			
-			/* Reset clock interrupt */
-			if( ( ! event_handling ) || ( cd_ticks + CLOCK_OPERATION_TICKS ) < current_cd ){
-				status = clk_reset( &clock_1, cd_ticks );
-				assert( status == ERR_NONE );
-			}
 
-			/* Send request to event_start */
-			if( ! event_handling ){
-				clk_clear( &clock_1 );
-				status = event_start( event_handler_tid );
+				assert( cd_ticks <= 0xffff );
+
+				status = clk_value( &clock_1, &current_cd );
 				assert( status == ERR_NONE );
-				event_handling = 1;
+		
+				/* Reset clock interrupt */
+				if( ( ! event_handling ) || ( cd_ticks + CLOCK_OPERATION_TICKS ) < current_cd ){
+					status = clk_reset( &clock_1, cd_ticks );
+					assert( status == ERR_NONE );
+				}
+
+				/* Send request to event_start */
+				if( ! event_handling ){
+					clk_clear( &clock_1 );
+					status = event_start( event_handler_tid );
+					assert( status == ERR_NONE );
+					event_handling = 1;
+				}
+				break;
 			}
-			break;
-		case CLOCK_QUIT:
-			Kill( event_handler_tid );
-			execute = 0;
-			break;
 		case CLOCK_COUNT_DOWN_COMPLETE:
 			clk_clear( &clock_1 );
 			event_handling = 0;
@@ -180,6 +176,10 @@ void clock_main()
 				assert( status == ERR_NONE );
 			}
 			/* Otherwise there is a notification going on, no need to send another one */
+			break;
+		case CLOCK_QUIT:
+			Kill( event_handler_tid );
+			execute = 0;
 			break;
 		}
 
