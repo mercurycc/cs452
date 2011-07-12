@@ -1,6 +1,12 @@
 #ifndef _TRAIN_CONFIG_H_
 #define _TRAIN_CONFIG_H_
 
+/* Train module transmission delays */
+#define SWITCH_XMIT_DELAY 18
+#define SWITCH_OFF_DELAY 20
+#define TRAIN_XMIT_DELAY 20
+#define SWITCH_ALL_DELAY 180
+
 #define SENSOR_BYTE_COUNT    10
 #define SENSOR_NAME_LENGTH    3
 #define NUM_SWITCHES         22
@@ -12,23 +18,27 @@
 #define PATH_LOOK_AHEAD_LOW     6
 #define PATH_LOOK_AHEAD_HIGH    10
 #define PATH_LOOK_AHEAD_BUFFER  32
-#define PATH_LOOK_AHEAD_DIST    4000
-#define PATH_LOOK_AHEAD_ADJUST_DIST 2000
-#define PATH_LOOK_AHEAD_ADJUST_TIME 200
-#define PATH_LOOK_AHEAD_DEFAULT_STOP 200
+#define PATH_LOOK_AHEAD_DIST    800
+// #define PATH_LOOK_AHEAD_ADJUST_DIST 800
+#define PATH_LOOK_AHEAD_DEFAULT_STOP    250
+#define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
 
 /* number of ticks needed to change speed */
-#define SPEED_CHANGE_TIME 280
+#define SPEED_CHANGE_TIME   260
+#define CLOSE_SPEED_CHANGE_TIME 220
+#define CLOSE_SPEED_CHANGE_GAP  4
+#define START_CHANGE_TIME   400     /* Time for pick up speed from 0 */
+#define STOP_SAFE_TIME      500
 #define COMMAND_DELAY_TIME  7
 
 #define TRAIN_AUTO_REG_SPEED_1  8
 #define TRAIN_AUTO_REG_SPEED_2  12
 
 #define TRAIN_TRAVEL_SPEED        10
-#define TRAIN_CLOSE_TRAVEL_SPEED  6
+#define TRAIN_CLOSE_TRAVEL_SPEED  4
 
-#define TRAIN_AUTO_REG_RETRY      3
-#define TRAIN_AUTO_REG_SPEED_CALIB_TIME   1000
+#define TRAIN_AUTO_REG_RETRY      2
+#define TRAIN_AUTO_REG_SPEED_CALIB_TIME   500
 
 #define SENSOR_GROUP_COUNT      5
 #define SENSOR_COUNT_PER_GROUP  16

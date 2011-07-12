@@ -11,11 +11,6 @@
 #include "inc/train.h"
 #include "inc/warning.h"
 
-#define SWITCH_XMIT_DELAY 18
-#define SWITCH_OFF_DELAY 20
-#define TRAIN_XMIT_DELAY 20
-#define SWITCH_ALL_DELAY 180
-
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
 
@@ -117,6 +112,8 @@ void train_module()
 	char switch_table[ NUM_SWITCHES ];
 	Train_event event;
 	Train_reply reply;
+	int curtime;
+	int last_switch_time = 0;
 
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
@@ -137,6 +134,8 @@ void train_module()
 		status = Receive( &tid, (char*)&event, sizeof(event) );
 		assert( status == sizeof(event) );
 
+		curtime = Time();
+
 		// early reply
 		switch ( event.event_type ){
 		case TRAIN_CHECK_SWITCH:
@@ -147,7 +146,17 @@ void train_module()
 			assert( status == 0 );
 			break;
 		}
-		
+
+		/* Switch command timing */
+		switch( event.event_type ){
+		case TRAIN_SWITCH:
+		case TRAIN_SWITCH_ALL:
+			if( curtime - last_switch_time < SWITCH_ALL_DELAY ){
+				Delay( curtime - last_switch_time );
+			}
+			break;
+		}
+
 		switch (event.event_type) {
 		case TRAIN_CHECK_SWITCH:
 			reply.result = switch_table[ SWID_TO_ARRAYID( event.args[ 0 ] ) ];
@@ -173,7 +182,6 @@ void train_module()
 			for( i = 0; i < NUM_SWITCHES; i += 1 ){
 				switch_table[ i ] = event.args[0];
 			}
-			delay( SWITCH_ALL_DELAY );
 			break;
 		case TRAIN_MODULE_SUICIDE:
 			if ( tid == ptid ) {
@@ -186,6 +194,15 @@ void train_module()
 		default:
 			// should not get to here
 			assert(0);
+		}
+
+		/* Assign switch command timing */
+		switch( event.event_type ){
+		case TRAIN_REVERSE:
+		case TRAIN_SWITCH:
+		case TRAIN_SWITCH_ALL:
+			last_switch_time = Time();
+			break;
 		}
 
 		switch ( event.event_type ){

@@ -97,7 +97,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		default:
 			assert( 0 );
 		}
-		dist_pass -= dst->edge[ DIR_AHEAD ].dist;
+		*dist_pass -= dst->edge[ DIR_AHEAD ].dist;
 		dst = dst->edge[ DIR_AHEAD ].dest;
 	}
 
@@ -138,6 +138,8 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				} else {
 					path_node.direction = 'C';
 				}
+			} else {
+				path_node.direction = 'S';
 			}
 			break;
 		}
@@ -213,7 +215,7 @@ static int train_forward_stop_cannot_match( volatile const Train* train, int mod
 	return -1;
 }
 
-static int train_forward_stop( volatile const Train_data* train, Rbuf* path, volatile const int* switch_table, int stop_dist, int module_tid, int auto_tid )
+static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile const int* switch_table, int path_length, int module_tid, int auto_tid )
 {
 	const track_node* match_node;
 	int look_ahead = 0;
@@ -221,13 +223,13 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 	Train_path path_node_body;
 	Train_path * const path_node = &path_node_body;
 	Train_path path_buf[ 2 ][ PATH_LOOK_AHEAD_BUFFER ];
-	int i;
 	Rbuf path_body;
 	Rbuf * const local_path = &path_body;
 	Rbuf path_stack_body;
 	Rbuf * const local_path_stack = &path_stack_body;
 	int path_matched;
-	enum { TRAVEL, STOP } state;
+	int all_matched;
+	enum { TRAVEL, SLOW_TRAVEL, STOP } state;
 	char name[ 6 ];
 	int done = 0;
 	
@@ -236,6 +238,7 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 	
 	look_ahead = 0;
 	path_matched = 0;
+	all_matched = 0;
 
 	state = STOP;
 
@@ -249,55 +252,73 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 			} else {
 				look_ahead += path_node->node->edge[ DIR_AHEAD ].dist;
 			}
-
+			
 			if( path_node->node->type == NODE_BRANCH ){
+				track_node_id2name( name, path_node->node->group, path_node->node->id );
+				dprintf( "Switch %s to %c\n", name, path_node->direction );
 				train_switch( module_tid, path_node->node->id + 1, path_node->direction );
 				train_auto_set_switch( auto_tid, path_node->node->id + 1, path_node->direction );
 			}
 		}
 
 		/* Travel is here because we want to set the switches before the train starts */
-		if( state != TRAVEL ){
-			if( look_ahead < PATH_LOOK_AHEAD_ADJUST_DIST ){
+		if( state == STOP ){
+			if( rbuf_empty( path ) ){
 				train_set_speed( module_tid, train->id, TRAIN_CLOSE_TRAVEL_SPEED );
 				train_auto_set_speed( auto_tid, train->id, TRAIN_CLOSE_TRAVEL_SPEED );
+				state = SLOW_TRAVEL;
 			} else {
 				train_set_speed( module_tid, train->id, TRAIN_TRAVEL_SPEED );
 				train_auto_set_speed( auto_tid, train->id, TRAIN_TRAVEL_SPEED );
+				state = TRAVEL;
 			}
-
-			state = TRAVEL;
 		}
 
 		path_matched = 0;
-
 		matched_dist = 0;
 
 		/* Wait for update */
 		sem_acquire_all( train->update );
 
+		dprintf( "Train %d caught update\n", train->id );
+
 		if( ! train->planner_control ){
+			dprintf( "Train %d control is taken back to manual\n", train->id );
 			break;
 		}
 		
-		sem_acquire( train->sem );
+		sem_acquire_all( train->sem );
 		match_node = train->check_point;
+
+		track_node_id2name( name, match_node->group, match_node->id );
+		dprintf( "Train %d matching %s\n", train->id, name );
 		
+		/* Here we remove the distance of traveled edges */
 		do {
 			rbuf_get( local_path, ( uchar* )path_node );
 			rbuf_put_front( local_path_stack, ( uchar* )path_node );
+			if( path_node->node == match_node ){
+				/* all_matched can only be set here because local_path will be filled with the last node
+				   again for calculation of matched_dist */
+				if( rbuf_empty( local_path ) && rbuf_empty( path ) ){
+					all_matched = 1;
+				}
+				rbuf_put_front( local_path, ( uchar* )path_node );
+				rbuf_reset( local_path_stack );
+				path_matched = 1;
+				break;
+			}
+
 			/* If the node could be matched, count into the matched distance */
+			/* Notice that the last node does not count because it indicates only the end of the traveled edges */
 			if( path_node->direction == 'C' ){
 				matched_dist += path_node->node->edge[ DIR_CURVED ].dist;
 			} else {
 				matched_dist += path_node->node->edge[ DIR_AHEAD ].dist;
 			}
-			if( path_node->node == match_node ){
-				rbuf_reset( local_path_stack );
-				path_matched = 1;
-				break;
-			}
 		} while( ! rbuf_empty( local_path ) );
+
+		sem_release( train->sem );
 
 		if( ! path_matched ){
 			while( ! rbuf_empty( local_path_stack ) ){
@@ -309,30 +330,60 @@ static int train_forward_stop( volatile const Train_data* train, Rbuf* path, vol
 			track_node_id2name( name, path_node->node->group, path_node->node->id );
 			dprintf( "Train %d last matched %s, %d mm\n", train->id, name, matched_dist );
 			look_ahead -= matched_dist;
+			path_length -= matched_dist;
 		}
 
-		if( train_tracking_trav_time( train, look_ahead ) < PATH_LOOK_AHEAD_ADJUST_TIME && state == TRAVEL ){
-			dprintf( "Train %d reaching dest\n", train->id );
+		/* Switch the train to slow travel if train is close to destination */
+		if( rbuf_empty( path ) && state == TRAVEL ){
+			train_set_speed( module_tid, train->id, TRAIN_CLOSE_TRAVEL_SPEED );
+			train_auto_set_speed( auto_tid, train->id, TRAIN_CLOSE_TRAVEL_SPEED );
+			state = SLOW_TRAVEL;
+		}
+		
+		if( all_matched ){
+			dprintf( "Train %d reaching dest, path_length remaining %d\n", train->id, path_length );
 			state = STOP;
 
-			dprintf( "Train %d stop distance: %d, wait %d ticks\n", train->id,
-				 train_tracking_stop_distance( train ),
-				 train_tracking_trav_time( train, look_ahead - stop_dist - train_tracking_stop_distance( train ) ) );
-			Delay( train_tracking_trav_time( train, look_ahead - stop_dist - train_tracking_stop_distance( train ) ) );
+			sem_acquire_all( train->sem );
+			train->mark_dist = path_length;
+			sem_release( train->sem );
+
+			dnotice( "Mark dist " );
+
+			while( 1 ){
+				sem_acquire_all( train->sem );
+				if( ! train->planner_control ){
+					dprintf( "Train %d control is taken back to manual\n", train->id );
+					break;
+				}
+				dprintf( "%d -> ", train->mark_dist );
+				if( train_tracking_stop_distance( train ) >= train->mark_dist ){
+					dprintf( "Stop dist %d\n", train_tracking_stop_distance( train ) );
+					break;
+				}
+				Delay( PLANNER_WAKE_UP );
+				sem_release( train->sem );
+			}
 
 			/* Execution should be completed */
 			done = 1;
-		}
 
-		sem_release( train->sem );
+			sem_release( train->sem );
+		}
 	}
 
-	dprintf( "Train %d wait done, will stop\n", train->id );
-	train_set_speed( module_tid, train->id, 0 );
-	train_auto_set_speed( auto_tid, train->id, 0 );
-	dprintf( "Train %d stop\n", train->id );
+	if( train->planner_control ){
+		dprintf( "Train %d wait done, will stop\n", train->id );
+		train_set_speed( module_tid, train->id, 0 );
+		train_auto_set_speed( auto_tid, train->id, 0 );
+		dprintf( "Train %d stop\n", train->id );
 
-	dprintf( "Train %d forward execution completed\n", train->id );
+		Delay( STOP_SAFE_TIME );
+
+		dprintf( "Train %d forward execution completed\n", train->id );
+	}
+
+	return ERR_NONE;
 }
 
 void train_planner()
@@ -340,35 +391,28 @@ void train_planner()
 	/* TODO: rewrite the whole thing to accomodate multiple trains */
 	Planner_request request;
 	int tid;
-	uint path_length;
 	Train_data* train;
-	volatile const int* switch_table;
+	const int* switch_table;
 	const track_node* track_graph;
-	const track_node* backward_node;
-	const track_node* targets[ TARGET_BUFFER_SIZE ];
 	const int* node_map;
-	const track_node* final_node;
 	Rbuf path_body;
 	Rbuf * const path = &path_body;
 	Train_path path_buf[ PATH_BUFFER_SIZE ];
 	Rbuf forward_path_body;
 	Rbuf * const forward_path = &forward_path_body;
-	track_node * previous_node = 0;
+	const track_node* previous_node = 0;
+	uint previous_node_length = 0;
 	Train_path path_node_body;
 	Train_path * const path_node = &path_node_body;
 	Train_path forward_path_buf[ PATH_BUFFER_SIZE ];
 	uint plan_direction;
-	uint remain_distance;
-	uint dist_pass;
+	int dist_pass;
+	uint path_length;
 	int module_tid;
 	int auto_tid;
 	int planning;
-	int i, j;
-	int distance;
-	int near_end;
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
-	uint count = 0;
 	int status;
 
 	region_init( &path_display );
@@ -424,9 +468,12 @@ void train_planner()
 					train_reverse( module_tid, train->id );
 					train_auto_set_reverse( auto_tid, train->id );
 					dprintf( "Reverse for %d\n", train->id );
+					Delay( 50 );
 				}
 
 				previous_node = 0;
+
+				path_length = 0;
 
 				while( ! rbuf_empty( path ) ){
 					/* Obtain the next forward path, i.e. till path is empty or a merger reverse*/
@@ -438,11 +485,18 @@ void train_planner()
 					
 					if( path_node->node->reverse == previous_node ){
 						dnotice( "Found reverse node\n" );
-
+ 
 						rbuf_put_front( path, ( uchar* )path_node );
 
 						break;
 					} else {
+						if( path_node->direction == 'C' ){
+							previous_node_length = path_node->node->edge[ DIR_CURVED ].dist;
+						} else {
+							previous_node_length = path_node->node->edge[ DIR_AHEAD ].dist;
+						}
+						path_length += previous_node_length;
+
 						rbuf_put( forward_path, ( uchar* )path_node );
 					}
 
@@ -451,14 +505,20 @@ void train_planner()
 					previous_node = path_node->node;
 				}
 
-				dprintf( "Planner forward path filled for %d\n", train->id );
-							
+				path_length -= previous_node_length;
+
+				if( rbuf_empty( path ) ){
+					path_length += dist_pass;
+				} else {
+					path_length += PATH_LOOK_AHEAD_DEFAULT_STOP;
+				}
+
+				dprintf( "Planner forward path filled for %d, length %d\n", train->id, path_length );
+
 				if( train->planner_control ){
 					/* If path is empty, then we are at the end of the journey.  Therefore respect required stop distance. */
 					dprintf( "Planner forward path executing for %d\n", train->id );
-					status = train_forward_stop( train, forward_path, switch_table,
-								     ! rbuf_empty( path ) ? PATH_LOOK_AHEAD_DEFAULT_STOP : dist_pass,
-								     module_tid, auto_tid );
+					status = train_forward_stop( train, forward_path, switch_table, path_length, module_tid, auto_tid );
 					dprintf( "Planner forward path executing for %d completed\n", train->id );
 					if( status < 0 ){
 						break;
@@ -512,7 +572,3 @@ int train_planner_init( int tid, Train_data* train )
 
 	return train_planner_request( tid, PLANNER_INIT, &request, sizeof( request ) );
 }
-
-
-#if 0
-#endif

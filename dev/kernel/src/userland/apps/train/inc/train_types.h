@@ -50,18 +50,19 @@ typedef struct Train_path_s {
 typedef struct Train_tracking_s {
 	float speed;                     /* Speed currently at */
 	float old_speed;                 /* Last speed */
-	uint old_speed_level;            /* For acc/deceleration */
-	uint speed_level;                /* Current speed level */
+	int old_speed_level;            /* For acc/deceleration */
+	int speed_level;                /* Current speed level */
 	int distance;                    /* Distance from last check point, in mm */
 	int remaining_distance;          /* Distance towards next check point, in mm */
-	uint trav_distance;              /* Distance between current and next sensor */
-	uint trav_time_stamp;
+	int trav_distance;              /* Distance between current and next sensor */
+	int trav_time_stamp;
 	float speed_stat_table[ NUM_SPEED_LEVEL ];
 	int speed_stat_count[ NUM_SPEED_LEVEL ];
-	uint speed_change_start_time;
-	uint speed_change_end_time;
-	uint check_point_time;
-	uint eta;                        /* Estimated time of arrival to next check point */
+	int speed_change_start_time;
+	int speed_change_last_integration;
+	int speed_change_end_time;
+	int check_point_time;
+	int eta;                        /* Estimated time of arrival to next check point */
 } Train_tracking;
 
 typedef struct Train_planner_s {
@@ -108,7 +109,7 @@ typedef struct Train_data_s {
 	/* Planner */
 	int planner_tid;                 /* Planner */
 	volatile int planner_control;
-	volatile int mark_dist;          /* Variable updated by tracking, used by planner to track amount of distance travelled to track stop distance */
+	volatile int mark_dist;
 } Train_data;
 
 typedef Train_data Train;

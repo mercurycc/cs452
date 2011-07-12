@@ -8,7 +8,7 @@
 #include "inc/error_tolerance.h"
 
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 #include <user/dprint.h>
 
 
@@ -53,9 +53,14 @@ int sensor_trust( track_node* sensor ){
 	return 0;
 }
 
-int train_next_possible( Train_data* train, int* switch_table ){
-	assert( train->next_sensor );
+int train_next_possible( Train_data* train, int* switch_table )
+{
 	assert( train->last_sensor );
+
+	/* If train stops heading an exit then no sensor available */
+	if( ! train->next_sensor ){
+		return 0;
+	}
 
 	track_node* primary = train->next_sensor;
 	track_node* secondary = 0;
