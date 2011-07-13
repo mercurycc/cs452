@@ -70,9 +70,14 @@ void time_main(){
 		
 		DEBUG_PRINT( DBG_TIME, "received request 0x%x, interval %d\n", msg.request, msg.interval );
 
-		if ( msg.request < TIME_SIGNAL ) {
+		switch ( msg.request ) {
+		case TIME_SIGNAL:
+		case TIME_SUICIDE:
+			break;
+		default:
 			status = clock_current_time( clock_tid, &result );
 			assert( status == 0 );
+			break;
 		}
 
 		switch ( msg.request ) {
