@@ -29,11 +29,7 @@ typedef struct Map_node_s {
 /* for path search */
 #define INFINITY 2147483647
 
-/* 999 means not measured yet */
-#define TRAIN_HEAD_LENGTH( i ) ( i > 21 ? ( i == 23 ? 30 : 999 ) : ( i == 21 ? 20 : 999 ) )
-#define TRAIN_TAIL_LENGTH( i ) ( i > 21 ? ( i == 23 ? 140 : 999 ) : ( i == 21 ? 120 : 999 ) )
 
-#define TRAIN_SPEED_PRED_FACTOR( i ) ( i > 21 ? ( i == 23 ? 55 : 0 ) : ( i == 21 ? 22 : 0 ) )
 
 
 
