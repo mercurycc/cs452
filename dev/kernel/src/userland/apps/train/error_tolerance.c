@@ -67,6 +67,7 @@ int train_next_possible( Train_data* train, int* switch_table )
 	track_node* tertiary = 0;
 	track_node* last = train->last_sensor;
 	track_node* temp = train->last_sensor;
+	int dist = 0;
 	assert( last );
 
 	/* find a trustable primary */
@@ -82,19 +83,21 @@ int train_next_possible( Train_data* train, int* switch_table )
 
 	/* find tertiary if possible */
 	do {
+		dist += node_distance( temp, switch_table );
 		temp = temp->edge[DIR_AHEAD].dest;
 		if ( temp->type == NODE_BRANCH ) {
 			int id = SWID_TO_ARRAYID( temp->id + 1 );
 			if ( switch_table[id] == 'C' ) {
 				tertiary = temp->edge[DIR_STRAIGHT].dest;
+				dist += temp->edge[DIR_STRAIGHT].dist;
 			} else {
 				tertiary = temp->edge[DIR_CURVED].dest;
+				dist += temp->edge[DIR_CURVED].dist;
 			}
-			if ( tertiary->type != NODE_SENSOR ) {
-				do {
-					tertiary = track_next_sensor( tertiary, switch_table );
-				} while ( tertiary && !sensor_trustable( tertiary ) );
-			}
+			while ( tertiary && ( tertiary->type != NODE_SENSOR || !sensor_trustable( tertiary ) ) ) {
+				dist += node_distance( tertiary, switch_table );
+				tertiary = track_next_sensor( tertiary, switch_table );
+			} 
 			break;
 		}
 	} while ( temp != primary );
@@ -102,6 +105,12 @@ int train_next_possible( Train_data* train, int* switch_table )
 	train->next_sensor = primary;
 	train->secondary_sensor = secondary;
 	train->tertiary_sensor = tertiary;
+	if ( tertiary ) {
+		train->tertiary_distance = dist;
+	}
+	else {
+		train->tertiary_distance = 0;
+	}
 	
 	/* update pred time */
 	train_update_time_pred( train, switch_table );

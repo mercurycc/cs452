@@ -18,7 +18,7 @@
 #include "inc/train_tracking.h"
 #include <perf.h>
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 #include <user/dprint.h>
 
 enum Train_planner_request_type {

@@ -446,8 +446,12 @@ void train_auto()
 						   if the next check point is before the switch then the next check point should
 						   be the switch, and if the train is on the switch the switch should not be
 						   switched, and if the train is off the switch then it does not matter */
+						train_forget_sensors( current_train, sensor_expect );
 						current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
+						train_next_possible( current_train, switch_table );
+						train_expect_sensors( current_train, sensor_expect );
+						
 					}
 
 					/* Process train states */
@@ -507,18 +511,29 @@ void train_auto()
 								dprintf( "Train %d init_3 revert to init_1\n", current_train->id );
 							}
 							break;
+						case TRAIN_STATE_STOP:
+							// this train should not move
+							break;
 						default:
 							if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
 								sensor_trust( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->next_sensor;
+								dprintf( "train hit primary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
 								sensor_trust( current_train->secondary_sensor );
 								sensor_error( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->secondary_sensor;
+								current_train->tracking.trav_distance += track_next_sensor_distance( current_train->last_sensor, switch_table );
+								dprintf( "train hit secondary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
-								// TODO: tertiary sensor is hit
+								sensor_trust( current_train->tertiary_sensor );
+								// TODO switch error
+								train_forget_sensors( current_train, sensor_expect );
+								current_train->last_sensor = current_train->tertiary_sensor;
+								current_train->tracking.trav_distance = current_train->tertiary_distance;
+								dprintf( "train hit tertiary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 							}
 
 							if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ||
@@ -531,6 +546,8 @@ void train_auto()
 										    current_train->last_sensor->group, current_train->last_sensor->id,
 										    current_time + train_tracking_eta( current_train ),
 										    train_tracking_eta( current_train ) );
+
+								dprintf( "train traveled %d\n", current_train->tracking.trav_distance );
 
 								train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 
