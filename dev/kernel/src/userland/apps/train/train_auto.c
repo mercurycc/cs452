@@ -524,7 +524,7 @@ void train_auto()
 								sensor_error( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->secondary_sensor;
-								current_train->tracking.trav_distance += track_next_sensor_distance( train->last_sensor, train->switch_table );
+								current_train->tracking.trav_distance += track_next_sensor_distance( current_train->last_sensor, switch_table );
 							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
 								sensor_trust( current_train->tertiary_sensor );
 								// TODO switch error
