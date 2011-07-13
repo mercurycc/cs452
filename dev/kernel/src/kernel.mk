@@ -18,6 +18,7 @@ KERNELSRC += interrupt.s
 KERNELSRC += interrupt_handler.c
 KERNELSRC += watchdog.c
 KERNELSRC += perf.c
+KERNELSRC += cache.s
 
 # Devices
 KERNELSRC += devices/console.c

@@ -43,4 +43,7 @@ int mem_alloc( Context* ctx, uint type, void** ret, uint count );
    Put count pointers back to the rbuf inside the Memmgr */
 int mem_free( Context* ctx, uint type, void** ptrs, uint count );
 
+/* Initialize I and D cache */
+void cache_init();
+
 #endif /* _MEM_H_ */

@@ -18,6 +18,9 @@
 /* Watchdog */
 #include <watchdog.h>
 
+/* Memory */
+#include <mem.h>
+
 /* CLK_4 */
 #include <perf.h>
 
@@ -42,6 +45,9 @@ int kernel_init( Context* ctx )
 		      "nop\n\t"
 		      "nop\n\t"
 		      "nop\n\t" );
+
+	/* Enable I and D cache */
+	cache_init();
 
 	/* Install trap handler */
 	trap_init( ctx );
