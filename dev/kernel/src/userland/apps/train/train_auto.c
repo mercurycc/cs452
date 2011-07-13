@@ -24,7 +24,7 @@
 #include "inc/train_tracking.h"
 #include "inc/error_tolerance.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 #include <user/dprint.h>
 
 enum Train_pickup {
@@ -353,6 +353,8 @@ void train_auto()
 					current_train->track_graph = track_graph;
 					current_train->switch_table = switch_table;
 					current_train->node_map = ( int* )node_map;
+
+					current_train->tracking.speed_change_time = SPEED_CHANGE_TIME;
 
 					status = train_planner_init( current_train->planner_tid, current_train );
 					assert( status == ERR_NONE );
