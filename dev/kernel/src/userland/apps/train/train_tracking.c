@@ -341,7 +341,7 @@ int train_tracking_speed_to_level( const Train* train, float speed )
 	int i;
 	
 	for( i = 0; i < NUM_SPEED_LEVEL; i += 1 ){
-		if( train->tracking.speed_state_table[ i ] >= speed ){
+		if( train->tracking.speed_stat_table[ i ] >= speed ){
 			return i - 1;
 		}
 	}
