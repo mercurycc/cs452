@@ -109,9 +109,12 @@ typedef struct Train_data_s {
 	volatile Train_tracking tracking; /* Shared. */
 
 	/* Planner */
-	int planner_tid;                 /* Planner */
+	int planner_tid;                  /* Planner */
 	volatile int planner_control;
 	volatile int mark_dist;
+
+	/* Reservation */
+	int reserve_version;              /* version of reservation for fast reservation freeing */
 } Train_data;
 
 typedef Train_data Train;
