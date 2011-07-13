@@ -398,8 +398,17 @@ void train_auto()
 				current_train->check_point = current_train->next_check_point->reverse;
 				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
-				current_train->last_sensor = current_train->next_sensor->reverse;
-				current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+				/* the comment-out reverse works on some part, but doesn't work in a specific location
+				 * the bottom one works but has error in another situation, though in that situation\
+				 * the error will be correct by the tertiary sensor prediction
+				 */
+				//////////
+				// current_train->last_sensor = current_train->next_sensor->reverse;
+				// current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+				current_node = current_train->next_sensor->reverse;
+				current_train->next_sensor = current_train->last_sensor->reverse;
+				current_train->last_sensor = current_node;
+				//////////
 				current_train->state = TRAIN_STATE_STOP;
 				train_tracking_reverse( current_train );
 				train_next_possible( current_train, switch_table );
