@@ -42,6 +42,7 @@ void train_control()
 	int buf_i = 0;
 	int token_filled;
 	int i;
+	Region title_reg = { 2, 1, 1, 14 - 2, 1, 0 };
 	/* Prompt UI */
 	Region prompt_titles = { 2, 20, 1, 11 - 2, 1, 0 };
 	Region prompt_reg = { 2, 21, 1, 78 - 2, 1, 0 };
@@ -61,8 +62,12 @@ void train_control()
 	assert( status == ERR_NONE );
 	status = region_init( &warning_reg );
 	assert( status == ERR_NONE );
+	status = region_init( &title_reg );
+	assert( status == ERR_NONE );
 
 	/* Print title */
+	/* System */
+	region_printf( &title_reg, "Pinball P2" );
 	/* Console */
 	status = region_init( &prompt_titles );
 	assert( status == ERR_NONE );
