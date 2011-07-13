@@ -402,6 +402,8 @@ void train_auto()
 				current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 				current_train->state = TRAIN_STATE_STOP;
 				train_tracking_reverse( current_train );
+				train_next_possible( current_train, switch_table );
+				train_expect_sensors( current_train, sensor_expect );
 				sem_release( current_train->sem );
 				break;
 			case TRAIN_AUTO_SET_SWITCH_DIR:
