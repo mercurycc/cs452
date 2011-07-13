@@ -252,6 +252,7 @@ static inline void train_forward_set_speed( volatile Train_data* train, uint* st
 	}
 
 	if( speed_level ){
+		dprintf( "Train %d change speed to %d\n", train->id, speed_level );
 		train_set_speed( module_tid, train->id, speed_level );
 		train_auto_set_speed( auto_tid, train->id, speed_level );
 	}

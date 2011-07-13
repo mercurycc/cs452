@@ -28,7 +28,7 @@ static void train_tracking_sc_current_speed( Train* train, int curtime )
 
 static int train_tracking_sc_dist_diff( Train* train, int curtime )
 {
-	int dist_diff;
+	int dist_diff = 0;
 
 	if( curtime < train->tracking.speed_change_end_time ){
 		if( curtime <= train->tracking.speed_change_start_time ){

@@ -24,7 +24,7 @@
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
 
 /* number of ticks needed to change speed */
-#define SPEED_CHANGE_TIME   300
+#define SPEED_CHANGE_TIME   260
 #define CLOSE_SPEED_CHANGE_TIME 220
 #define CLOSE_SPEED_CHANGE_GAP  8
 #define START_CHANGE_TIME   350     /* Time for pick up speed from 0 */
