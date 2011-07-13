@@ -45,6 +45,7 @@ KERNELSRC += userland/apps/init/main.c
 # KERNELSRC += userland/apps/lazy_dog/main.c
 KERNELSRC += userland/apps/train/train_control.c
 KERNELSRC += userland/apps/train/train_module.c
+KERNELSRC += userland/apps/train/train_module_executor.c
 KERNELSRC += userland/apps/train/train_auto.c
 KERNELSRC += userland/apps/train/sensor.c
 KERNELSRC += userland/apps/train/track_data.c
