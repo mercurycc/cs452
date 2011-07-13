@@ -20,6 +20,8 @@ int train_tracking_speed_change( Train* train, int new_speed_level, int curtime 
 /* Conversion */
 int train_tracking_trav_dist( const Train* train, int ticks );
 int train_tracking_trav_time( const Train* train, int dist );
+/* Return the highest speed level that does not exceed 'speed' */
+int train_tracking_speed_to_level( const Train* train, float speed );
 
 /* Reporting */
 int train_tracking_speed_in_sec( const Train* train );

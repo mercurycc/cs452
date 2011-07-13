@@ -23,6 +23,9 @@
 #define PATH_LOOK_AHEAD_DEFAULT_STOP    250
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
 
+/* number of speed levels of train */
+#define NUM_SPEED_LEVEL 30
+
 /* number of ticks needed to change speed */
 #define SPEED_CHANGE_TIME   260
 #define CLOSE_SPEED_CHANGE_TIME 220

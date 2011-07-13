@@ -7,9 +7,6 @@
 #include "track_node.h"
 #include "config.h"
 
-/* number of speed levels of train */
-#define NUM_SPEED_LEVEL 30
-
 enum Train_planner_direction_type {
 	PLANNER_FORWARD,
 	PLANNER_BACKWARD,

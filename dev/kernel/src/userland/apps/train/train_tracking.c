@@ -336,6 +336,17 @@ int train_tracking_trav_dist( const Train* train, int ticks )
 	return dist;
 }
 
+int train_tracking_speed_to_level( const Train* train, float speed )
+{
+	int i;
+	
+	for( i = 0; i < NUM_SPEED_LEVEL; i += 1 ){
+		if( train->tracking.speed_state_table[ i ] >= speed ){
+			return i - 1;
+		}
+	}
+}
+
 int train_tracking_trav_time( const Train* train, int dist )
 {
 	return ( int )( dist / train->tracking.speed );
