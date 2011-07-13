@@ -331,7 +331,7 @@ void train_auto()
 					available_train += 1;
 
 					/* Create planner */
-p					current_train->planner_tid = Create( TRAIN_PLAN_PRIORITY, train_planner );
+					current_train->planner_tid = Create( TRAIN_PLAN_PRIORITY, train_planner );
 					assert( current_train->planner_tid > 0 );
 
 					current_train->id = request.data.new_train.train_id;
