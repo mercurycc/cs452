@@ -299,24 +299,26 @@ void train_auto()
 
 				/* Update last triggered sensor, for wh */
 				for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
-					if( sensor_data.sensor_raw[ temp ] ){
-						last_sensor_group = temp;
-						for( i = 0; i < BITS_IN_BYTE; i += 1 ){
-							if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
-								int group = temp / 2;
-								int id = i + ( temp % 2 ) * 8;
-								current_sensor = track_graph + node_map[ group ][ id ];
+					if( ! sensor_data.sensor_raw[ temp ] ){
+						continue;
+					}
+					last_sensor_group = temp;
+					for( i = 0; i < BITS_IN_BYTE; i += 1 ){
+						if( ! ( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ) ){
+							continue;
+						}
+						int group = temp / 2;
+						int id = i + ( temp % 2 ) * 8;
+						current_sensor = track_graph + node_map[ group ][ id ];
 
-								if ( !sensor_trustable( current_sensor ) ) {
-									clear_sensor_data( &sensor_data, current_sensor );
-								}
-								else {
-									last_sensor_group = group;
-									last_sensor_id = id;
-									if ( !( sensor_expect[ group ][ id ] ) ){
-										sensor_error( current_sensor );
-									}
-								}
+						if ( !sensor_trustable( current_sensor ) ) {
+							clear_sensor_data( &sensor_data, current_sensor );
+						}
+						else {
+							last_sensor_group = group;
+							last_sensor_id = id;
+							if ( !( sensor_expect[ group ][ id ] ) ){
+								sensor_error( current_sensor );
 							}
 						}
 					}
