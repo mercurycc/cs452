@@ -95,7 +95,7 @@ int train_next_possible( Train_data* train, int* switch_table )
 				dist += temp->edge[DIR_CURVED].dist;
 			}
 			while ( tertiary && ( tertiary->type != NODE_SENSOR || !sensor_trustable( tertiary ) ) ) {
-				dist += node_distance( tertiary );
+				dist += node_distance( tertiary, switch_table );
 				tertiary = track_next_sensor( tertiary, switch_table );
 			} 
 			break;
