@@ -68,6 +68,7 @@ KERNELSRC += userland/lib/uart.c
 KERNELSRC += userland/lib/cursor_control.c
 KERNELSRC += userland/lib/courier.c
 KERNELSRC += userland/lib/parser.c
+KERNELSRC += userland/lib/math.c
 
 # Drivers
 KERNELSRC += userland/drivers/clock_drv.c
