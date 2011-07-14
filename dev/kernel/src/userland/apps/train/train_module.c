@@ -134,6 +134,9 @@ static inline int execute_command( Rbuf* command_buffer, char* switch_table, int
 		track_switch_off();
 		delay = SWITCH_OFF_DELAY;
 		break;
+	case TRAIN_EXEC_SENSOR:
+		status = Putc( COM_1, (char)133 );
+		delay = TRAIN_XMIT_DELAY;
 	default:
 		delay = 0;
 		break;
@@ -258,8 +261,7 @@ void train_module()
 			buffer_command( command_buffer, TRAIN_EXEC_RV, event.args[0], 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
-			status = Putc( COM_1, (char)133 );
-			assert( status == ERR_NONE );
+			buffer_command( command_buffer, TRAIN_EXEC_SENSOR, 0, 0 );
 			break;
 		case TRAIN_SWITCH:
 			buffer_command( command_buffer, TRAIN_EXEC_SW, event.args[0], event.args[1] );
@@ -288,6 +290,8 @@ void train_module()
 		case TRAIN_SET_SPEED:
 		case TRAIN_REVERSE:
 		case TRAIN_SWITCH:
+		// case TRAIN_SWITCH_ALL:
+		case TRAIN_ALL_SENSORS:
 			if ( executor_ready ){
 				reply.result = execute_command( command_buffer, switch_table, switch_ui_tid );
 				status = Reply( executor_tid, (char*)&reply, sizeof( reply ) );

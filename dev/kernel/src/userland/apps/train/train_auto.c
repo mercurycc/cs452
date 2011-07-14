@@ -636,10 +636,6 @@ void train_auto()
 					switch( current_train->init_state ){
 					default:
 						/* Update track reservation */
-
-						/* FIXME: This, freeing all reservations, is a bit hacky and slow */
-						track_reserve_free( current_train );
-
 						status = track_reserve_get_range( reserve_tid, current_train, train_tracking_stop_distance( current_train ) + TRACK_RESERVE_SAFE_DISTANCE );
 
 						if( status != RESERVE_SUCCESS ){
@@ -648,6 +644,7 @@ void train_auto()
 							current_train->planner_control = 0;
 						}
 
+						/* The check point must always be reservable */
 						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
 						assert( status == RESERVE_SUCCESS );
 						

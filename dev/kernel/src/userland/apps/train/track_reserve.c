@@ -137,7 +137,7 @@ static int track_reserve_request( int tid, Track_request* request, Track_reply* 
 {
 	int status;
 
-	status = Send( tid, ( char* )request, sizeof( request ), ( char* )reply, sizeof( reply ) );
+	status = Send( tid, ( char* )request, sizeof( Track_request ), ( char* )reply, sizeof( Track_reply ) );
 	assert( status == sizeof( reply ) );
 
 	return ERR_NONE;
