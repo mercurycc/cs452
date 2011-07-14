@@ -11,7 +11,6 @@
 #include "inc/train.h"
 #include "inc/warning.h"
 
-
 int train_module_executor(){
 
 	int module_tid;
@@ -20,7 +19,7 @@ int train_module_executor(){
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	
 	while(1){
-		result = train_execute( module_tid );
+		// result = train_execute( module_tid );
 		Delay( result );
 	}
 }

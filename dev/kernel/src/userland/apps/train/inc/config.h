@@ -1,6 +1,9 @@
 #ifndef _TRAIN_CONFIG_H_
 #define _TRAIN_CONFIG_H_
 
+/* If we will caliberate speed change time */
+// #define CALIB_SPEED_CHANGE
+
 /* Train module transmission delays */
 #define SWITCH_XMIT_DELAY 18
 #define SWITCH_OFF_DELAY 20
@@ -20,7 +23,7 @@
 #define PATH_LOOK_AHEAD_BUFFER  32
 #define PATH_LOOK_AHEAD_DIST    1000
 // #define PATH_LOOK_AHEAD_ADJUST_DIST 800
-#define PATH_LOOK_AHEAD_DEFAULT_STOP    250
+#define PATH_LOOK_AHEAD_DEFAULT_STOP    350
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
 
 /* number of speed levels of train */
@@ -29,6 +32,7 @@
 /* number of ticks needed to change speed */
 #define SPEED_CHANGE_TIME   260
 #define CLOSE_SPEED_CHANGE_TIME 220
+#define LOW_SPEED_BREAK_TIME    70
 #define CLOSE_SPEED_CHANGE_GAP  8
 #define START_CHANGE_TIME   350     /* Time for pick up speed from 0 */
 #define STOP_SAFE_TIME      500
@@ -41,7 +45,7 @@
 #define TRAIN_TRAVEL_SPEED_2_LENGTH 2000
 #define TRAIN_TRAVEL_SPEED_2        10
 #define TRAIN_TRAVEL_SPEED_3_LENGTH 1000
-#define TRAIN_TRAVEL_SPEED_3        5
+#define TRAIN_TRAVEL_SPEED_3        6
 #define TRAIN_TRAVEL_SPEED_4_LENGTH 500
 #define TRAIN_TRAVEL_SPEED_4        3
 
@@ -66,6 +70,7 @@
 #define SENSOR_QUERY_NAME   "sensor_qu"
 #define TRACKING_UI_NAME    "tracking_ui"
 #define CONTROL_NAME        "train_ctl"
+#define RESERVE_NAME        "track_rsv"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */

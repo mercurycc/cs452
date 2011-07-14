@@ -19,8 +19,8 @@ static void train_tracking_sc_current_speed( Train* train, int curtime )
 {
 	if( curtime < train->tracking.speed_change_end_time ){
 		train->tracking.speed = ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) *
-					  ( curtime - train->tracking.speed_change_start_time )
-					  / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) + train->tracking.old_speed );
+					  ( curtime - train->tracking.speed_change_last_integration )
+					  / ( train->tracking.speed_change_end_time - train->tracking.speed_change_last_integration ) + train->tracking.old_speed );
 	} else {
 		train->tracking.speed = train->tracking.speed_stat_table[ train->tracking.speed_level ];
 	}
@@ -31,14 +31,14 @@ static int train_tracking_sc_dist_diff( Train* train, int curtime )
 	int dist_diff = 0;
 
 	if( curtime < train->tracking.speed_change_end_time ){
-		if( curtime <= train->tracking.speed_change_start_time ){
+		if( curtime <= train->tracking.speed_change_last_integration ){
 			/* Hack.  This should not happen */
 			dist_diff = 0;
 		} else {
-			dist_diff = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
+			dist_diff = ( int )( ( curtime - train->tracking.speed_change_last_integration ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
 		}
 	} else {
-		dist_diff += ( int )( ( curtime - train->tracking.speed_change_start_time ) * train->tracking.speed );
+		dist_diff += ( int )( ( curtime - train->tracking.speed_change_last_integration ) * train->tracking.speed );
 	}
 
 	assert( dist_diff >= 0 );
@@ -47,14 +47,21 @@ static int train_tracking_sc_dist_diff( Train* train, int curtime )
 
 static void train_tracking_sc_update_time_point( Train* train, int curtime )
 {
-	train->tracking.speed_change_start_time = curtime;
+	train->tracking.speed_change_last_integration = curtime;
 	train->tracking.old_speed = train->tracking.speed;
 }
 
 static inline int train_tracking_sc_time( Train* train )
 {
+#ifdef CALIB_SPEED_CHANGE
+	return train->tracking.speed_change_time;
+#else
 	int diff;
-	
+
+	if( train->tracking.speed_level == 0 && train->tracking.old_speed_level <= 10 ){
+		return LOW_SPEED_BREAK_TIME;
+	}
+
 	if( train->tracking.old_speed_level ){
 		diff = train->tracking.old_speed_level - train->tracking.speed_level;
 		if( diff < 0 ){
@@ -68,6 +75,7 @@ static inline int train_tracking_sc_time( Train* train )
 		/* If the train was picking up speed from 0 then we use this number */
 		return START_CHANGE_TIME;
 	}
+#endif
 }
 
 static void train_tracking_update_check_point( Train* train, int check_point_time, int curtime )
@@ -120,8 +128,6 @@ int train_tracking_init_calib( Train* train )
 	factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
 	factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
 
-	dprintf( "Train %d factor 1 = %d, factor 2 = %d\n", ( int )( factor_1 * 1 ), ( int )( factor_2 * 1 ) );
-	
 	factor = ( factor_1 + factor_2 ) / 2;
 
 	train->tracking.speed_stat_table[ 0 ] = 0;
@@ -135,6 +141,68 @@ int train_tracking_init_calib( Train* train )
 	}
 
 	return 0;
+}
+
+static inline void train_tracking_speed_change_time_calib( Train* train, int sensor_time )
+{
+	int new_speed_change_time;
+	float time_travel;
+	float dist_travel;
+	float final_speed;
+	float init_speed;
+
+	if( ! train->tracking.speed_calib ){
+		dprintf( "Train %d no need for speed change time update\n", train->id );
+		return;
+	}
+
+	/* Derivation of speed change time caliberation
+	   d is the distance travelled after speed change and before sensor hit.
+	   t_0 is the time for travelling through d.
+	   For case 1:
+	   ( d - ( s_i + s_f ) * t / 2 ) / s_f + t = t_0
+	   For case 2:
+	   ( s_i + s_0 ) * t_0 / 2 = d
+	   where
+	   s_0 = ( s_f - s_i ) * t_0 / t + s_i
+	*/
+
+	time_travel = ( float )( sensor_time - train->tracking.speed_change_start_time);
+
+	if( time_travel < 0 ){
+		return;
+	}
+	
+	dist_travel = ( float )train->tracking.speed_change_distance;
+	final_speed = ( float )train->tracking.speed_stat_table[ train->tracking.speed_level ];
+	init_speed = ( float )train->tracking.speed_change_start_speed;
+
+#ifdef LOCAL_DEBUG
+	int time = ( int )( sensor_time - train->tracking.speed_change_start_time );
+	int dist = ( int )train->tracking.speed_change_distance;
+	int final = ( int )( train->tracking.speed_stat_table[ train->tracking.speed_level ] + 0.5f );
+	int init = ( int )( train->tracking.speed_change_start_speed + 0.5f );
+	dprintf( "Train %d data: time %d, dist %d, final %d, init %d\n", time, dist, final, init );
+#endif
+	
+	if( sensor_time >= train->tracking.speed_change_end_time ){
+		dprintf( "Train %d speed change case 1\n", train->id );
+		new_speed_change_time = ( int )( 2 * ( time_travel * final_speed - dist_travel ) /
+						 ( final_speed - init_speed ) );
+	} else {
+		dprintf( "Train %d speed change case 2\n", train->id );
+		new_speed_change_time = ( int )( ( ( final_speed - init_speed ) * time_travel * time_travel ) /
+						 ( 2 * ( dist_travel - init_speed * time_travel ) ) );
+	}
+
+	dprintf( "Train %d got speed change time %d\n", train->id, new_speed_change_time );
+	
+	if( !( new_speed_change_time < 200 || new_speed_change_time > 500 ) ){
+		/* Make new speed change time 1/4 weight */
+		// train->tracking.speed_change_time = new_speed_change_time / 4 + ( train->tracking.speed_change_time * 3 ) / 4;
+	}
+
+	train->tracking.speed_calib = 0;
 }
 
 int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
@@ -163,7 +231,7 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 		}
 		break;
 	case TRAIN_STATE_SPEED_CHANGE:
-		if( curtime >= train->tracking.speed_change_end_time ){
+		if( sensor_time >= train->tracking.speed_change_end_time ){
 			if( train->tracking.speed_level / 2 ){
 				train->state = TRAIN_STATE_TRACKING;
 			} else {
@@ -171,9 +239,12 @@ int train_tracking_new_sensor( Train* train, int sensor_time, int curtime )
 				train->state = TRAIN_STATE_STOP;
 			}
 		} else {
-			train->tracking.speed_change_start_time = curtime;
+			train->tracking.speed_change_last_integration = curtime;
 			train->tracking.old_speed = train->tracking.speed;
 		}
+#ifdef CALIB_SPEED_CHANGE
+		train_tracking_speed_change_time_calib( train, sensor_time );
+#endif /* CALIB_SPEED_CHANGE */
 		break;
 	default:
 		break;
@@ -306,8 +377,12 @@ int train_tracking_speed_change( Train* train, int new_speed_level, int curtime 
 	train->tracking.old_speed_level = train->tracking.speed_level;
 	train->tracking.speed_level = new_speed_level;
 	train->tracking.old_speed = train->tracking.speed;
+	train->tracking.speed_change_start_speed = train->tracking.speed;
 	train->tracking.speed_change_start_time = curtime;
-	train->tracking.speed_change_end_time = train_tracking_sc_time( train ) + curtime;
+	train->tracking.speed_change_last_integration = curtime;
+	train->tracking.speed_change_end_time = train_tracking_sc_time( train ) + curtime;	
+	train->tracking.speed_change_distance = train->tracking.remaining_distance;
+	train->tracking.speed_calib = 1;
 
 	return ERR_NONE;
 }
@@ -323,8 +398,8 @@ int train_tracking_trav_dist( const Train* train, int ticks )
 		curtime = Time();
 		if( curtime < train->tracking.speed_change_end_time ){
 			end_speed = ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) *
-				      ( curtime + ticks - train->tracking.speed_change_start_time )
-				      / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) + train->tracking.old_speed );
+				      ( curtime + ticks - train->tracking.speed_change_last_integration )
+				      / ( train->tracking.speed_change_end_time - train->tracking.speed_change_last_integration ) + train->tracking.old_speed );
 
 			dist = ( int )( ( end_speed + train->tracking.speed ) * ticks / 2 );
 			break;

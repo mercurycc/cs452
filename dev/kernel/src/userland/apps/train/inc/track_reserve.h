@@ -3,13 +3,21 @@
 
 #include <types.h>
 #include "track_node.h"
+#include "train_types.h"
+
+enum Track_reserve_return {
+	RESERVE_SUCCESS,
+	RESERVE_FAIL_SAME_DIR,
+	RESERVE_FAIL_AGAINST_DIR
+};
 
 /* Server */
 void track_reserve();
 
-int track_reserve_init( int tid, track_node* track_graph, int* switch_table );
-int track_reserve_get_range( int tid, track_node* node, int dist );
-int track_reserve_get( int tid, track_node* node );
-int track_reserve_put( int tid, track_node* node );
+int track_reserve_get_range( int tid, Train* train, track_node* node, int dist );
+int track_reserve_get( int tid, Train* train, track_node* node, int direction );
+int track_reserve_put( int tid, Train* train, track_node* node, int direction );
+Train* track_reserved( track_node* node, int direction );
+int track_reserve_free( Train* train );
 
 #endif /* _TRACK_RESERVE_H_ */

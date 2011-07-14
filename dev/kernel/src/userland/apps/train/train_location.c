@@ -160,14 +160,14 @@ uint train_time_to_distance( Train_data* train, int distance ) {
 	float accel;
 	uint time;
 	uint result = 0;
-	int change_dist = ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time ) * ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] + train->tracking.old_speed ) / 2 );
+	int change_dist = ( train->tracking.speed_change_end_time - train->tracking.speed_change_last_integration ) * ( ( train->tracking.speed_stat_table[ train->tracking.speed_level ] + train->tracking.old_speed ) / 2 );
 	
 	if ( change_dist <= distance ) {
 		time = ( distance - change_dist ) / train->tracking.speed_stat_table[ train->tracking.speed_level ];
-		result = time + train->tracking.speed_change_end_time - train->tracking.speed_change_start_time;
+		result = time + train->tracking.speed_change_end_time - train->tracking.speed_change_last_integration;
 	}
 	else {
-		accel = ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) / ( train->tracking.speed_change_end_time - train->tracking.speed_change_start_time );
+		accel = ( train->tracking.speed_stat_table[ train->tracking.speed_level ] - train->tracking.old_speed ) / ( train->tracking.speed_change_end_time - train->tracking.speed_change_last_integration );
 		speed = fsqrt( train->tracking.speed * train->tracking.speed + 2 * accel * distance );
 		time = ( speed - train->tracking.speed ) / accel;
 		result = time;

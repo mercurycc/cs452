@@ -76,9 +76,10 @@ int stoi( const char* str )
 	
 	if( str[ 0 ] == '-' ){
 		neg = 1;
+		str += 1;
 	}
 
-	result = stou( str + 1 );
+	result = stou( str );
 
 	if( neg ){
 		result = -result;
