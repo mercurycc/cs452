@@ -357,12 +357,22 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 			do {
 				rbuf_get( local_path, ( uchar* )path_node );
 				rbuf_put_front( local_path_stack, ( uchar* )path_node );
-				if( path_node->node == match_node ){
-					/* all_matched can only be set here because local_path will be filled with the last node
-					   again for calculation of matched_dist */
-					if( rbuf_empty( local_path ) && rbuf_empty( path ) ){
+
+				/* all_matched can only be set here because local_path will be filled with the
+				   last node again for calculation of matched_dist.
+				   Notice if the last node is not a sensor then we can only rely on distance prediction.
+				*/
+				if( rbuf_empty( local_path ) && rbuf_empty( path ) ){
+					if( path_node->node->type == NODE_SENSOR ){
+						if( path_node->node == match_node ){
+							all_matched = 1;
+						}
+					} else {
 						all_matched = 1;
 					}
+				}
+				
+				if( path_node->node == match_node ){
 					rbuf_put_front( local_path, ( uchar* )path_node );
 					rbuf_reset( local_path_stack );
 					path_matched = 1;
@@ -398,7 +408,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		sem_acquire_all( train->sem );
 		/* Stop when applicable */
 		/* Since we require the train to slow down at the end, we should always be able to match all the nodes */
-		if( train_tracking_stop_distance( train ) >= train->mark_dist && all_matched ){
+		if( train->mark_dist <= 0 && all_matched ){
 			dprintf( "Train %d will stop, stop dist %d\n", train->id, train_tracking_stop_distance( train ) );
 			done = 1;
 		}

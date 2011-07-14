@@ -29,19 +29,21 @@ static void train_tracking_sc_current_speed( Train* train, int curtime )
 static int train_tracking_sc_dist_diff( Train* train, int curtime )
 {
 	int dist_diff = 0;
+	int temp;
 
 	if( curtime < train->tracking.speed_change_end_time ){
-		if( curtime <= train->tracking.speed_change_last_integration ){
-			/* Hack.  This should not happen */
-			dist_diff = 0;
-		} else {
-			dist_diff = ( int )( ( curtime - train->tracking.speed_change_last_integration ) * ( train->tracking.old_speed + train->tracking.speed ) / 2 );
-		}
+		temp = ( int )( ( curtime - train->tracking.speed_change_start_time ) * ( train->tracking.speed_change_start_speed + train->tracking.speed ) / 2 );
 	} else {
-		dist_diff += ( int )( ( curtime - train->tracking.speed_change_last_integration ) * train->tracking.speed );
+		temp = ( int )( ( curtime - train->tracking.speed_change_end_time ) * train->tracking.speed );
 	}
 
-	assert( dist_diff >= 0 );
+	dist_diff = temp - train->tracking.speed_change_last_dist;
+	train->tracking.speed_change_last_dist = temp;
+
+	if( dist_diff < 0 ){
+		/* Hacky */
+		return 0;
+	}
 	return dist_diff;
 }
 
@@ -136,7 +138,9 @@ int train_tracking_init_calib( Train* train )
 	train->tracking.speed_stat_count[ 1 ] = 1;
 
 	for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
-		train->tracking.speed_stat_table[ i ] = ( float )i * factor;
+		train->tracking.speed_stat_table[ i ] = ( ( float )( i - 1 ) * factor *
+							  ( ( float )i + ( float )30 ) /
+							  ( ( float )NUM_SPEED_LEVEL + 30 ) );
 		train->tracking.speed_stat_count[ i ] = 1;
 	}
 
@@ -380,6 +384,7 @@ int train_tracking_speed_change( Train* train, int new_speed_level, int curtime 
 	train->tracking.speed_change_start_speed = train->tracking.speed;
 	train->tracking.speed_change_start_time = curtime;
 	train->tracking.speed_change_last_integration = curtime;
+	train->tracking.speed_change_last_dist = 0;
 	train->tracking.speed_change_end_time = train_tracking_sc_time( train ) + curtime;	
 	train->tracking.speed_change_distance = train->tracking.remaining_distance;
 	train->tracking.speed_calib = 1;
@@ -420,6 +425,8 @@ int train_tracking_speed_to_level( const Train* train, float speed )
 			return i - 1;
 		}
 	}
+
+	return 14;
 }
 
 int train_tracking_trav_time( const Train* train, int dist )

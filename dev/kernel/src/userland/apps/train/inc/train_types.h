@@ -53,6 +53,7 @@ typedef struct Train_tracking_s {
 	int speed_level;                /* Current speed level */
 	int distance;                   /* Distance from last check point, in mm */
 	int remaining_distance;         /* Distance towards next check point, in mm */
+	int speed_change_last_dist;     /* Distance of last speed change integration */
 	int trav_distance;              /* Distance between current and next sensor */
 	int trav_time_stamp;
 	float speed_stat_table[ NUM_SPEED_LEVEL ];
