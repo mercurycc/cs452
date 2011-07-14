@@ -14,7 +14,7 @@
 #define TRAIN_UI_PRIORITY           9
 
 
-#define COMMAND_BUFFER_SIZE (sizeof( Train_command ) * 32)		// 12 * 32
+#define COMMAND_BUFFER_SIZE (sizeof( Train_command ) * 128)		// 12 * 32
 
 /* train event api */
 /* Server */
