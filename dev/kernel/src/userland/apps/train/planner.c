@@ -18,7 +18,7 @@
 #include "inc/train_tracking.h"
 #include <perf.h>
 
-// #define LOCAL_DEBUG
+#define LOCAL_DEBUG
 #include <user/dprint.h>
 
 enum Train_planner_request_type {
@@ -38,6 +38,7 @@ enum Train_state_types {
 	TRAVEL_2,
 	TRAVEL_3,
 	TRAVEL_4,
+	TRAVEL_5,
 	STOP
 };
 
@@ -100,7 +101,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		case NODE_BRANCH:
 		case NODE_EXIT:
 			WAR_NOTICE( "Brancher or exit cannot be destination\n" );
-			return 0;
+			return -1;
 		case NODE_NONE:
 		default:
 			assert( 0 );
@@ -169,6 +170,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
+				if( track_reserved( train, current_node, DIR_AHEAD ) ){
+					temp = ~0;
+				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 			}
 
@@ -177,6 +181,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
+					if( track_reserved( train, current_node, DIR_AHEAD ) ){
+						temp = ~0;
+					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
 				}
 			}
@@ -189,6 +196,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 
 	/* Fill in path */
 	do {
+		if( ! ( cost[ i ] < ~0 ) ){
+			return -1;
+		}
 		current_node = track_graph + i;
 		path_node.node = current_node;
 
@@ -249,6 +259,11 @@ static inline void train_forward_set_speed( volatile Train_data* train, uint* st
 	if( path_length < TRAIN_TRAVEL_SPEED_4_LENGTH && ( init_state == TRAVEL_3 || init_state == STOP ) ){
 		speed_level = TRAIN_TRAVEL_SPEED_4;
 		*state = TRAVEL_4;
+	}
+
+	if( path_length < TRAIN_TRAVEL_SPEED_5_LENGTH && ( init_state == TRAVEL_4 || init_state == STOP ) ){
+		speed_level = TRAIN_TRAVEL_SPEED_5;
+		*state = TRAVEL_5;
 	}
 
 	if( speed_level ){
@@ -313,8 +328,10 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		sem_acquire_all( train->sem );
 		temp = train->mark_dist;
 		sem_release( train->sem );
-		
-		train_forward_set_speed( train, &state, temp, module_tid, auto_tid );
+
+		if( train->planner_control ){
+			train_forward_set_speed( train, &state, temp, module_tid, auto_tid );
+		}
 
 		path_matched = 0;
 		matched_dist = 0;
@@ -380,8 +397,9 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 		sem_acquire_all( train->sem );
 		/* Stop when applicable */
-		if( train_tracking_stop_distance( train ) >= train->mark_dist ){
-			dprintf( "Train %d will stop, stop dist %d\n", train_tracking_stop_distance( train ) );
+		/* Since we require the train to slow down at the end, we should always be able to match all the nodes */
+		if( train_tracking_stop_distance( train ) >= train->mark_dist && all_matched ){
+			dprintf( "Train %d will stop, stop dist %d\n", train->id, train_tracking_stop_distance( train ) );
 			done = 1;
 		}
 		sem_release( train->sem );
@@ -396,11 +414,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		train_auto_set_speed( auto_tid, train->id, 0 );
 		dprintf( "Train %d stop\n", train->id );
 
-		Delay( 100 );
-		Delay( 100 );
-		Delay( 100 );
-		Delay( 100 );
-		Delay( 100 );
+		Delay( 320 );
 
 		dprintf( "Train %d forward execution completed\n", train->id );
 	}
@@ -410,7 +424,6 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 void train_planner()
 {
-	/* TODO: rewrite the whole thing to accomodate multiple trains */
 	Planner_request request;
 	int tid;
 	Train_data* train;
@@ -432,7 +445,6 @@ void train_planner()
 	uint path_length;
 	int module_tid;
 	int auto_tid;
-	int planning;
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
 	int status;
@@ -471,15 +483,21 @@ void train_planner()
 		assert( status == SYSCALL_SUCCESS );
 		train->planner_control = 1;
 
+		dprintf( "Request received, dist pass = %d\n", request.dist_pass );
+
 		switch( request.type ){
 		case PLANNER_PATH_PLAN:
 			dist_pass = request.dist_pass;
-			planning = 1;
 			rbuf_reset( path );
 			rbuf_reset( forward_path );
 			
 			status = train_planner_plan( request.dst, &dist_pass, train, path, &plan_direction );
-			assert( status == ERR_NONE );
+			if( ! ( status == ERR_NONE ) ){
+				dprintf( "Cannot find path for train %d\n", train->id );
+				break;
+			}
+
+			dprintf( "Path planned, dist pass = %d\n", dist_pass );
 
 			assert( ! rbuf_empty( path ) );
 
@@ -529,13 +547,15 @@ void train_planner()
 
 				path_length -= previous_node_length;
 
+				dprintf( "Planner forward path filled for %d, length %d\n", train->id, path_length );
+
 				if( rbuf_empty( path ) ){
 					path_length += dist_pass;
 				} else {
 					path_length += PATH_LOOK_AHEAD_DEFAULT_STOP;
 				}
 
-				dprintf( "Planner forward path filled for %d, length %d\n", train->id, path_length );
+				dprintf( "After dist_pass: %d\n", path_length );
 
 				if( train->planner_control ){
 					/* If path is empty, then we are at the end of the journey.  Therefore respect required stop distance. */

@@ -18,6 +18,7 @@ KERNELSRC += interrupt.s
 KERNELSRC += interrupt_handler.c
 KERNELSRC += watchdog.c
 KERNELSRC += perf.c
+KERNELSRC += cache.s
 
 # Devices
 KERNELSRC += devices/console.c
@@ -52,6 +53,7 @@ KERNELSRC += userland/apps/train/train_location.c
 # KERNELSRC += userland/apps/train/speed.c
 KERNELSRC += userland/apps/train/planner.c
 KERNELSRC += userland/apps/train/train_tracking.c
+KERNELSRC += userland/apps/train/track_reserve.c
 KERNELSRC += userland/apps/train/error_tolerance.c
 KERNELSRC += userland/apps/train/ui/clock.c
 KERNELSRC += userland/apps/train/ui/sensor_monitor.c

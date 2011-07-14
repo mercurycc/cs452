@@ -120,8 +120,8 @@ int train_next_possible( Train_data* train, int* switch_table )
 	uint b = train->next_time_pred + range;
 	
 	
-	dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, a, b, range );
-	//dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_start_time, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
+	dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, a, b, range );
+	//dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
 
 	return 0;
 }
@@ -139,16 +139,16 @@ int train_update_time_pred( Train_data* train, int* switch_table ){
 		
 		switch ( train->state ){
 		case TRAIN_STATE_SPEED_CHANGE:
-			train->next_time_pred = train_time_to_distance( train, ( dist - train->tracking.distance ) ) + train->tracking.speed_change_start_time;
+			train->next_time_pred = train_time_to_distance( train, ( dist - train->tracking.distance ) ) + train->tracking.speed_change_last_integration;
 			break;
 		case TRAIN_STATE_TRACKING:
-			train->next_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_start_time;
+			train->next_time_pred = ( dist - train->tracking.distance ) / train->tracking.speed + train->tracking.speed_change_last_integration;
 			break;
 		default:
 			train->next_time_pred = 0;
 		}
-		dprintf( "range is 1/3 of %d - %d\n", train->next_time_pred, train->tracking.speed_change_start_time );
-		train->next_time_range = ( train->next_time_pred - train->tracking.speed_change_start_time ) * TIME_WINDOW_RANGE_FACTOR;
+		dprintf( "range is 1/3 of %d - %d\n", train->next_time_pred, train->tracking.speed_change_last_integration );
+		train->next_time_range = ( train->next_time_pred - train->tracking.speed_change_last_integration ) * TIME_WINDOW_RANGE_FACTOR;
 	}
 	else {
 		train->next_time_pred = 0;

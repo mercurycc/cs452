@@ -18,13 +18,14 @@
 #include "inc/sensor_data.h"
 #include "inc/track_data.h"
 #include "inc/track_node.h"
+#include "inc/track_reserve.h"
 #include "inc/warning.h"
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
 #include "inc/error_tolerance.h"
 
-#define LOCAL_DEBUG
+// #define LOCAL_DEBUG
 #include <user/dprint.h>
 
 enum Train_pickup {
@@ -106,7 +107,7 @@ static void train_auto_alarm()
 	int ptid = MyParentTid();
 
 	while( 1 ){
-		Delay( 2 );
+		Delay( 1 );
 
 		train_auto_wakeup( ptid );
 	}
@@ -131,6 +132,7 @@ void train_auto()
 	int tracking_ui_tid;
 	int alarm_tid;
 	int control_tid;
+	int reserve_tid;
 	int tid;
 	int i;
 	int temp;
@@ -184,6 +186,9 @@ void train_auto()
 
 	control_tid = WhoIs( CONTROL_NAME );
 	assert( control_tid > 0 );
+
+	reserve_tid = WhoIs( RESERVE_NAME );
+	assert( reserve_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
@@ -299,24 +304,26 @@ void train_auto()
 
 				/* Update last triggered sensor, for wh */
 				for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
-					if( sensor_data.sensor_raw[ temp ] ){
-						last_sensor_group = temp;
-						for( i = 0; i < BITS_IN_BYTE; i += 1 ){
-							if( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ){
-								int group = temp / 2;
-								int id = i + ( temp % 2 ) * 8;
-								current_sensor = track_graph + node_map[ group ][ id ];
+					if( ! sensor_data.sensor_raw[ temp ] ){
+						continue;
+					}
+					last_sensor_group = temp;
+					for( i = 0; i < BITS_IN_BYTE; i += 1 ){
+						if( ! ( sensor_data.sensor_raw[ temp ] & ( ( 1 << 7 ) >> i ) ) ){
+							continue;
+						}
+						int group = temp / 2;
+						int id = i + ( temp % 2 ) * 8;
+						current_sensor = track_graph + node_map[ group ][ id ];
 
-								if ( !sensor_trustable( current_sensor ) ) {
-									clear_sensor_data( &sensor_data, current_sensor );
-								}
-								else {
-									last_sensor_group = group;
-									last_sensor_id = id;
-									if ( !( sensor_expect[ group ][ id ] ) ){
-										sensor_error( current_sensor );
-									}
-								}
+						if ( !sensor_trustable( current_sensor ) ) {
+							clear_sensor_data( &sensor_data, current_sensor );
+						}
+						else {
+							last_sensor_group = group;
+							last_sensor_id = id;
+							if ( !( sensor_expect[ group ][ id ] ) ){
+								sensor_error( current_sensor );
 							}
 						}
 					}
@@ -352,6 +359,8 @@ void train_auto()
 					current_train->switch_table = switch_table;
 					current_train->node_map = ( int* )node_map;
 
+					current_train->tracking.speed_change_time = SPEED_CHANGE_TIME;
+
 					status = train_planner_init( current_train->planner_tid, current_train );
 					assert( status == ERR_NONE );
 
@@ -383,6 +392,8 @@ void train_auto()
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					sem_acquire_all( current_train->sem );
 					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
+					/* Reset reservation */
+					track_reserve_free( current_train );
 					sem_release( current_train->sem );
 					train_update_time_pred( current_train, switch_table );
 					break;
@@ -398,21 +409,21 @@ void train_auto()
 				current_train->check_point = current_train->next_check_point->reverse;
 				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
-				/* the comment-out reverse works on some part, but doesn't work in a specific location
-				 * the bottom one works but has error in another situation, though in that situation\
-				 * the error will be correct by the tertiary sensor prediction
-				 */
-				//////////
-				// current_train->last_sensor = current_train->next_sensor->reverse;
-				// current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-				current_node = current_train->next_sensor->reverse;
-				current_train->next_sensor = current_train->last_sensor->reverse;
-				current_train->last_sensor = current_node;
-				//////////
+				
+				/* The last sensor does not matter that much */
+				current_train->last_sensor = current_train->next_sensor->reverse;
+				
+				/* The next sensor needs to be found from the check point in case of multiple branches between sensors */
+				current_train->next_sensor = track_next_sensor( current_train->check_point, switch_table );
+				
 				current_train->state = TRAIN_STATE_STOP;
 				train_tracking_reverse( current_train );
 				train_next_possible( current_train, switch_table );
 				train_expect_sensors( current_train, sensor_expect );
+
+				/* Free reservation */
+				track_reserve_free( current_train );
+				
 				sem_release( current_train->sem );
 				break;
 			case TRAIN_AUTO_SET_SWITCH_DIR:
@@ -460,7 +471,7 @@ void train_auto()
 						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
 						train_next_possible( current_train, switch_table );
 						train_expect_sensors( current_train, sensor_expect );
-						
+						track_reserve_free( current_train );
 					}
 
 					/* Process train states */
@@ -624,6 +635,23 @@ void train_auto()
 
 					switch( current_train->init_state ){
 					default:
+						/* Update track reservation */
+
+						/* FIXME: This, freeing all reservations, is a bit hacky and slow */
+						track_reserve_free( current_train );
+
+						status = track_reserve_get_range( reserve_tid, current_train, train_tracking_stop_distance( current_train ) + TRACK_RESERVE_SAFE_DISTANCE );
+
+						if( status != RESERVE_SUCCESS ){
+							track_reserve_free( current_train );
+							train_auto_recompose_set_speed( &request, current_train->id, 0 );
+							current_train->planner_control = 0;
+						}
+
+						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
+						assert( status == RESERVE_SUCCESS );
+						
+						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
 						tracking_ui_dist( tracking_ui_tid, current_train->id, train_tracking_position( current_train ) );

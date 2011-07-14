@@ -13,14 +13,16 @@
 #include "inc/warning.h"
 
 
+
 void train_module_executor(){
+
 	int module_tid;
 	int result;
 	
 	module_tid = WhoIs( TRAIN_MODULE_NAME );
 	
 	while(1){
-		result = train_execute( module_tid );
+		// result = train_execute( module_tid );
 		Delay( result );
 	}
 }

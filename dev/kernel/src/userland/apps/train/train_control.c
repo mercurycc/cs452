@@ -10,6 +10,7 @@
 #include <user/lib/sync.h>
 #include <user/lib/parser.h>
 #include "inc/track_node.h"
+#include "inc/track_reserve.h"
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -35,6 +36,7 @@ void train_control()
 	int module_tid;
 	int auto_tid;
 	int tracking_ui_tid;
+	int track_reserve_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -42,6 +44,7 @@ void train_control()
 	int buf_i = 0;
 	int token_filled;
 	int i;
+	Region title_reg = { 2, 1, 1, 14 - 2, 1, 0 };
 	/* Prompt UI */
 	Region prompt_titles = { 2, 20, 1, 11 - 2, 1, 0 };
 	Region prompt_reg = { 2, 21, 1, 78 - 2, 1, 0 };
@@ -61,8 +64,12 @@ void train_control()
 	assert( status == ERR_NONE );
 	status = region_init( &warning_reg );
 	assert( status == ERR_NONE );
+	status = region_init( &title_reg );
+	assert( status == ERR_NONE );
 
 	/* Print title */
+	/* System */
+	region_printf( &title_reg, "Pinball P2" );
 	/* Console */
 	status = region_init( &prompt_titles );
 	assert( status == ERR_NONE );
@@ -105,6 +112,9 @@ void train_control()
 
 	tracking_ui_tid = Create( TRAIN_UI_PRIORITY, tracking_ui );
 	assert( tracking_ui_tid > 0 );
+
+	track_reserve_tid = Create( TRAIN_AUTO_PRIROTY, track_reserve );
+	assert( track_reserve_tid > 0 );
 
 	sync_wait();
 
@@ -286,31 +296,11 @@ void train_control()
 				dist_pass = ( int )stoi( token_buf[ 3 ] );
 				if( ! fail ){
 					train_auto_plan( auto_tid, train_id, group, id, dist_pass );
-					region_printf( &result_reg, "Plan to %s (%d, %d) for train %d\n", token_buf[ 2 ], group, id, train_id );
+					region_printf( &result_reg, "Plan to %s (%d, %d), %d for train %d\n", token_buf[ 2 ], group, id, dist_pass, train_id );
 				}
 			} else {
 				region_printf( &result_reg, "%s <train id> <land mark> <distance pass the landmard>\n", token_buf[ 0 ] );
 			}
-		/* } else if( ! strcmp( token_buf[ 0 ], "hit" ) ){ */
-		/* 	int train_id; */
-		/* 	int sensor_group; */
-		/* 	int sensor_id; */
-		/* 	int distance; */
-		/* 	if( token_filled == 4 ){ */
-		/* 		train_id = ( int )stou( token_buf[ 1 ] ); */
-		/* 		status = track_node_name2id( token_buf[ 2 ], &sensor_group, &sensor_id ); */
-		/* 		if( status != ERR_NONE ){ */
-		/* 			region_printf( &result_reg, "%s is not a valid sensor\n", token_buf[ 2 ] ); */
-		/* 			fail = 1; */
-		/* 		} */
-		/* 		distance = ( int )stou( token_buf[ 3 ] ); */
-		/* 		if( ! fail ){ */
-		/* 			train_auto_hit_and_stop( auto_tid, train_id, sensor_group, sensor_id, distance ); */
-		/* 			region_printf( &result_reg, "Set train %d to stop after sensor %s distance %d\n", train_id, token_buf[ 2 ], distance ); */
-		/* 		} */
-		/* 	} else { */
-		/* 		region_printf( &result_reg, "%s <train id> <sensor to hit till stop>\n", token_buf[ 0 ] ); */
-		/* 	} */
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}
