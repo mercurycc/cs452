@@ -10,6 +10,7 @@
 #include <user/lib/sync.h>
 #include <user/lib/parser.h>
 #include "inc/track_node.h"
+#include "inc/track_reserve.h"
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -35,6 +36,7 @@ void train_control()
 	int module_tid;
 	int auto_tid;
 	int tracking_ui_tid;
+	int track_reserve_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -110,6 +112,9 @@ void train_control()
 
 	tracking_ui_tid = Create( TRAIN_UI_PRIORITY, tracking_ui );
 	assert( tracking_ui_tid > 0 );
+
+	track_reserve_tid = Create( TRAIN_AUTO_PRIROTY, track_reserve );
+	assert( track_reserve_tid > 0 );
 
 	sync_wait();
 

@@ -30,7 +30,7 @@
 #define NUM_SPEED_LEVEL 30
 
 /* number of ticks needed to change speed */
-#define SPEED_CHANGE_TIME   260
+#define SPEED_CHANGE_TIME   265
 #define CLOSE_SPEED_CHANGE_TIME 220
 #define LOW_SPEED_BREAK_TIME    70
 #define CLOSE_SPEED_CHANGE_GAP  8
@@ -38,6 +38,10 @@
 #define STOP_SAFE_TIME      500
 #define COMMAND_DELAY_TIME  7
 
+/* Track reservation */
+#define TRACK_RESERVE_SAFE_DISTANCE   200
+
+/* Train init */
 #define TRAIN_AUTO_REG_SPEED_1  8
 #define TRAIN_AUTO_REG_SPEED_2  12
 
@@ -48,6 +52,8 @@
 #define TRAIN_TRAVEL_SPEED_3        6
 #define TRAIN_TRAVEL_SPEED_4_LENGTH 500
 #define TRAIN_TRAVEL_SPEED_4        3
+#define TRAIN_TRAVEL_SPEED_5_LENGTH 100
+#define TRAIN_TRAVEL_SPEED_5        1
 
 #define TRAIN_AUTO_REG_RETRY      2
 #define TRAIN_AUTO_REG_SPEED_CALIB_TIME   500

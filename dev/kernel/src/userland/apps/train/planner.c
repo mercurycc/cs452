@@ -38,6 +38,7 @@ enum Train_state_types {
 	TRAVEL_2,
 	TRAVEL_3,
 	TRAVEL_4,
+	TRAVEL_5,
 	STOP
 };
 
@@ -169,9 +170,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				/* if( track_reserved( current_node, DIR_AHEAD ) ){ */
-				/* 	temp = ~0; */
-				/* } */
+				if( track_reserved( train, current_node, DIR_AHEAD ) ){
+					temp = ~0;
+				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 			}
 
@@ -180,9 +181,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					/* if( track_reserved( current_node, DIR_AHEAD ) ){ */
-					/* 	temp = ~0; */
-					/* } */
+					if( track_reserved( train, current_node, DIR_AHEAD ) ){
+						temp = ~0;
+					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
 				}
 			}
@@ -258,6 +259,11 @@ static inline void train_forward_set_speed( volatile Train_data* train, uint* st
 	if( path_length < TRAIN_TRAVEL_SPEED_4_LENGTH && ( init_state == TRAVEL_3 || init_state == STOP ) ){
 		speed_level = TRAIN_TRAVEL_SPEED_4;
 		*state = TRAVEL_4;
+	}
+
+	if( path_length < TRAIN_TRAVEL_SPEED_5_LENGTH && ( init_state == TRAVEL_4 || init_state == STOP ) ){
+		speed_level = TRAIN_TRAVEL_SPEED_5;
+		*state = TRAVEL_5;
 	}
 
 	if( speed_level ){

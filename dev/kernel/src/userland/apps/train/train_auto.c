@@ -18,6 +18,7 @@
 #include "inc/sensor_data.h"
 #include "inc/track_data.h"
 #include "inc/track_node.h"
+#include "inc/track_reserve.h"
 #include "inc/warning.h"
 #include "inc/train_location.h"
 #include "inc/train_types.h"
@@ -131,6 +132,7 @@ void train_auto()
 	int tracking_ui_tid;
 	int alarm_tid;
 	int control_tid;
+	int reserve_tid;
 	int tid;
 	int i;
 	int temp;
@@ -184,6 +186,9 @@ void train_auto()
 
 	control_tid = WhoIs( CONTROL_NAME );
 	assert( control_tid > 0 );
+
+	reserve_tid = WhoIs( RESERVE_NAME );
+	assert( reserve_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
@@ -387,6 +392,8 @@ void train_auto()
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					sem_acquire_all( current_train->sem );
 					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
+					/* Reset reservation */
+					track_reserve_free( current_train );
 					sem_release( current_train->sem );
 					train_update_time_pred( current_train, switch_table );
 					break;
@@ -413,6 +420,10 @@ void train_auto()
 				train_tracking_reverse( current_train );
 				train_next_possible( current_train, switch_table );
 				train_expect_sensors( current_train, sensor_expect );
+
+				/* Free reservation */
+				track_reserve_free( current_train );
+				
 				sem_release( current_train->sem );
 				break;
 			case TRAIN_AUTO_SET_SWITCH_DIR:
@@ -460,7 +471,7 @@ void train_auto()
 						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
 						train_next_possible( current_train, switch_table );
 						train_expect_sensors( current_train, sensor_expect );
-						
+						track_reserve_free( current_train );
 					}
 
 					/* Process train states */
@@ -624,6 +635,23 @@ void train_auto()
 
 					switch( current_train->init_state ){
 					default:
+						/* Update track reservation */
+
+						/* FIXME: This, freeing all reservations, is a bit hacky and slow */
+						track_reserve_free( current_train );
+
+						status = track_reserve_get_range( reserve_tid, current_train, train_tracking_stop_distance( current_train ) + TRACK_RESERVE_SAFE_DISTANCE );
+
+						if( status != RESERVE_SUCCESS ){
+							track_reserve_free( current_train );
+							train_auto_recompose_set_speed( &request, current_train->id, 0 );
+							current_train->planner_control = 0;
+						}
+
+						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
+						assert( status == RESERVE_SUCCESS );
+						
+						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
 						tracking_ui_dist( tracking_ui_tid, current_train->id, train_tracking_position( current_train ) );
