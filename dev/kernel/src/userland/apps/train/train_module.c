@@ -7,12 +7,15 @@
 #include <user/uart.h>
 #include <user/name_server.h>
 #include <user/lib/sync.h>
+#include "inc/train.h"
 #include "inc/config.h"
 #include "inc/train.h"
 #include "inc/warning.h"
 
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
+
+typedef struct Train_command_s Train_command;
 
 enum Train_event_type {
 	TRAIN_UPDATE_TIME,
@@ -24,7 +27,8 @@ enum Train_event_type {
 	TRAIN_ALL_SENSORS,
 	TRAIN_MODULE_SUICIDE,
 	TRAIN_PRESSURE_TEST,
-	TRAIN_SWITCH_ALL
+	TRAIN_SWITCH_ALL,
+	TRAIN_EXECUTE
 };
 
 struct Train_event_s {
@@ -36,12 +40,23 @@ struct Train_reply_s {
 	int result;
 };
 
+enum Train_execute_type {
+	TRAIN_EXEC_TR,
+	TRAIN_EXEC_RV,
+	TRAIN_EXEC_SW,
+	TRAIN_EXEC_SWOFF,
+	TRAIN_EXEC_SENSOR
+};
+
+struct Train_command_s {
+	uint command;
+	int args[2];
+};
+
 static inline void setspeed( int train, int speed ){
 	int status = Putc( COM_1, (char)speed );
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)train );
-	assert( status == ERR_NONE );
-	status = Delay( TRAIN_XMIT_DELAY );
 	assert( status == ERR_NONE );
 }
 
@@ -49,8 +64,6 @@ static inline void reverse( int train ){
 	int status = Putc( COM_1, (char)15 );
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)train );
-	assert( status == ERR_NONE );
-	status = Delay( TRAIN_XMIT_DELAY );
 	assert( status == ERR_NONE );
 }
 
@@ -70,29 +83,11 @@ static inline void track_switch( int ui_tid, int track_id, char direction ){
 	assert( status == ERR_NONE );
 	status = Putc( COM_1, (char)track_id );
 	assert( status == ERR_NONE );
-	status = Delay( SWITCH_XMIT_DELAY );
-	assert( status == ERR_NONE );
 }
 
 static inline void track_switch_off() {
-	int status = Delay( SWITCH_OFF_DELAY );
+	int status = Putc( COM_1, (char)32 );
 	assert( status == ERR_NONE );
-	status = Putc( COM_1, (char)32 );
-	assert( status == ERR_NONE );
-	status = Delay( SWITCH_OFF_DELAY );
-	assert( status == ERR_NONE );
-}
-
-static inline void track_switch_all( int ui_tid, char direction ){
-	int i;
-	// reset all switches
-	for ( i = 1; i < 19; i++ ) {
-		track_switch( ui_tid, i, direction );
-	}
-	for ( i = 153; i < 157; i++ ) {
-		track_switch( ui_tid, i, direction );
-	}
-	track_switch_off();
 }
 
 static inline void delay( int ticks ) {
@@ -100,11 +95,82 @@ static inline void delay( int ticks ) {
 	assert( status == ERR_NONE );
 }
 
+static inline int execute_command( Rbuf* command_buffer, char* switch_table, int switch_ui_tid ){
+	Train_command command;
+	Train_command temp;
+	int i;
+	int delay;
+	int status = rbuf_get( command_buffer, ( uchar* ) &command );
+	assert( status == 0 );
+	while ( command.command == TRAIN_EXEC_SWOFF && !rbuf_empty( command_buffer ) ){
+		status = rbuf_get( command_buffer, ( uchar* ) &temp );
+		assert( status == 0 );
+		
+		if ( temp.command != TRAIN_EXEC_SWOFF ){
+			status = rbuf_put( command_buffer, ( uchar* ) &command );
+			assert( status == 0 );
+			command.command = temp.command;
+			command.args[0] = temp.args[0];
+			command.args[1] = temp.args[1];
+		}
+	}
+	
+	switch( command.command ){
+	case TRAIN_EXEC_TR:
+		setspeed( command.args[0], command.args[1] );
+		delay = TRAIN_XMIT_DELAY;
+		break;
+	case TRAIN_EXEC_RV:
+		reverse( command.args[0] );
+		delay = TRAIN_XMIT_DELAY;
+		break;
+	case TRAIN_EXEC_SW:
+		i = SWID_TO_ARRAYID( command.args[0] );
+		switch_table[ i ] = command.args[ 1 ];
+		track_switch( switch_ui_tid, command.args[0], command.args[1] );
+		delay = SWITCH_XMIT_DELAY;
+		break;
+	case TRAIN_EXEC_SWOFF:
+		track_switch_off();
+		delay = SWITCH_OFF_DELAY;
+		break;
+	default:
+		delay = 0;
+		break;
+	}
+	
+	return delay;
+}
+
+static inline void buffer_command( Rbuf* command_buffer, uint command_type, int arg0, int arg1 ){
+	Train_command command;
+	command.command = command_type;
+	command.args[0] = arg0;
+	command.args[1] = arg1;
+	int status = rbuf_put( command_buffer, ( uchar* )&command );
+	assert( status == 0 );
+}
+
+static inline void track_switch_all( int ui_tid, char direction ){
+	int i;
+	// reset all switches
+	for ( i = 1; i < 19; i++ ) {
+		track_switch( ui_tid, i, direction );
+		delay( SWITCH_XMIT_DELAY );
+	}
+	for ( i = 153; i < 157; i++ ) {
+		track_switch( ui_tid, i, direction );
+		delay( SWITCH_XMIT_DELAY );
+	}
+	track_switch_off();
+	delay( SWITCH_OFF_DELAY );
+}
 
 void train_module()
 {
 	int tid;
 	int ptid = MyParentTid();
+	int executor_tid;
 	int quit = 0;
 	int status;
 	int i;
@@ -114,6 +180,14 @@ void train_module()
 	Train_reply reply;
 	int curtime;
 	int last_switch_time = 0;
+	
+	int executor_ready = 0;
+	uchar buffer[COMMAND_BUFFER_SIZE];
+	Rbuf command_buffer_var;
+	Rbuf* command_buffer = &command_buffer_var;
+
+	status = rbuf_init( command_buffer, buffer, sizeof( Train_command ), COMMAND_BUFFER_SIZE );
+	assert( status == 0 );
 
 	status = RegisterAs( TRAIN_MODULE_NAME );
 	assert( status == ERR_NONE );
@@ -121,6 +195,8 @@ void train_module()
 	for( i = 0; i < NUM_SWITCHES; i += 1 ){
 		switch_table[ i ] = 'C';
 	}
+
+	executor_tid = Create( TRAIN_EXECUTOR_PRIORITY, train_module_executor );
 
 	switch_ui_tid = WhoIs( TRAIN_SWITCH_NAME );
 	assert( switch_ui_tid > 0 );
@@ -136,8 +212,9 @@ void train_module()
 
 		curtime = Time();
 
-		// early reply
+		/* early reply */
 		switch ( event.event_type ){
+		case TRAIN_EXECUTE:
 		case TRAIN_CHECK_SWITCH:
 			break;
 		default:
@@ -157,25 +234,36 @@ void train_module()
 			break;
 		}
 
-		switch (event.event_type) {
+		switch ( event.event_type ) {
+		case TRAIN_EXECUTE:
+			assert( executor_ready == 0 );
+			if ( rbuf_empty( command_buffer ) ) {
+				/* pending to wait on new taks */
+				executor_ready = 1;
+			}
+			else {
+				reply.result = execute_command( command_buffer, switch_table, switch_ui_tid );
+				status = Reply( executor_tid, (char*)&reply, sizeof( reply ) );
+				assert( status == 0 );
+				executor_ready = 0;
+			}
+			break;
 		case TRAIN_CHECK_SWITCH:
 			reply.result = switch_table[ SWID_TO_ARRAYID( event.args[ 0 ] ) ];
 			break;
 		case TRAIN_SET_SPEED:
-			setspeed( event.args[0], event.args[1] );
+			buffer_command( command_buffer, TRAIN_EXEC_TR, event.args[0], event.args[1] );
 			break;
 		case TRAIN_REVERSE:
-			reverse( event.args[0] );
+			buffer_command( command_buffer, TRAIN_EXEC_RV, event.args[0], 0 );
 			break;
 		case TRAIN_ALL_SENSORS:
 			status = Putc( COM_1, (char)133 );
 			assert( status == ERR_NONE );
 			break;
 		case TRAIN_SWITCH:
-			i = SWID_TO_ARRAYID( event.args[0] );
-			switch_table[ i ] = event.args[ 1 ];
-			track_switch( switch_ui_tid, event.args[0], event.args[1] );
-			track_switch_off();
+			buffer_command( command_buffer, TRAIN_EXEC_SW, event.args[0], event.args[1] );
+			buffer_command( command_buffer, TRAIN_EXEC_SWOFF, 0, 0 );
 			break;
 		case TRAIN_SWITCH_ALL:
 			track_switch_all( switch_ui_tid, event.args[0] );
@@ -194,6 +282,20 @@ void train_module()
 		default:
 			// should not get to here
 			assert(0);
+		}
+		
+		switch ( event.event_type ) {
+		case TRAIN_SET_SPEED:
+		case TRAIN_REVERSE:
+		case TRAIN_SWITCH:
+			if ( executor_ready ){
+				reply.result = execute_command( command_buffer, switch_table, switch_ui_tid );
+				status = Reply( executor_tid, (char*)&reply, sizeof( reply ) );
+				assert( status == 0 );
+				executor_ready = 0;
+			}
+		default:
+			break;
 		}
 
 		/* Assign switch command timing */
@@ -273,4 +375,8 @@ int train_pressure_test( int tid )
 int train_switch_all( int tid, int d )
 {
 	return train_event( tid, TRAIN_SWITCH_ALL, d, 0 );
+}
+
+int train_execute( int tid ){
+	return train_event( tid, TRAIN_EXECUTE, 0, 0 );
 }

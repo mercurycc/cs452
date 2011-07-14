@@ -7,13 +7,13 @@
 #include <user/uart.h>
 #include <user/name_server.h>
 #include <user/lib/sync.h>
+#include "inc/train.h"
 #include "inc/config.h"
 #include "inc/train.h"
 #include "inc/warning.h"
 
 
-int train_module_executor(){
-
+void train_module_executor(){
 	int module_tid;
 	int result;
 	

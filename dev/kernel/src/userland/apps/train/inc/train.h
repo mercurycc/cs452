@@ -6,11 +6,15 @@
 #include "train_types.h"
 
 /* task priorities : high - low */
-#define TRAIN_SENSOR_PRIORITY   6
-#define TRAIN_MODULE_PRIORITY   7
-#define TRAIN_AUTO_PRIROTY      7
-#define TRAIN_PLAN_PRIORITY     8
-#define TRAIN_UI_PRIORITY       9
+#define TRAIN_SENSOR_PRIORITY       6
+#define TRAIN_MODULE_PRIORITY       7
+#define TRAIN_AUTO_PRIROTY          7
+#define TRAIN_PLAN_PRIORITY         8
+#define TRAIN_EXECUTOR_PRIORITY     8
+#define TRAIN_UI_PRIORITY           9
+
+
+#define COMMAND_BUFFER_SIZE (sizeof( Train_command ) * 32)		// 12 * 32
 
 /* train event api */
 /* Server */
@@ -23,6 +27,10 @@ int train_all_sensor( int tid );
 int train_module_suicide( int tid );
 int train_pressure_test( int tid );
 int train_switch_all( int tid, int d );
+int train_execute( int tid );
+
+/* executor notifier */
+void train_module_executor();
 
 /* Automation */
 /* Server */
