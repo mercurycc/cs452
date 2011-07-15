@@ -39,7 +39,7 @@
 #define COMMAND_DELAY_TIME  7
 
 /* Track reservation */
-#define TRACK_RESERVE_SAFE_DISTANCE   200
+#define TRACK_RESERVE_SAFE_DISTANCE   400
 
 /* Train init */
 #define TRAIN_AUTO_REG_SPEED_1  8

@@ -4,6 +4,7 @@
 #include <user/syscall.h>
 #include <user/time.h>
 #include <user/devices/clock.h>     /* For CLOCK_COUNT_DOWN_MS_PER_TICK */
+#include <user/lib/math.h>
 #include <lib/str.h>
 #include "inc/train_types.h"
 #include "inc/train.h"
@@ -58,25 +59,21 @@ static inline int train_tracking_sc_time( Train* train )
 #ifdef CALIB_SPEED_CHANGE
 	return train->tracking.speed_change_time;
 #else
-	int diff;
+	float diff;
 
-	if( train->tracking.speed_level == 0 && train->tracking.old_speed_level <= 10 ){
-		return LOW_SPEED_BREAK_TIME;
+	diff = train->tracking.old_speed_level - train->tracking.speed_level;
+	if( diff < 0 ){
+		diff = -diff;
 	}
 
-	if( train->tracking.old_speed_level ){
-		diff = train->tracking.old_speed_level - train->tracking.speed_level;
-		if( diff < 0 ){
-			diff = -diff;
-		}
-		if( diff < CLOSE_SPEED_CHANGE_GAP ){
-			return CLOSE_SPEED_CHANGE_TIME;
-		}
-		return SPEED_CHANGE_TIME;
-	} else {
-		/* If the train was picking up speed from 0 then we use this number */
-		return START_CHANGE_TIME;
-	}
+	assert( diff < NUM_SPEED_LEVEL );
+	diff = ( diff / NUM_SPEED_LEVEL );
+
+	diff = fsqrt( diff );
+
+	/* So the speed change time is defined by this equation:
+	   maximum 260, minimum 100 for close speed change */
+	return ( int )( 160 * diff + 100 );
 #endif
 }
 
@@ -457,4 +454,9 @@ int train_tracking_eta( const Train* train )
 int train_tracking_stop_distance( const Train* train )
 {
 	return ( int )( train->tracking.speed * ( float )( train_tracking_sc_time( train ) ) / 2 );
+}
+
+int train_tracking_current_speed_level( const Train* train )
+{
+	return ( int )( train->tracking.speed_level / 2 );
 }

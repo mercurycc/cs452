@@ -29,5 +29,6 @@ int train_tracking_position( const Train* train );
 int train_tracking_remaining_distance( const Train* train );
 int train_tracking_eta( const Train* train );
 int train_tracking_stop_distance( const Train* train );
+int train_tracking_current_speed_level( const Train* train );
 
 #endif /* _TRAIN_TRACKING_H_ */
