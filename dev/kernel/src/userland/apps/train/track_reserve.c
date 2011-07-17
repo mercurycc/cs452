@@ -9,6 +9,9 @@
 #include "inc/train.h"
 #include "inc/config.h"
 
+#define LOCAL_DEBUG
+#include <user/dprint.h>
+
 enum Track_reserve_type {
 	TRACK_RESERVE_GET_RANGE,
 	TRACK_RESERVE_GET,
@@ -75,7 +78,7 @@ void track_reserve()
 	Track_request request;
 	Track_reply reply;
 	int range;
-	int* switch_table;
+	int* switch_table = 0;
 	track_node* node;
 	int status;
 	int direction;
@@ -108,6 +111,8 @@ void track_reserve()
 				}
 				
 				range -= node->edge[ direction ].dist;
+
+				node = track_next_node( node, switch_table );
 			} while( range > 0 );
 			break;
 		case TRACK_RESERVE_GET:
