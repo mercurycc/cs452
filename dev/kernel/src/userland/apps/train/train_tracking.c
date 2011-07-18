@@ -72,8 +72,8 @@ static inline int train_tracking_sc_time( Train* train )
 	diff = fsqrt( diff );
 
 	/* So the speed change time is defined by this equation:
-	   maximum 260, minimum 100 for close speed change */
-	return ( int )( 160 * diff + 100 );
+	   maximum 350, minimum 200 for close speed change */
+	return ( int )( 150 * diff + 200 );
 #endif
 }
 
@@ -119,28 +119,53 @@ int train_tracking_init( Train* train )
 
 int train_tracking_init_calib( Train* train )
 {
-	float factor_1;
+	//float factor_1;
 	float factor_2;
 	float factor;
 	int i;
-
-	factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
-	factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
-
-	factor = ( factor_1 + factor_2 ) / 2;
+	int x;
 
 	train->tracking.speed_stat_table[ 0 ] = 0;
 	train->tracking.speed_stat_count[ 0 ] = 1;
 	train->tracking.speed_stat_table[ 1 ] = 0;
 	train->tracking.speed_stat_count[ 1 ] = 1;
 
-	for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
-		train->tracking.speed_stat_table[ i ] = ( ( float )( i - 1 ) * factor *
-							  ( ( float )i + ( float )30 ) /
-							  ( ( float )NUM_SPEED_LEVEL + 30 ) );
-		train->tracking.speed_stat_count[ i ] = 1;
-	}
+	switch ( train->id ) {
+	case 21:
+		//factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
+		factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
+		factor = factor_2;
 
+		for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
+			train->tracking.speed_stat_table[ i ] = ( ( float )( i - 1 ) * factor *
+								  ( ( float )i + ( float )30 ) /
+								  ( ( float )NUM_SPEED_LEVEL + 30 ) );
+			train->tracking.speed_stat_count[ i ] = 1;
+		}
+		break;
+	case 24:
+		factor = (float)( train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] - 0.1F ) / ( TRAIN_AUTO_REG_SPEED_2 - 1 );
+		for ( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
+			x = i / 2;
+			train->tracking.speed_stat_table[ i ] = 0.1F + (float)( x - 1 ) * factor;
+			train->tracking.speed_stat_count[ i ] = 1;
+			dprintf( "train 24 speed %d = %d\n", x, (int)( train->tracking.speed_stat_table[ i ] * 100 ) );
+		}
+		dprintf( "factor = %d\n", (int)( factor * 100 ) );
+		break;
+	case 23:
+		/* same as default */
+	default:
+		//factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
+		factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
+		factor = factor_2;
+		
+		for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
+			train->tracking.speed_stat_table[ i ] = ( ( float )( i ) * factor );
+			train->tracking.speed_stat_count[ i ] = 1;
+		}
+		break;
+	}
 	return 0;
 }
 

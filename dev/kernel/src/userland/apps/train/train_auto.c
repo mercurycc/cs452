@@ -414,9 +414,10 @@ void train_auto()
 					}
 					
 					if ( status != RESERVE_SUCCESS ) {
-						/* this should only happens when train start from stop ) */
+						/* this should only happens when train start from stop */
 						track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
 						dprintf( "Train %d change speed reservation failed at %s, not starting\n", current_train->id, name );
+						sem_release( current_train->sem );
 						break;
 					}
 
@@ -457,6 +458,7 @@ void train_auto()
 					/* this should only happens when train start from stop ) */
 					track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
 					dprintf( "Train %d reverse reservation failed at %s\n", current_train->id, name );
+					sem_release( current_train->sem );
 					break;
 				}
 				
@@ -565,7 +567,8 @@ void train_auto()
 
 								/* Allow tracking to track the train */
 								current_train->init_state = TRAIN_STATE_INIT_4;
-								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
+								//current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
+								current_train->init_speed_timeout = current_time;
 
 								dprintf( "Train %d init_3 pass\n", current_train->id );
 							}
@@ -604,11 +607,6 @@ void train_auto()
 								// dprintf( "train hit secondary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 								hit_sensor = 2;
 							} else if ( current_train->tertiary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
-								if ( current_train->tertiary_sensor->edge[DIR_AHEAD].train != current_train ){
-									dprintf( "train %d ignores trigger of tertiary sensor\n", current_train->id );
-									break;
-								}
-
 								sensor_trust( current_train->tertiary_sensor );
 								// TODO switch error
 								train_forget_sensors( current_train, sensor_expect );

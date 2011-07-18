@@ -16,6 +16,7 @@
 #include "inc/warning.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
+#include "inc/track_reserve.h"
 #include <perf.h>
 
 #define LOCAL_DEBUG
