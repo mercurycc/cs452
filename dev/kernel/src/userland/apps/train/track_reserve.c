@@ -18,7 +18,8 @@ enum Track_reserve_type {
 	TRACK_RESERVE_MAY_I,
 	TRACK_RESERVE_GET,
 	TRACK_RESERVE_PUT,
-	TRACK_RESERVE_FREE
+	TRACK_RESERVE_FREE,
+	TRACK_RESERVE_HOLDS
 };
 
 typedef struct Track_reserve_request_s {
@@ -72,6 +73,16 @@ static int track_reserve_node( Train* train, track_node* node, int direction )
 	}
 
 	return RESERVE_SUCCESS;
+}
+
+static int track_reserve_hold_node( Train* train, track_node* node ){
+	int direction = DIR_AHEAD;
+
+	if ( node->edge[ direction ].train == train && node->edge[ direction ].reverse_version == train->reverse_version ) {
+		return RESERVE_HOLD;
+	}
+	
+	return RESERVE_NOT_HOLD;
 }
 
 void track_reserve()
@@ -137,6 +148,9 @@ void track_reserve()
 			break;
 		case TRACK_RESERVE_FREE:
 			request.train->reserve_version += 1;
+			break;
+		case TRACK_RESERVE_HOLDS:
+			reply.direction = track_reserve_hold_node( request.train, node );
 			break;
 		}
 
@@ -225,6 +239,20 @@ int track_reserve_free( int tid, Train* train )
 
 	request.type = TRACK_RESERVE_FREE;
 	request.train = train;
+
+	status = track_reserve_request( tid, &request, &reply );
+	
+	return reply.direction;
+}
+
+int track_reserve_holds( int tid, Train* train, track_node* node ) {
+	Track_request request;
+	Track_reply reply;
+	int status;
+
+	request.type = TRACK_RESERVE_HOLDS;
+	request.train = train;
+	request.node = node;
 
 	status = track_reserve_request( tid, &request, &reply );
 	

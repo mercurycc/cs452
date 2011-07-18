@@ -547,7 +547,7 @@ void train_auto()
 							hit_sensor = 0;
 							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
 								// tries to check if the sensor is in the reservation
-								if ( current_train->next_sensor->edge[DIR_AHEAD].train != current_train ){
+								if ( track_reserve_holds( reserve_tid, current_train, current_train->next_sensor ) == RESERVE_NOT_HOLD ){
 									dprintf( "train %d ignores trigger of primary sensor, version %d\n", current_train->id );
 									break;
 								}
@@ -557,7 +557,7 @@ void train_auto()
 								// dprintf( "train hit primary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 								hit_sensor = 1;
 							} else if ( current_train->secondary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-								if ( current_train->secondary_sensor->edge[DIR_AHEAD].train != current_train ){
+								if ( track_reserve_holds( reserve_tid, current_train, current_train->secondary_sensor ) == RESERVE_NOT_HOLD ){
 									dprintf( "train %d ignores trigger of secondary sensor\n", current_train->id );
 									break;
 								}
