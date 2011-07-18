@@ -120,6 +120,15 @@ static inline void train_auto_recompose_set_speed( Train_auto_request* request, 
 	request->data.set_speed.speed_level = speed_level;
 }
 
+static inline void train_auto_recompose_plan( Train_auto_request* request, int train_id, int group, int id, int dist_pass )
+{
+	request->type = TRAIN_AUTO_PLAN;
+	request->data.plan.train_id = train_id;
+	request->data.plan.group = group;
+	request->data.plan.id = id;
+	request->data.plan.dist_pass = dist_pass;
+}
+
 void train_auto()
 {
 	Train_auto_request request;
@@ -446,12 +455,18 @@ void train_auto()
 			case TRAIN_AUTO_PLAN:
 				current_train = trains + train_map[ request.data.plan.train_id ];
 				current_sensor = track_graph + node_map[ request.data.plan.group ][ request.data.plan.id ];
-				if( ! current_train->planner_control ){
-					dprintf( "Train %d received planning request successfully\n", current_train->id );
-					train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
-				} else {
-					dprintf( "Train %d received planning request failed\n", current_train->id );
-				}
+
+				current_train->current_dest = current_sensor;
+				current_train->current_dist_pass = request.data.plan.dist_pass;
+
+				/* Release planner control */
+				current_train->planner_control = 0;
+				
+				/* Wake up planner */
+				sem_release( current_train->update );
+				
+				dprintf( "Train %d received planning request successfully\n", current_train->id );
+				train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
 				break;
 			}
 
@@ -677,7 +692,6 @@ void train_auto()
 											    // + train_tracking_remaining_distance( current_train )
 											    + train_tracking_stop_distance( current_train )
 											    + TRACK_RESERVE_SAFE_DISTANCE ) );
-
 						}
 
 						if( status != RESERVE_SUCCESS ){
@@ -688,7 +702,13 @@ void train_auto()
 								train_auto_recompose_set_speed( &request, current_train->id, 0 );
 								reprocess = 1;
 							}
-							current_train->planner_control = 0;
+							if( current_train->planner_control ){
+								train_auto_recompose_plan( &request, current_train->id,
+											   current_train->current_dest->group,
+											   current_train->current_dest->id,
+											   current_train->current_dist_pass );
+								reprocess = 1;
+							}
 							/* Wake up planner */
 							sem_release( current_train->update );
 						}

@@ -36,6 +36,8 @@ typedef struct Track_reserve_reply_s {
 static int track_reserved( Train* train, track_node* node, int direction )
 {
 	track_edge* edge;
+
+	assert( train && node );
 	
 	assert( ( direction == DIR_CURVED && node->type == NODE_BRANCH ) || direction == DIR_AHEAD );
 
@@ -90,12 +92,11 @@ void track_reserve()
 	Track_request request;
 	Track_reply reply;
 	int range;
-	int* switch_table = 0;
+	volatile int* switch_table = 0;
 	track_node* node;
 	int status;
 	int direction;
 	int tid;
-	char* name;
 
 	status = RegisterAs( RESERVE_NAME );
 	assert( status == REGISTER_AS_SUCCESS );
@@ -105,9 +106,7 @@ void track_reserve()
 		assert( status == sizeof( request ) );
 
 		node = request.node;
-		if( ! switch_table ){
-			switch_table = request.train->switch_table;
-		}
+		switch_table = request.train->switch_table;
 
 		/* Convert direction */
 		direction = DIR_AHEAD;
@@ -132,6 +131,10 @@ void track_reserve()
 				range -= node->edge[ direction ].dist;
 
 				node = track_next_node( node, switch_table );
+				if( ! node ){
+					reply.direction = RESERVE_FAIL_AGAINST_DIR;
+					range = 0;
+				}
 			} while( range > 0 );
 			break;
 		case TRACK_RESERVE_MAY_I:
@@ -175,9 +178,12 @@ int track_reserve_get_range( int tid, Train* train, int dist )
 	Track_reply reply;
 	int status;
 
+	assert( train );
+
 	request.type = TRACK_RESERVE_GET_RANGE;
 	request.train = train;
 	request.node = train->check_point;
+	assert( request.node );
 	request.range_dir = dist;
 
 	status = track_reserve_request( tid, &request, &reply );
@@ -190,6 +196,8 @@ int track_reserve_may_i( int tid, Train* train, track_node* node, int direction 
 	Track_request request;
 	Track_reply reply;
 	int status;
+
+	assert( train && node );
 
 	request.type = TRACK_RESERVE_MAY_I;
 	request.train = train;
@@ -207,6 +215,8 @@ int track_reserve_get( int tid, Train* train, track_node* node )
 	Track_reply reply;
 	int status;
 
+	assert( train && node );
+
 	request.type = TRACK_RESERVE_GET;
 	request.train = train;
 	request.node = node;
@@ -221,6 +231,8 @@ int track_reserve_put( int tid, Train* train, track_node* node )
 	Track_request request;
 	Track_reply reply;
 	int status;
+
+	assert( train && node );
 
 	request.type = TRACK_RESERVE_PUT;
 	request.train = train;
@@ -237,6 +249,8 @@ int track_reserve_free( int tid, Train* train )
 	Track_reply reply;
 	int status;
 
+	assert( train );
+	
 	request.type = TRACK_RESERVE_FREE;
 	request.train = train;
 
