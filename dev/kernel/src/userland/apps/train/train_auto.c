@@ -399,7 +399,7 @@ void train_auto()
 					sem_acquire_all( current_train->sem );
 
 					/* Reset reservation */
-					track_reserve_free( current_train );
+					track_reserve_free( reserve_tid, current_train );
 					switch ( current_train->init_state ){
 					case TRAIN_STATE_INIT_1:
 					case TRAIN_STATE_INIT_2:
@@ -449,10 +449,10 @@ void train_auto()
 				train_expect_sensors( current_train, sensor_expect );
 
 				/* Reset reservation */
-				track_reserve_free( current_train );
+				track_reserve_free( reserve_tid, current_train );
 				status = track_reserve_get_range( reserve_tid, current_train,
-										  ( train_tracking_position( current_train )
-										    + TRACK_RESERVE_SAFE_DISTANCE ) );
+								  ( train_tracking_position( current_train )
+								    + TRACK_RESERVE_SAFE_DISTANCE ) );
 				if ( status != RESERVE_SUCCESS ) {
 					/* this should only happens when train start from stop ) */
 					track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
@@ -514,7 +514,7 @@ void train_auto()
 						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
 						train_next_possible( current_train, switch_table );
 						train_expect_sensors( current_train, sensor_expect );
-						track_reserve_free( current_train );
+						track_reserve_free( reserve_tid, current_train );
 					}
 
 					/* Process train states */
@@ -702,7 +702,7 @@ void train_auto()
 						break;
 					default:
 						/* To be safe, free the reservations every time */
-						track_reserve_free( current_train );
+						track_reserve_free( reserve_tid, current_train );
 						
 						if ( current_train->init_state == TRAIN_STATE_INIT_4 || current_train->init_state == TRAIN_STATE_INIT_5 ) {
 							/* Update reservation for init*/
