@@ -1,0 +1,55 @@
+                           ==========================
+                           Pinball System for TS-7200
+                                   Release P3
+                                Project Proposal
+                           ==========================
+                                    cs452_08
+
+Overview
+========
+
+In the project we have these goals:
+
+- Plan the train for trips with deadlines so collision does not happen, and
+  possibly provide plans that minimize the time for total trips.  The goal is to
+  have a generalized algorithm that generates interesting results such as making
+  a train to follow another train with lower speed if necessary to obtain
+  optimal trip time.
+- Improved real time detection of collisions, so that in some reservations
+  failure cases one of the trains involved can continue to run.
+- Ability to take arbitrary train with minimal user input.
+- Ability to track and control > 2 trains.
+- Ability to make an AI to operate the system randomly and flawlessly.
+
+
+Technical Challenges
+====================
+
+- To plan without collision a higher level reservation system is needed to
+  preserve the sections on the track with time windows and ability to change
+  reservations in case of any unexpected situation.
+- The path finding algorithm might need to integrate with the said higher level
+  reservation system in order to minimize trip time.
+- Implementing the higher level reservation system, integrating it into the path
+  finding algorithm, and implementing the AI requires great amount of careful
+  designing and programming effort.
+
+
+Technical Solutions
+===================
+
+- The current plan for the higher level reservation system is to have each edge
+  on the track be cut into finer pieces so the trips can be planned with a finer
+  route.  The final route will still be organized in terms of nodes despite of
+  the finer cuts, as this reservation system is there solely to avoid collision
+  at trip planning phase.  The time windows will be given by the path finding
+  algorithm, as it is more aware of the condition of the train, such as speed
+  and how the train is going to run.
+- The path finding algorithm will be aware of the higher level reservation
+  system and make use of these information to implement trips for requested
+  train routing.  With the reservation at hand many interesting routings
+  involving change of train speed and reversing at switches can be implemented.
+- Essentially the higher level reservation system implements a mechanism to
+  manipulate and synchronize reservations for tracks to avoid collision, and the
+  path finding algorithm implements the policy for minimizing the trip time.
+

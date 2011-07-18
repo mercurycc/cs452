@@ -1,6 +1,6 @@
                            ==========================
                            Pinball System for TS-7200
-                                   Release P1
+                                   Release P2
                                Installation Guide
                            ==========================
                                     cs452_08
@@ -11,12 +11,12 @@
 To install the kernel, boot the TS-7200 box into RedBoot and load the executable
 from the tftp server via
 
-> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_p1.elf"
+> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_p2.elf"
 
-A backup of pinball_p1.elf is located in /u9/z2long/rt/rel/p1/bin/pinball_p1.elf
+A backup of pinball_p2.elf is located in /u9/z2long/rt/rel/p2/bin/pinball_p2.elf
 
 MD5 of pinball:
-266c2ea9028fe2bbb905ac1576ea7b76  pinball_k4.elf
+
 
 2. Launch
 =========
@@ -27,12 +27,30 @@ On RedBoot prompt, run command
 
 The kernel should boot up.
 
-As of Project milestone 1, the kernel will show the train control application.
-See Assignment 0 and attached document for instructions.  Use command q to quit
-the application and, in turn, the system.
+As of Project milestone 2, the kernel will show the train control application.
 
-
-3. Known Problems
+3. Command Manual
 =================
 
-- The plan command does not always stop the train at its destination.
+Besides normal commands as described in assignment 0, the extra/modified
+commands are:
+
+- rv < train id >
+
+  rv no longer restore the speed of the train after reversing its direction.
+
+- reg < train id >
+
+  Register a train with id < train id >.  An 15 seconds initial calibration will
+  be triggered after registration succeed.
+
+- plan < train id > < destination > < distance after destination >
+
+  Plan a trip for the train < train id > to < distance after destination > after
+  < destination >.  The execution of the trip should happen immediately and
+  would only be impeded by failure of reserving tracks.
+
+
+4. Known Problems
+=================
+

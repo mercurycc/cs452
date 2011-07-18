@@ -62,7 +62,7 @@ static inline int train_planner_is_dst( const track_node* current, const track_n
 	return  DST_DIRECT( current, dst ) || DST_REVERSE( current, dst ) || DST_REVERSE_BR( current, dst );
 }
 
-static int train_planner_plan( const track_node* dst, int* dist_pass, const Train_data* train, Rbuf* path, uint* direction )
+static int train_planner_plan( const track_node* dst, int* dist_pass, const Train_data* train, Rbuf* path, uint* direction, int reserve_tid )
 {
 	uint cost[ TRACK_NUM_NODES ];                /* ~0 for infinity */
 	int parent[ TRACK_NUM_NODES ][ 2 ];          /* -1 for no parent, second element for direction */
@@ -171,7 +171,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				if( track_reserved( train, current_node, DIR_AHEAD ) ){
+				if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) ){
 					temp = ~0;
 				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
@@ -182,7 +182,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					if( track_reserved( train, current_node, DIR_AHEAD ) ){
+					if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) ){
 						temp = ~0;
 					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
@@ -455,6 +455,7 @@ void train_planner()
 	int dist_pass;
 	uint path_length;
 	int module_tid;
+	int reserve_tid;
 	int auto_tid;
 	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
@@ -473,6 +474,9 @@ void train_planner()
 
 	auto_tid = WhoIs( TRAIN_AUTO_NAME );
 	assert( module_tid > 0 );
+
+	reserve_tid = WhoIs( RESERVE_NAME );
+	assert( reserve_tid > 0 );
 	
 	train = ( Train_data* )request.dst;
 	track_graph = train->track_graph;
@@ -502,7 +506,7 @@ void train_planner()
 			rbuf_reset( path );
 			rbuf_reset( forward_path );
 			
-			status = train_planner_plan( request.dst, &dist_pass, train, path, &plan_direction );
+			status = train_planner_plan( request.dst, &dist_pass, train, path, &plan_direction, reserve_tid );
 			if( ! ( status == ERR_NONE ) ){
 				dprintf( "Cannot find path for train %d\n", train->id );
 				break;
