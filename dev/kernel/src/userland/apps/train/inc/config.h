@@ -40,6 +40,7 @@
 
 /* Track reservation */
 #define TRACK_RESERVE_SAFE_DISTANCE   300
+#define TRACK_RESERVE_INIT_DISTANCE   800
 
 /* Train init */
 #define TRAIN_AUTO_REG_SPEED_1  8

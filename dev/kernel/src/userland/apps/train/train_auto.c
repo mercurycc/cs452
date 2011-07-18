@@ -154,6 +154,7 @@ void train_auto()
 	char name[ 6 ];
 	int status;
 	int hit_sensor;
+	int num_sensor_hit;
 
 	/*
 	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
@@ -307,7 +308,7 @@ void train_auto()
 			case TRAIN_AUTO_NEW_SENSOR_DATA:
 				/* Unfortuate memcpy */
 				memcpy( ( uchar* )&sensor_data, ( uchar* )&request.data.sensor_data, sizeof( sensor_data ) );
-
+				num_sensor_hit = 0;
 				/* Update last triggered sensor, for wh */
 				for( temp = 0; temp < SENSOR_BYTE_COUNT; temp += 1 ){
 					if( ! sensor_data.sensor_raw[ temp ] ){
@@ -331,10 +332,10 @@ void train_auto()
 							if ( !( sensor_expect[ group ][ id ] ) ){
 								sensor_error( current_sensor );
 							}
+							num_sensor_hit += 1;
 						}
 					}
 				}
-				
 				break;
 			case TRAIN_AUTO_NEW_TRAIN:
 				if( ! train_map[ request.data.new_train.train_id ] ){
@@ -488,6 +489,13 @@ void train_auto()
 				break;
 			}
 
+			/* sensor report with no useful information, skip the whole section */
+			if ( request.type == TRAIN_AUTO_NEW_SENSOR_DATA && num_sensor_hit == 0 ) {
+				// dnotice( "no new sensor hit\n" );
+				break;
+			}
+			
+
 			if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ||
 			    request.type == TRAIN_AUTO_WAKEUP || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
 				for( temp = 1; temp < available_train && ( ! reprocess ); temp += 1 ){
@@ -574,7 +582,7 @@ void train_auto()
 							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
 								// tries to check if the sensor is in the reservation
 								if ( current_train->next_sensor->edge[DIR_AHEAD].train != current_train ){
-									dprintf( "train %d ignores trigger of primary sensor\n", current_train->id );
+									dprintf( "train %d ignores trigger of primary sensor, version %d\n", current_train->id );
 									break;
 								}
 								sensor_trust( current_train->next_sensor );
@@ -688,11 +696,24 @@ void train_auto()
 					}
 
 					switch( current_train->init_state ){
+					case TRAIN_STATE_INIT_1:
+					case TRAIN_STATE_INIT_2:
+					case TRAIN_STATE_INIT_3:
+						break;
 					default:
 						/* To be safe, free the reservations every time */
 						track_reserve_free( current_train );
 						
-						if ( current_train->state != TRAIN_STATE_STOP ){
+						if ( current_train->init_state == TRAIN_STATE_INIT_4 || current_train->init_state == TRAIN_STATE_INIT_5 ) {
+							/* Update reservation for init*/
+							status = track_reserve_get_range( reserve_tid, current_train,
+											    TRACK_RESERVE_INIT_DISTANCE );
+
+							if( status != RESERVE_SUCCESS ){
+								dprintf( "Train %d init reservation failed at %s, please check\n", current_train->id, name );
+							}
+						}
+						else if ( current_train->state != TRAIN_STATE_STOP ){
 							/* Update track reservation */
 							status = track_reserve_get_range( reserve_tid, current_train,
 											  ( train_tracking_position( current_train )
@@ -739,7 +760,6 @@ void train_auto()
 							Delay( 100 );
 							assert( 0 );
 						}
-						
 						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
@@ -748,10 +768,6 @@ void train_auto()
 						tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
 								     current_train->next_check_point->group, current_train->next_check_point->id,
 								     train_tracking_eta( current_train ) );
-					case TRAIN_STATE_INIT_1:
-					case TRAIN_STATE_INIT_2:
-					case TRAIN_STATE_INIT_3:
-						break;
 					}
 
 					sem_release( current_train->sem );
