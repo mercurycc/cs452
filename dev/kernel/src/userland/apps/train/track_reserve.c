@@ -135,7 +135,7 @@ void track_reserve()
 			}
 			break;
 		case TRACK_RESERVE_FREE:
-			train->reserve_version += 1;
+			request.train->reserve_version += 1;
 			break;
 		}
 
