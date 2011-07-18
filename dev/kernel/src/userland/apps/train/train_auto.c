@@ -398,33 +398,10 @@ void train_auto()
 				if( request.data.set_speed.speed_level != 15 ){
 					sem_acquire_all( current_train->sem );
 
-					/* Reset reservation */
-					track_reserve_free( reserve_tid, current_train );
-					switch ( current_train->init_state ){
-					case TRAIN_STATE_INIT_1:
-					case TRAIN_STATE_INIT_2:
-					case TRAIN_STATE_INIT_3:
-						/* pretend reserved successfully */
-						status = RESERVE_SUCCESS;
-						break;
-					default:
-						status = track_reserve_get_range( reserve_tid, current_train,
-												  ( train_tracking_position( current_train )
-												    + TRACK_RESERVE_SAFE_DISTANCE ) );
-					}
-					
-					if ( status != RESERVE_SUCCESS ) {
-						/* this should only happens when train start from stop */
-						track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-						dprintf( "Train %d change speed reservation failed at %s, not starting\n", current_train->id, name );
-						sem_release( current_train->sem );
-						break;
-					}
-
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
-					sem_release( current_train->sem );
 					train_update_time_pred( current_train, switch_table );
+					sem_release( current_train->sem );
 					break;
 				}
 			case TRAIN_AUTO_SET_TRAIN_REVERSE:
@@ -448,19 +425,6 @@ void train_auto()
 				train_tracking_reverse( current_train );
 				train_next_possible( current_train, switch_table );
 				train_expect_sensors( current_train, sensor_expect );
-
-				/* Reset reservation */
-				track_reserve_free( reserve_tid, current_train );
-				status = track_reserve_get_range( reserve_tid, current_train,
-								  ( train_tracking_position( current_train )
-								    + TRACK_RESERVE_SAFE_DISTANCE ) );
-				if ( status != RESERVE_SUCCESS ) {
-					/* this should only happens when train start from stop ) */
-					track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-					dprintf( "Train %d reverse reservation failed at %s\n", current_train->id, name );
-					sem_release( current_train->sem );
-					break;
-				}
 				
 				sem_release( current_train->sem );
 				break;
@@ -705,10 +669,6 @@ void train_auto()
 							/* Update reservation for init*/
 							status = track_reserve_get_range( reserve_tid, current_train,
 											    TRACK_RESERVE_INIT_DISTANCE );
-
-							if( status != RESERVE_SUCCESS ){
-								dprintf( "Train %d init reservation failed at %s, please check\n", current_train->id, name );
-							}
 						}
 						else if ( current_train->state != TRAIN_STATE_STOP ){
 							/* Update track reservation */
@@ -718,36 +678,21 @@ void train_auto()
 											    + train_tracking_stop_distance( current_train )
 											    + TRACK_RESERVE_SAFE_DISTANCE ) );
 
-							if( status != RESERVE_SUCCESS ){
-								if( train_tracking_current_speed_level( current_train ) ){
-									track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-									dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
-									train_set_speed( module_tid, current_train->id, 0 );
-									train_auto_recompose_set_speed( &request, current_train->id, 0 );
-									reprocess = 1;
-								}
-								current_train->planner_control = 0;
-								/* Wake up planner */
-								sem_release( current_train->update );
-							}
 						}
-						else {
-							status = track_reserve_get_range( reserve_tid, current_train,
-											  ( train_tracking_position( current_train )
-											    + TRACK_RESERVE_SAFE_DISTANCE ) );
-							if( status != RESERVE_SUCCESS ){
-								if( train_tracking_current_speed_level( current_train ) ){
-									track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-									dprintf( "Train %d stopped reservation failed at %s\n", current_train->id, name );
-								}
-								current_train->planner_control = 0;
-								/* Wake up planner */
-								sem_release( current_train->update );
+
+						if( status != RESERVE_SUCCESS ){
+							if( train_tracking_current_speed_level( current_train ) ){
+								track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
+								dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
+								train_set_speed( module_tid, current_train->id, 0 );
+								train_auto_recompose_set_speed( &request, current_train->id, 0 );
+								reprocess = 1;
 							}
-
-
+							current_train->planner_control = 0;
+							/* Wake up planner */
+							sem_release( current_train->update );
 						}
-						
+
 						/* The check point must always be reservable */
 						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
 						if( status != RESERVE_SUCCESS ){
