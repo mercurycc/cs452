@@ -567,8 +567,7 @@ void train_auto()
 
 								/* Allow tracking to track the train */
 								current_train->init_state = TRAIN_STATE_INIT_4;
-								//current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
-								current_train->init_speed_timeout = current_time;
+								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
 
 								dprintf( "Train %d init_3 pass\n", current_train->id );
 							}

@@ -119,7 +119,7 @@ int train_tracking_init( Train* train )
 
 int train_tracking_init_calib( Train* train )
 {
-	//float factor_1;
+	float factor_1;
 	float factor_2;
 	float factor;
 	int i;
@@ -132,9 +132,9 @@ int train_tracking_init_calib( Train* train )
 
 	switch ( train->id ) {
 	case 21:
-		//factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
+		factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
 		factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
-		factor = factor_2;
+		factor = ( factor_1 + factor_2 ) / 2.0F;
 
 		for( i = 2; i < NUM_SPEED_LEVEL; i += 1 ){
 			train->tracking.speed_stat_table[ i ] = ( ( float )( i - 1 ) * factor *
@@ -156,7 +156,7 @@ int train_tracking_init_calib( Train* train )
 	case 23:
 		/* same as default */
 	default:
-		//factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
+		factor_1 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_1 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_1 );
 		factor_2 = train->tracking.speed_stat_table[ TRAIN_AUTO_REG_SPEED_2 * 2 ] / ( 2 * TRAIN_AUTO_REG_SPEED_2 );
 		factor = factor_2;
 		
