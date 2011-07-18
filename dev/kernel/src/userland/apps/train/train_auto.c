@@ -456,6 +456,9 @@ void train_auto()
 				current_train = trains + train_map[ request.data.plan.train_id ];
 				current_sensor = track_graph + node_map[ request.data.plan.group ][ request.data.plan.id ];
 
+				current_train->current_dest = current_sensor;
+				current_train->current_dist_pass = request.data.plan.dist_pass;
+
 				/* Release planner control */
 				current_train->planner_control = 0;
 				
@@ -702,7 +705,9 @@ void train_auto()
 							if( current_train->planner_control ){
 								train_auto_recompose_plan( &request, current_train->id,
 											   current_train->current_dest->group,
-											   current_train->current_dest->id, dist_pass );
+											   current_train->current_dest->id,
+											   current_train->current_dist_pass );
+								reprocess = 1;
 							}
 							/* Wake up planner */
 							sem_release( current_train->update );
