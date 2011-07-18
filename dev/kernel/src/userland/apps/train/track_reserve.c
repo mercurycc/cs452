@@ -5,6 +5,7 @@
 #include <user/assert.h>
 #include "inc/train_types.h"
 #include "inc/track_node.h"
+#include "inc/train_location.h"
 #include "inc/track_reserve.h"
 #include "inc/train.h"
 #include "inc/config.h"
@@ -35,14 +36,18 @@ int track_reserved( Train* train, track_node* node, int direction )
 	
 	assert( ( direction == DIR_CURVED && node->type == NODE_BRANCH ) || direction == DIR_AHEAD );
 
-	edge = node->edge + direction;
+	switch ( node->type ){
+	case NODE_EXIT:
+		return RESERVE_FAIL_EXIT;
+	default:
+		break;
+	}
 
+	edge = node->edge + direction;
 	if( edge->train && edge->train != train && edge->reserve_version == edge->train->reserve_version ){
 		return RESERVE_FAIL_SAME_DIR;
 	}
-
 	edge = edge->reverse;
-
 	if( edge->train && edge->train != train && edge->reserve_version == edge->train->reserve_version ){
 		return RESERVE_FAIL_AGAINST_DIR;
 	}
@@ -83,6 +88,7 @@ void track_reserve()
 	int status;
 	int direction;
 	int tid;
+	char* name;
 
 	status = RegisterAs( RESERVE_NAME );
 	assert( status == REGISTER_AS_SUCCESS );

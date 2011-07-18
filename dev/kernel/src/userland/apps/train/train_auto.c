@@ -145,6 +145,7 @@ void train_auto()
 	track_node* current_sensor;
 	track_node* next_sensor;
 	track_node* current_node;
+	track_edge* current_edge;
 	int switch_table[ NUM_SWITCHES ] = { 0 };
 	int module_tid;
 	uint current_time;
@@ -152,6 +153,7 @@ void train_auto()
 	uint reprocess = 0;
 	char name[ 6 ];
 	int status;
+	int hit_sensor;
 
 	/*
 	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
@@ -393,11 +395,32 @@ void train_auto()
 			case TRAIN_AUTO_SET_TRAIN_SPEED:
 				current_train = trains + train_map[ request.data.set_speed.train_id ];
 				if( request.data.set_speed.speed_level != 15 ){
-					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					sem_acquire_all( current_train->sem );
-					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
+
 					/* Reset reservation */
 					track_reserve_free( current_train );
+					switch ( current_train->init_state ){
+					case TRAIN_STATE_INIT_1:
+					case TRAIN_STATE_INIT_2:
+					case TRAIN_STATE_INIT_3:
+						/* pretend reserved successfully */
+						status = RESERVE_SUCCESS;
+						break;
+					default:
+						status = track_reserve_get_range( reserve_tid, current_train,
+												  ( train_tracking_position( current_train )
+												    + TRACK_RESERVE_SAFE_DISTANCE ) );
+					}
+					
+					if ( status != RESERVE_SUCCESS ) {
+						/* this should only happens when train start from stop ) */
+						track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
+						dprintf( "Train %d change speed reservation failed at %s, not starting\n", current_train->id, name );
+						break;
+					}
+
+					current_train->state = TRAIN_STATE_SPEED_CHANGE;
+					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
 					sem_release( current_train->sem );
 					train_update_time_pred( current_train, switch_table );
 					break;
@@ -413,20 +436,28 @@ void train_auto()
 				current_train->check_point = current_train->next_check_point->reverse;
 				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
-				
-				/* The last sensor does not matter that much */
-				current_train->last_sensor = current_train->next_sensor->reverse;
-				
+
+				/* using checkpoint as the last sensor here to avoid reservation error when reverse on a branch */
+				current_train->last_sensor = current_train->check_point;
 				/* The next sensor needs to be found from the check point in case of multiple branches between sensors */
 				current_train->next_sensor = track_next_sensor( current_train->check_point, switch_table );
-				
+
 				current_train->state = TRAIN_STATE_STOP;
 				train_tracking_reverse( current_train );
 				train_next_possible( current_train, switch_table );
 				train_expect_sensors( current_train, sensor_expect );
 
-				/* Free reservation */
+				/* Reset reservation */
 				track_reserve_free( current_train );
+				status = track_reserve_get_range( reserve_tid, current_train,
+										  ( train_tracking_position( current_train )
+										    + TRACK_RESERVE_SAFE_DISTANCE ) );
+				if ( status != RESERVE_SUCCESS ) {
+					/* this should only happens when train start from stop ) */
+					track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
+					dprintf( "Train %d reverse reservation failed at %s\n", current_train->id, name );
+					break;
+				}
 				
 				sem_release( current_train->sem );
 				break;
@@ -535,34 +566,53 @@ void train_auto()
 								dprintf( "Train %d init_3 revert to init_1\n", current_train->id );
 							}
 							break;
-						case TRAIN_STATE_STOP:
-							// this train should not move
-							break;
 						default:
-							if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ){
+							if( current_train->state == TRAIN_STATE_STOP ){
+								break;
+							}
+							hit_sensor = 0;
+							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
+								// tries to check if the sensor is in the reservation
+								if ( current_train->next_sensor->edge[DIR_AHEAD].train != current_train ){
+									dprintf( "train %d ignores trigger of primary sensor\n", current_train->id );
+									break;
+								}
 								sensor_trust( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->next_sensor;
 								// dprintf( "train hit primary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
-							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+								hit_sensor = 1;
+							} else if ( current_train->secondary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+								if ( current_train->secondary_sensor->edge[DIR_AHEAD].train != current_train ){
+									dprintf( "train %d ignores trigger of secondary sensor\n", current_train->id );
+									break;
+								}
+
 								sensor_trust( current_train->secondary_sensor );
 								sensor_error( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->secondary_sensor;
 								current_train->tracking.trav_distance += track_next_sensor_distance( current_train->last_sensor, switch_table );
 								// dprintf( "train hit secondary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
-							} else if ( train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+								hit_sensor = 2;
+							} else if ( current_train->tertiary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+								if ( current_train->tertiary_sensor->edge[DIR_AHEAD].train != current_train ){
+									dprintf( "train %d ignores trigger of tertiary sensor\n", current_train->id );
+									break;
+								}
+
 								sensor_trust( current_train->tertiary_sensor );
 								// TODO switch error
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->tertiary_sensor;
 								current_train->tracking.trav_distance = current_train->tertiary_distance;
 								// dprintf( "train hit tertiary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
+								hit_sensor = 3;
 							}
 
-							if( train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ||
-							    train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ||
-							    train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ){
+							if( hit_sensor ){
+								assert( current_train->state != TRAIN_STATE_STOP );
+								
 								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 
 								/* UI update have to come before train update */
@@ -642,26 +692,44 @@ void train_auto()
 						/* To be safe, free the reservations every time */
 						track_reserve_free( current_train );
 						
-						/* Update track reservation */
-						status = track_reserve_get_range( reserve_tid, current_train,
-										  ( train_tracking_position( current_train )
-										    + train_tracking_remaining_distance( current_train )
-										    + train_tracking_stop_distance( current_train )
-										    + TRACK_RESERVE_SAFE_DISTANCE ) );
+						if ( current_train->state != TRAIN_STATE_STOP ){
+							/* Update track reservation */
+							status = track_reserve_get_range( reserve_tid, current_train,
+											  ( train_tracking_position( current_train )
+											    // + train_tracking_remaining_distance( current_train )
+											    + train_tracking_stop_distance( current_train )
+											    + TRACK_RESERVE_SAFE_DISTANCE ) );
 
-						if( status != RESERVE_SUCCESS ){
-							if( train_tracking_current_speed_level( current_train ) ){
-								track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-								dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
-								train_set_speed( module_tid, current_train->id, 0 );
-								train_auto_recompose_set_speed( &request, current_train->id, 0 );
-								reprocess = 1;
+							if( status != RESERVE_SUCCESS ){
+								if( train_tracking_current_speed_level( current_train ) ){
+									track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
+									dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
+									train_set_speed( module_tid, current_train->id, 0 );
+									train_auto_recompose_set_speed( &request, current_train->id, 0 );
+									reprocess = 1;
+								}
+								current_train->planner_control = 0;
+								/* Wake up planner */
+								sem_release( current_train->update );
 							}
-							current_train->planner_control = 0;
-							/* Wake up planner */
-							sem_release( current_train->update );
 						}
+						else {
+							status = track_reserve_get_range( reserve_tid, current_train,
+											  ( train_tracking_position( current_train )
+											    + TRACK_RESERVE_SAFE_DISTANCE ) );
+							if( status != RESERVE_SUCCESS ){
+								if( train_tracking_current_speed_level( current_train ) ){
+									track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
+									dprintf( "Train %d stopped reservation failed at %s\n", current_train->id, name );
+								}
+								current_train->planner_control = 0;
+								/* Wake up planner */
+								sem_release( current_train->update );
+							}
 
+
+						}
+						
 						/* The check point must always be reservable */
 						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
 						if( status != RESERVE_SUCCESS ){

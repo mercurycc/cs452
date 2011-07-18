@@ -8,7 +8,7 @@
 #include "inc/error_tolerance.h"
 
 
-// #define LOCAL_DEBUG
+#define LOCAL_DEBUG
 #include <user/dprint.h>
 
 
@@ -113,15 +113,15 @@ int train_next_possible( Train_data* train, int* switch_table )
 	}
 	
 	/* update pred time */
-	train_update_time_pred( train, switch_table );
+	// train_update_time_pred( train, switch_table );
 	
 	uint range = train->next_time_range;
 	uint a = train->next_time_pred - range;
 	uint b = train->next_time_pred + range;
 	
 	
-	dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, a, b, range );
-	//dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
+	// dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, a, b, range );
+	// dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
 
 	return 0;
 }
@@ -147,7 +147,7 @@ int train_update_time_pred( Train_data* train, int* switch_table ){
 		default:
 			train->next_time_pred = 0;
 		}
-		dprintf( "range is 1/3 of %d - %d\n", train->next_time_pred, train->tracking.speed_change_last_integration );
+		// dprintf( "range is 1/3 of %d - %d\n", train->next_time_pred, train->tracking.speed_change_last_integration );
 		train->next_time_range = ( train->next_time_pred - train->tracking.speed_change_last_integration ) * TIME_WINDOW_RANGE_FACTOR;
 	}
 	else {
