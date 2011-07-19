@@ -117,6 +117,8 @@ typedef struct Train_data_s {
 	int planner_tid;                  /* Planner */
 	track_node* current_dest;
 	int current_dist_pass;
+	int replan;
+	int replan_time;
 	volatile int planner_control;
 	volatile int mark_dist;
 

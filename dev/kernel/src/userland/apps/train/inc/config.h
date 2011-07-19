@@ -35,7 +35,7 @@
 #define LOW_SPEED_BREAK_TIME    70
 #define CLOSE_SPEED_CHANGE_GAP  8
 #define START_CHANGE_TIME   350     /* Time for pick up speed from 0 */
-#define STOP_SAFE_TIME      500
+#define STOP_SAFE_TIME      400
 #define COMMAND_DELAY_TIME  7
 
 /* Track reservation */

@@ -85,7 +85,7 @@ int train_next_possible( Train_data* train, int* switch_table )
 	/* find tertiary if possible */
 	do {
 		dist += node_distance( temp, switch_table );
-		temp = temp->edge[DIR_AHEAD].dest;
+		temp = track_next_node( temp, switch_table );
 		if ( temp->type == NODE_BRANCH ) {
 			int id = SWID_TO_ARRAYID( temp->id + 1 );
 			if ( switch_table[id] == 'C' ) {
@@ -101,7 +101,11 @@ int train_next_possible( Train_data* train, int* switch_table )
 			} 
 			break;
 		}
-	} while ( temp != primary );
+	} while ( temp != secondary );
+
+	if( temp == secondary ){
+		tertiary = 0;
+	}
 
 	train->next_sensor = primary;
 	train->secondary_sensor = secondary;

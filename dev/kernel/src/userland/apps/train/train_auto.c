@@ -382,6 +382,8 @@ void train_auto()
 
 					current_train->tracking.speed_change_time = SPEED_CHANGE_TIME;
 
+					current_train->replan = 0;
+
 					status = train_planner_init( current_train->planner_tid, current_train );
 					assert( status == ERR_NONE );
 
@@ -465,13 +467,18 @@ void train_auto()
 				current_train->current_dist_pass = request.data.plan.dist_pass;
 
 				/* Release planner control */
-				current_train->planner_control = 0;
-				
-				/* Wake up planner */
-				sem_release( current_train->update );
-				
-				dprintf( "Train %d received planning request successfully\n", current_train->id );
-				train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
+				if( current_train->planner_control ){
+					current_train->planner_control = 0;
+					current_train->replan = 1;
+					current_train->replan_time = current_time + STOP_SAFE_TIME;
+				} else {
+					current_train->replan = 0;
+					/* Wake up planner */
+					sem_release( current_train->update );
+					
+					dprintf( "Train %d received planning request successfully\n", current_train->id );
+					train_planner_path_plan( current_train->planner_tid, current_sensor, request.data.plan.dist_pass );
+				}
 				break;
 			}
 
@@ -625,15 +632,14 @@ void train_auto()
 					if( request.type == TRAIN_AUTO_WAKEUP ){
 						switch( current_train->init_state ){
 						default:
-							//dnotice( "before tracking update\n" );
-							//Delay( 10 );
-
+							if( current_train->replan && current_train->replan_time < current_time ){
+								train_auto_recompose_plan( &request, current_train->id,
+											   current_train->current_dest->group,
+											   current_train->current_dest->id,
+											   current_train->current_dist_pass );
+								reprocess = 1;
+							}
 							train_tracking_update( current_train, current_time );
-							// TODO: if sensor has not hit any sensor for a long time => lost the train
-							//dnotice( "after tracking update\n" );
-							//Delay( 10 );
-
-
 						case TRAIN_STATE_INIT_1:
 						case TRAIN_STATE_INIT_2:
 						case TRAIN_STATE_INIT_3:
@@ -714,11 +720,9 @@ void train_auto()
 								reprocess = 1;
 							}
 							if( current_train->planner_control ){
-								train_auto_recompose_plan( &request, current_train->id,
-											   current_train->current_dest->group,
-											   current_train->current_dest->id,
-											   current_train->current_dist_pass );
-								reprocess = 1;
+								current_train->planner_control = 0;
+								current_train->replan = 1;
+								current_train->replan_time = current_time + STOP_SAFE_TIME;
 							}
 							/* Wake up planner */
 							sem_release( current_train->update );
