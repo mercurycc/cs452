@@ -113,6 +113,11 @@ static void train_auto_alarm()
 	}
 }
 
+static inline int train_auto_safety_dist( Train* train )
+{
+	return 200 + 100 * train->tracking.speed_level / NUM_SPEED_LEVEL;
+}
+
 static inline void train_auto_recompose_set_speed( Train_auto_request* request, int train_id, int speed_level )
 {
 	request->type = TRAIN_AUTO_SET_TRAIN_SPEED;
@@ -697,7 +702,7 @@ void train_auto()
 											  ( train_tracking_position( current_train )
 											    // + train_tracking_remaining_distance( current_train )
 											    + train_tracking_stop_distance( current_train )
-											    + TRACK_RESERVE_SAFE_DISTANCE ) );
+											    + train_auto_safety_dist( current_train ) ) );
 						}
 
 						if( status != RESERVE_SUCCESS ){

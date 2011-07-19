@@ -171,7 +171,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) ){
+				if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) != RESERVE_SUCCESS ){
 					temp = ~0;
 				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
@@ -182,7 +182,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) ){
+					if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) != RESERVE_SUCCESS ){
 						temp = ~0;
 					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
