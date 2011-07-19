@@ -463,6 +463,9 @@ int train_tracking_speed_in_sec( const Train* train )
 
 int train_tracking_position( const Train* train )
 {
+	if( train->tracking.distance > train->tracking.trav_distance ){
+		return train->tracking.trav_distance;
+	}
 	return train->tracking.distance;
 }
 
