@@ -304,6 +304,7 @@ void train_auto()
 			if( tid == control_tid ){
 				current_train = trains + train_map[ request.data.new_train.train_id ];
 				current_train->planner_control = 0;
+				current_train->replan = 0;
 				
 				/* Wake up planner */
 				sem_release( current_train->update );
