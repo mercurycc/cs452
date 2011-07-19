@@ -1,0 +1,188 @@
+                           ==========================
+                           Pinball System for TS-7200
+                                   Release P1
+                                Train Controller
+                           ==========================
+                                    cs452_08
+
+Overview
+========
+
+- Reservation System
+
+  The reservation system is implemented to reserve edges (i.e. the track between
+  landmarks) on the track.  This is a corase policy that is subject to
+  improvements in the final project.
+
+  < TO BE CONTINUED >
+
+- Path Finding Algorithm
+
+  The path finding algorithm is able to plan the shortest path with change of
+  direction.  The execution of the path will correctly execute the path to make
+  the train stop and reverse at the correct places.  By consulting the
+  reservation system it also has the ability to avoid reserved edges.
+
+- Tracking More than One Trains
+
+  Sensor attibution is done with minimal effort solely for error tolerance.
+  With a functioning reservation system it is expected that no two trains will
+  share any sensor.
+
+- Sensor Attribution and Error Tolerance
+
+  < TO BE CONTINUED >
+
+- Improvements to Calibration and Tracking
+
+  A simpler method of registering the train is implemented.  Speed prediction
+  for non-calibrated speeds is improved.  Speed change model is improved.
+
+  < TO BE CONTINUED >
+
+
+Details
+=======
+
+* Reservation System
+--------------------
+
+The reservation system is a task that manipulates the track and train data to
+implement track reservations.
+
+The reservation algorithm is implemented based on modifications to the
+track/train data structure.  Now each edge of the track contains a pointer to a
+train structure indicating which train might be reserving the track, and a
+integer passcode for verifying the reservation.  In the train structure there is
+a field of matching integer passcode.
+
+To reserve, the train asks the reservation system for a range to reserve ahead
+of the train.  The reservation system follows the path from the train's last
+landmark, reserving each edge possible, until the whole range is convered.
+While reserving each edge, the train and its passcode is written to the edge to
+indicate a successful reservation.  If the edge or its reverse edge is reserved,
+a reservation failure is returned.
+
+To release one edge, the pointer to the train in the edge is set to 0.  This is
+rarely done given the implementation of reservation policy.  Almost always the
+train simply give up all its reservations and re-reserve the path ahead of the
+train to simplify the algorithm.  This also makes the algorithm more robust.
+
+The criteria for an edge being reserved allowed releasing all reservations of a
+train to be cheap.  An edge is reserved if the edge or its reversed edge fulfill
+both the conditions that the pointer to a train is non-null, and the passcode
+recorded matches the passcode in the train structure of the train recorded.
+
+Thus to release all the reservations of a train, the reservation system simply
+increment the passcode in the train structure.
+
+The reason releasing one edge at a time isn't robust enough is because in the
+case of the train running at high speed and the software missing the update on
+an edge, it requires much more effort to release the missed edge.  Also to make
+the train reserve an edge at a time also requires a lot of careful design to
+ensure missed updates does not affect the reservation.
+
+Given enough processing power and under the assumption that the train will not
+reserve a huge number of nodes, the implemented algorithm is expected to perform
+well enough not to interfere other tasks running on the system.
+
+The train should restart its trip via an alternative route if a collision is
+found, or simply stop to wait for further instructions if it is on free run
+mode.
+
+
+* Path Finding Algorithm and Path Execution
+-------------------------------------------
+
+The goal was to find the shortest path in term of distance.
+
+The algorithm at its present form runs the Dijkstra's algorithm, and while
+updating neighbor's costs the parent is updated with the direction the children
+were at.
+
+The reversed nodes are possible with a 1500 hardcoded cost.  1000 of the cost is
+due to the distance to travel in order to reverse, and the other 500 is for the
+time lost in waiting for the train to stop and accelerate.
+
+Later when back tracing the parent list, from the direction recorded the
+switches were switched to the correct orientation, ready for the train to run.
+
+The implementation of a path is essentially a queue of nodes and direction
+information.
+
+The algorithm is carried out by a train planner task.  Each registered train
+will own a planner, which will take trip planning requests and make call to the
+Dijkstra's algorithm to resolve the request.
+
+Once the planner have a resolved path it will read the path queue to fill out a
+forward path until it finds a node that is the reverse of the previous node
+examined.  This forward path is executed in the apparent method, by tracking the
+train with each landmark update and stop the train at the correct spot.  Then
+once the train stopped, if the path is not fully executed, then the train will
+reverse and continue with the next forward path section of the full path.
+
+The execution of a forward path, although said to be using the apparent method,
+actually involved some subtleties in order to work around implementation
+impedements.  The implementation of the execution actually slows down the train
+at most 4 times when the train is at 4 different distance ranges within its
+destination.  The main reason for this is because the tracking of the train in
+the execution is linked to the tracking of the train in the tracking task, and
+the tracking task contains possibility of missing edges.  Although the algorithm
+can handle missed edge updates, if the last edge of the path is missed the
+algorithm will not be able to stop the train.  Therefore the train has to be
+slow down so no edge is missed.  A second benefit we gain from this is if the
+path started to be short, then the train won't accelerate to a high speed.
+
+
+* Tracking More than 1 Trains
+-----------------------------
+
+The basic algorithms of train tracking and calibration does not have the
+assumption of only one train presenting, so we saved some effort on this aspect.
+
+In order to correctly track more than 1 trains, the greatest challenge is to
+correctly attribute sensors.  This is described in the following sections on
+sensor attribution and error tolerance.  With the help from a working
+reservation system, these can be done without much trouble.
+
+
+* Sensor Attribution and Error Tolerance
+----------------------------------------
+
+
+
+* Improvements to Calibration and Tracking
+------------------------------------------
+
+- Registration of Train
+
+The registration of train is made simpler by making the train run on the track
+and take the most recent 3 consecutive sensor hits to check the location of the
+train.  This implies in registration phase only one train can be moving on the
+track.
+
+- Initial Calibration
+
+The registration of the train will also trigger a 15 seconds initial calibration
+of the train in order to obtain some data about the speed of the train so to
+predict the speed of the train on all speed levels.
+
+- Speed Prediction
+
+The initially predicted speed for each train is reduced with the lower speed
+levels, because for many trains the lower the speed the higher the slowing down
+effect of the mechanical parts of train/track is.  Being a corase prediction, a
+better speed can only be reached by allowing the trains to run at the specified
+speed for a longer period of time.
+
+- Speed Change Time
+
+The speed change time is modelled as a function of the speed level difference
+between speeds, where the closer the speed level, the shorter the expected speed
+change time is.  This is solely obtained from observation and trial and error.
+
+< Add whatever you want >
+
+
+File List
+=========
