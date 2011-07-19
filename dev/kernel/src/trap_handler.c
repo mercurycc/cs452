@@ -16,6 +16,7 @@
 #include <devices/clock.h>
 #include <watchdog.h>
 #include <user/syscall.h>
+#include <abort.h>
 
 static inline int msg_copy( Task* sender, Task* receiver ){
 	char* data = sender->reason->data;
@@ -38,9 +39,17 @@ static inline int msg_copy( Task* sender, Task* receiver ){
 int trap_init( Context* ctx )
 {
 	uint* trap_addr = (uint*)0x28;
+	uint* undef_inst = (uint*)0x24;
+	uint* prefetch_abrt = (uint*)0x2c;
+	uint* data_abrt = (uint*)0x30;
 	
 	/* All interrupt are handled by trap_handler_begin.  For K1, only swi is setup */
 	*trap_addr = (uint)trap_handler_begin;
+
+	/* Install abort trap */
+	*undef_inst = (uint)abort_trap;
+	*prefetch_abrt = (uint)abort_trap;
+	*data_abrt = (uint)abort_trap;
 
 	return 0;
 }
