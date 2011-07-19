@@ -31,14 +31,12 @@ Overview
 
 - Sensor Attribution and Error Tolerance
 
-  < TO BE CONTINUED >
+  Sensor arribution is done with combination of the both error tolerance and reservation system. It is not too complicated, but effective enough to allow program to track multiple trains.
 
 - Improvements to Calibration and Tracking
 
   A simpler method of registering the train is implemented.  Speed prediction
   for non-calibrated speeds is improved.  Speed change model is improved.
-
-  < TO BE CONTINUED >
 
 
 Details
@@ -60,8 +58,8 @@ To reserve, the train asks the reservation system for a range to reserve ahead
 of the train.  The reservation system follows the path from the train's last
 landmark, reserving each edge possible, until the whole range is convered.
 While reserving each edge, the train and its passcode is written to the edge to
-indicate a successful reservation.  If the edge or its reverse edge is reserved,
-a reservation failure is returned.
+indicate a successful reservation. If the edge or its reverse edge is reserved,
+a reservation failure is returned. 
 
 To release one edge, the pointer to the train in the edge is set to 0.  This is
 rarely done given the implementation of reservation policy.  Almost always the
@@ -90,6 +88,9 @@ The train should restart its trip via an alternative route if a collision is
 found, or simply stop to wait for further instructions if it is on free run
 mode.
 
+The reservation system also protects train from running out of an exit. When a train tries to reserve the track in front of it and find it is an exit, the reservation will fail, and the train will be forced to stop.
+
+In particular locations such as branch and merges, the train will reserve the both direction of the track, so if would not hit any trains on the track of the other direction of a switch.
 
 * Path Finding Algorithm and Path Execution
 -------------------------------------------
@@ -151,9 +152,14 @@ reservation system, these can be done without much trouble.
 
 The sensor attribution is accomplished by mainly recording two piece of information. First we record in train's data structure that the sensors it is expected to hit. Whenever a train is successfuly registered, it predicts 2 or 3 sensors that it would hit. At the same time, we will mark these sensor as being expected by some train. When the train moves on and hit one of the sensor it is expecting, it will clear the old predictions and predict next a couple sensors based on this sensor report. With this, when different trains are expecting different sensors, we can distinguish which train actually hit this sensor when multiple trains are running on the field.
 
-Sometimes, a sensor would fail. For example, train 23 cannot hit A04 on track B.
+However, it may comes to a situation where 2 trains are one the track, two trains may expecting same sensor at ones. In order to distinguish which train hit the sensor, we combined the sensor checking with the reservation system. The key idea is: a train will only hit a sensor when it reserves the block after it. In situation like a sensor is the primary of the first train and secondary of the second train, when this sensor is hit, the program will check which train has reserved that block of the track, thus deside which train triggered the sensor.
 
-However, it may comes to a situation where 2 trains
+Sometimes, a sensor would fail. For example, train 23 cannot hit A04 on track B. Because of such cases, our program will predict not just one, but next two sensor that a train going to hit. If the train didn't hit the primary sensor ( which is the sensor that the train is expected to hit next ), when the train hit the secondary sensor ( the further one ), the program will catch this and update train's location. Therefore, the train would not lostm, for single sensor error.
+
+Whenever a sensor makes a mistake, either not triggered when it is supposed to ( eg. disconnected ), or triggered when it is not supposed to ( eg. stucked, as always being triggered ), the program will mark that sensor less trustable. Whenever a sensor worked normally, the program will mark that sensor more trustable. If a sensor gives error often, it will be mark less and less trustable until it gets to a stage where the program will mark this sensor invalid. In this situation, the sensor will be ignored.
+
+It is similar for switch error. We made the train expecting the sensor that it would hit if the switch is in a different setup. This is named as tertiary sensor. When a train hit its tertiary sensor, the program will update its location. However, currently, the path finder task is not connected in this part. So when a switch error happens, the train would not lost, but we have to manually stop the train and manually ask path finder to give a new path. We are about to change this in next a few days, since our final project need this.
+
 
 
 * Improvements to Calibration and Tracking
@@ -170,7 +176,7 @@ track.
 
 The registration of the train will also trigger a 15 seconds initial calibration
 of the train in order to obtain some data about the speed of the train so to
-predict the speed of the train on all speed levels.
+predict the speed of the train on all speed levels. We do this because the trains have different speed when in different conditions. Measurements are not accurate enough for most of the time.
 
 - Speed Prediction
 
@@ -185,8 +191,6 @@ speed for a longer period of time.
 The speed change time is modelled as a function of the speed level difference
 between speeds, where the closer the speed level, the shorter the expected speed
 change time is.  This is solely obtained from observation and trial and error.
-
-< Add whatever you want >
 
 
 File List

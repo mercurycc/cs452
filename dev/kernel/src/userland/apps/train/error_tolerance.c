@@ -38,6 +38,7 @@ int sensor_trustable( track_node* sensor ){
 }
 
 int sensor_error( track_node* sensor ){
+	assert( sensor );
 	if ( sensor_trustable( sensor ) ) {
 		sensor->broken += 1;
 		dprintf( "sensor %c%d is less trustable\n", sensor->group+'A', sensor->id+1 );
