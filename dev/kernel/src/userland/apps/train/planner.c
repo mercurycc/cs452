@@ -332,6 +332,9 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 		if( train->planner_control ){
 			train_forward_set_speed( train, &state, temp, module_tid, auto_tid );
+		} else {
+			dprintf( "Train %d control is taken back to manual\n", train->id );
+			break;
 		}
 
 		path_matched = 0;
@@ -382,7 +385,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 				/* If the node could be matched, count into the matched distance */
 				/* Notice that the last node does not count because it indicates only the end of the traveled edges */
-				if( path_node->direction == 'C' ){
+				if( path_node->node->type == NODE_BRANCH && path_node->direction == 'C' ){
 					matched_dist += path_node->node->edge[ DIR_CURVED ].dist;
 				} else {
 					matched_dist += path_node->node->edge[ DIR_AHEAD ].dist;
@@ -583,7 +586,9 @@ void train_planner()
 					if( status < 0 ){
 						break;
 					}
-				} else {
+				}
+				
+				if( ! train->planner_control ){
 					dnotice( "Planner control taken away\n" );
 				}
 				

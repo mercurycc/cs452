@@ -16,6 +16,10 @@ from the tftp server via
 A backup of pinball_p2.elf is located in /u9/z2long/rt/rel/p2/bin/pinball_p2.elf
 
 MD5 of pinball:
+cd4a7a5279f10ced7f60eef49df0c91c  ./bin/pinball_p2.elf
+
+This version might be slightly different from the version we used on the demo.
+The version used on the demo is either this version or an earlier version.
 
 
 2. Launch
@@ -54,3 +58,4 @@ commands are:
 4. Known Problems
 =================
 
+- Program occasionally freeze up.  In such case reboot is the only solution.

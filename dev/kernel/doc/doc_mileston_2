@@ -14,8 +14,6 @@ Overview
   landmarks) on the track.  This is a corase policy that is subject to
   improvements in the final project.
 
-  < TO BE CONTINUED >
-
 - Path Finding Algorithm
 
   The path finding algorithm is able to plan the shortest path with change of
@@ -31,7 +29,9 @@ Overview
 
 - Sensor Attribution and Error Tolerance
 
-  Sensor arribution is done with combination of the both error tolerance and reservation system. It is not too complicated, but effective enough to allow program to track multiple trains.
+  Sensor arribution is done with combination of the both error tolerance and
+  reservation system. It is not too complicated, but effective enough to allow
+  program to track multiple trains.
 
 - Improvements to Calibration and Tracking
 
@@ -88,9 +88,13 @@ The train should restart its trip via an alternative route if a collision is
 found, or simply stop to wait for further instructions if it is on free run
 mode.
 
-The reservation system also protects train from running out of an exit. When a train tries to reserve the track in front of it and find it is an exit, the reservation will fail, and the train will be forced to stop.
+The reservation system also protects train from running out of an exit. When a
+train tries to reserve the track in front of it and find it is an exit, the
+reservation will fail, and the train will be forced to stop.
 
-In particular locations such as branch and merges, the train will reserve the both direction of the track, so if would not hit any trains on the track of the other direction of a switch.
+In particular locations such as branch and merges, the train will reserve the
+sections of both direction of the track, so if would not hit any trains on the
+track of the other direction of a switch.
 
 * Path Finding Algorithm and Path Execution
 -------------------------------------------
@@ -124,15 +128,20 @@ reverse and continue with the next forward path section of the full path.
 
 The execution of a forward path, although said to be using the apparent method,
 actually involved some subtleties in order to work around implementation
-impedements.  The implementation of the execution actually slows down the train
-at most 4 times when the train is at 4 different distance ranges within its
-destination.  The main reason for this is because the tracking of the train in
-the execution is linked to the tracking of the train in the tracking task, and
-the tracking task contains possibility of missing edges.  Although the algorithm
-can handle missed edge updates, if the last edge of the path is missed the
-algorithm will not be able to stop the train.  Therefore the train has to be
-slow down so no edge is missed.  A second benefit we gain from this is if the
-path started to be short, then the train won't accelerate to a high speed.
+impedements.
+
+The implementation of the execution actually slows down the train at most 4
+times when the train is at 4 different distance ranges within its destination.
+The main reason for this is because the tracking of the train in the execution
+is linked to the tracking of the train in the tracking task, and the tracking
+task contains possibility of missing edges.  Although the algorithm can handle
+missed edge updates, if the last edge of the path is missed the algorithm will
+not be able to stop the train.  Therefore the train has to be slow down so no
+edge is missed.
+
+A second benefit we gain from slowing down the train at different distance
+towards the destination is if the path started to be short, then the train won't
+accelerate to a high speed.
 
 
 * Tracking More than 1 Trains
@@ -150,15 +159,47 @@ reservation system, these can be done without much trouble.
 * Sensor Attribution and Error Tolerance
 ----------------------------------------
 
-The sensor attribution is accomplished by mainly recording two piece of information. First we record in train's data structure that the sensors it is expected to hit. Whenever a train is successfuly registered, it predicts 2 or 3 sensors that it would hit. At the same time, we will mark these sensor as being expected by some train. When the train moves on and hit one of the sensor it is expecting, it will clear the old predictions and predict next a couple sensors based on this sensor report. With this, when different trains are expecting different sensors, we can distinguish which train actually hit this sensor when multiple trains are running on the field.
+The sensor attribution is accomplished by mainly recording two piece of
+information. First we record in train's data structure that the sensors it is
+expected to hit. Whenever a train is successfuly registered, it predicts 2 or 3
+sensors that it would hit. At the same time, we will mark these sensor as being
+expected by some train. When the train moves on and hit one of the sensor it is
+expecting, it will clear the old predictions and predict next a couple sensors
+based on this sensor report. With this, when different trains are expecting
+different sensors, we can distinguish which train actually hit this sensor when
+multiple trains are running on the field.
 
-However, it may comes to a situation where 2 trains are one the track, two trains may expecting same sensor at ones. In order to distinguish which train hit the sensor, we combined the sensor checking with the reservation system. The key idea is: a train will only hit a sensor when it reserves the block after it. In situation like a sensor is the primary of the first train and secondary of the second train, when this sensor is hit, the program will check which train has reserved that block of the track, thus deside which train triggered the sensor.
+However, it may comes to a situation where 2 trains are one the track, two
+trains may expecting same sensor at ones. In order to distinguish which train
+hit the sensor, we combined the sensor checking with the reservation system. The
+key idea is: a train will only hit a sensor when it reserves the block after
+it. In situation like a sensor is the primary of the first train and secondary
+of the second train, when this sensor is hit, the program will check which train
+has reserved that block of the track, thus deside which train triggered the
+sensor.
 
-Sometimes, a sensor would fail. For example, train 23 cannot hit A04 on track B. Because of such cases, our program will predict not just one, but next two sensor that a train going to hit. If the train didn't hit the primary sensor ( which is the sensor that the train is expected to hit next ), when the train hit the secondary sensor ( the further one ), the program will catch this and update train's location. Therefore, the train would not lostm, for single sensor error.
+Sometimes, a sensor would fail. For example, train 23 cannot hit A04 on track
+B. Because of such cases, our program will predict not just one, but next two
+sensor that a train going to hit. If the train didn't hit the primary sensor (
+which is the sensor that the train is expected to hit next ), when the train hit
+the secondary sensor ( the further one ), the program will catch this and update
+train's location. Therefore, the train would not lostm, for single sensor error.
 
-Whenever a sensor makes a mistake, either not triggered when it is supposed to ( eg. disconnected ), or triggered when it is not supposed to ( eg. stucked, as always being triggered ), the program will mark that sensor less trustable. Whenever a sensor worked normally, the program will mark that sensor more trustable. If a sensor gives error often, it will be mark less and less trustable until it gets to a stage where the program will mark this sensor invalid. In this situation, the sensor will be ignored.
+Whenever a sensor makes a mistake, either not triggered when it is supposed to (
+eg. disconnected ), or triggered when it is not supposed to ( eg. stucked, as
+always being triggered ), the program will mark that sensor less
+trustable. Whenever a sensor worked normally, the program will mark that sensor
+more trustable. If a sensor gives error often, it will be mark less and less
+trustable until it gets to a stage where the program will mark this sensor
+invalid. In this situation, the sensor will be ignored.
 
-It is similar for switch error. We made the train expecting the sensor that it would hit if the switch is in a different setup. This is named as tertiary sensor. When a train hit its tertiary sensor, the program will update its location. However, currently, the path finder task is not connected in this part. So when a switch error happens, the train would not lost, but we have to manually stop the train and manually ask path finder to give a new path. We are about to change this in next a few days, since our final project need this.
+It is similar for switch error. We made the train expecting the sensor that it
+would hit if the switch is in a different setup. This is named as tertiary
+sensor. When a train hit its tertiary sensor, the program will update its
+location. However, currently, the path finder task is not connected in this
+part. So when a switch error happens, the train would not lost, but we have to
+manually stop the train and manually ask path finder to give a new path. We are
+about to change this in next a few days, since our final project need this.
 
 
 
@@ -176,7 +217,9 @@ track.
 
 The registration of the train will also trigger a 15 seconds initial calibration
 of the train in order to obtain some data about the speed of the train so to
-predict the speed of the train on all speed levels. We do this because the trains have different speed when in different conditions. Measurements are not accurate enough for most of the time.
+predict the speed of the train on all speed levels. We do this because the
+trains have different speed when in different conditions. Measurements are not
+accurate enough for most of the time.
 
 - Speed Prediction
 
@@ -195,3 +238,171 @@ change time is.  This is solely obtained from observation and trial and error.
 
 File List
 =========
+
+This version might be slightly different from the version we used on the demo.
+The version used on the demo is either this version or an earlier version.
+
+$ cd /u9/z2long/rt/rel/p2
+$ find . -type f | xargs md5sum
+29933296247039d58b28860f01fe1f32  ./doc/desc
+8f935647a400fbf25c08c442833a42c8  ./doc/KernelDesign
+fa6063c33f7c555d04ce5c8e9c2301de  ./doc/README
+df0b51e5b673fbbb35ec427b63ad0422  ./doc/desc_2
+c4aee076bd493800ee6139e47da9074d  ./doc/SendReceiveMesurement
+b8b17f7bb08134a5c020db44782d5cb5  ./doc/desc_3
+a41435999a3f388b1098f5f49fae391b  ./doc/user
+6c290e74dc90132ad90e6a3f23b61392  ./doc/desc_4
+8b6d1e20c09a3ddbbfe1c8de5bd50dcb  ./doc/UserlandDesign
+2221f267f13f074109016e8f49c19c5d  ./doc/doc_milestone_1
+20e340a977a2940f0f9d25eb6b2a6c50  ./doc/pathFinding
+2d1759ce911494fd1f36124262782b2a  ./doc/doc_mileston_2
+9a77ac18d4a9336f1a665826e6d5cedc  ./doc/project_proposal
+67e6fa0c1499210401e39bd7d0698391  ./src/trap_handler.c
+ea91f94d12ef53757cc6738be15ff873  ./src/kernel.mk
+ee4f869f352e1e1ae178ddc9ed09cc6e  ./src/lib/str.c
+b93ab2b91d8aea5710f11ee1d38e3d36  ./src/lib/rbuf.c
+4d9e149a10e132633e723895196fdb10  ./src/lib/list.c
+b5257919645efcbad316803de92bf3d7  ./src/lib/hashtable.c
+cc7c2b16764f36e55de0e0a652a78559  ./src/lib/strprintf.c
+092c25aead2469df95fa67ff3d51ac57  ./src/trap.s
+c311d59e4740adbb4e54abf00d0a2439  ./src/init.c
+ef839b83d37e9b6e1f44d5823d95afc8  ./src/entry.c
+e4da8cae9acb838a0527fc585f2d7055  ./src/session_start.s
+d73b46de71ffbe57390c148513c36524  ./src/devices/clock.c
+485f1a99e81baa5d5f27199a30ff3d38  ./src/devices/console.c
+5740f18810cd052b5633882123e20d06  ./src/devices/bwio.c
+40c73b20cfec47bb4e8f4cb964a473d7  ./src/userland/apps/init_user/main.c
+217f3ae063db63ae24e5c5296d42dbb3  ./src/userland/apps/noise/main.c
+04dba971e7fe30faf95ce45c4df93083  ./src/userland/apps/init/main.c
+dc5b88c7489b689354727f56091b63cf  ./src/userland/apps/rps_client/main.c
+5e1ca4caf7a173f7ee2fd5ce0003ebf5  ./src/userland/apps/RPSServer/main.c
+b0beb2a32a5cab61b50b614f3ed3f9b3  ./src/userland/apps/srr_timing/main.c
+c805fb536ee7753dbf0a9feccc565321  ./src/userland/apps/train/train_control.c
+265bbcca2e0b2804bed2102b3e8d4e03  ./src/userland/apps/train/train_module.c
+fb994ef3b980973f3551d6f87559bb2e  ./src/userland/apps/train/sensor.c
+38fb89c5873e3d4b446e3a12774052ef  ./src/userland/apps/train/inc/train.h
+bf2689b8b6a2a0ca2bcb2d789a123ed6  ./src/userland/apps/train/inc/sensor_data.h
+744789b21aa77f1c97f601b5aa21f9ca  ./src/userland/apps/train/inc/track_data.h
+46b008b4f1b46c3e96a3fdfbb7d697ca  ./src/userland/apps/train/inc/config.h
+1cd5d5077f84efce07719666d0c20b10  ./src/userland/apps/train/inc/warning.h
+e877df3f97e3c1ff337303d8846bf905  ./src/userland/apps/train/inc/train_location.h
+692e8c3f3a7b4d3a8fb7cc2f80074d35  ./src/userland/apps/train/inc/track_node.h
+bbcba68039e2f97c007d07f0ea7e4421  ./src/userland/apps/train/inc/train_types.h
+e6e4c692cb8945655404b9a480db7ccc  ./src/userland/apps/train/inc/speed.h
+ace72cccd7394504327d09609a7ea30a  ./src/userland/apps/train/inc/error_tolerance.h
+f728e607b4cf9169da630e48afbb60d6  ./src/userland/apps/train/inc/timing.h
+5ddd727d870dbab2080b14c6bf036523  ./src/userland/apps/train/inc/train_tracking.h
+0167f138374fdd5adbbb9fa3dc5ee8dd  ./src/userland/apps/train/inc/train_constants.h
+767d21c39d7ac736ccabf5d929f653eb  ./src/userland/apps/train/inc/track_reserve.h
+3edb7a5a5a5624f795d9d7a057448d4f  ./src/userland/apps/train/import/track_data.c
+9e98181f13ede0c2942dd06b88d053b7  ./src/userland/apps/train/import/track_node.h
+1352f3743944badbb8c2399e6fb2ccd4  ./src/userland/apps/train/import/track_data.h
+284030840b56ece74c716fd56328800d  ./src/userland/apps/train/ui/clock.c
+a79cd763b331805e115a8abf1893603e  ./src/userland/apps/train/ui/train_tracking.c
+d4957ac64569f0fb62bfbc48441067cb  ./src/userland/apps/train/ui/sensor_monitor.c
+7e820bf77b2f6a88d9a9e20549bc9daf  ./src/userland/apps/train/ui/switch_monitor.c
+f841acd709843cee877dd43652f685fa  ./src/userland/apps/train/UIDesign
+821819a1b3ab78e660b8330a32d37816  ./src/userland/apps/train/track_data.c
+d61036e4c19357f4009e584bac122c0a  ./src/userland/apps/train/train_auto.c
+725b99e901bbe1f3ec3d958cb519337c  ./src/userland/apps/train/train_location.c
+2aa5b42c9aea7562c5f3ec22610375e3  ./src/userland/apps/train/train_data_edit.regexp
+f530c2cecf2de34473a063d56e818dee  ./src/userland/apps/train/planner.c
+63eb9083962f391db39189bdaecc0d20  ./src/userland/apps/train/speed.c
+cc64e20084143a1478a8e3d2cee97c8b  ./src/userland/apps/train/error_tolerance.c
+9bf04d4d9861e21acd2191ae4749c9d1  ./src/userland/apps/train/train_tracking.c
+e4f05ea2dc9e1f7b9a054e4d90d60acf  ./src/userland/apps/train/train_module_executor.c
+2e7d7e3eb5757bf4ae90bca3741a9a61  ./src/userland/apps/train/track_reserve.c
+78d2ebd6f39ef3cc204434eefd0612c8  ./src/userland/apps/rps_game/main.c
+20327d4f4e6a71e33f33418eccbbc617  ./src/userland/apps/lazy_dog/main.c
+9b9cc4eeb2471737f65c414fd9fec11a  ./src/userland/lib/name_server.c
+2a21316c69dcffddd5f5198851e5f64a  ./src/userland/lib/syscall.c
+5654c4de4ae067b3b4710490a09f003b  ./src/userland/lib/heap.c
+8062b65488e82042a43e0ff9dabefef2  ./src/userland/lib/prng.c
+bdd14a2f187303a274295e44fe9f34ae  ./src/userland/lib/sync.c
+2c529c39706de121bdc6bd4f670a71f9  ./src/userland/lib/math.c
+225864f8879525e6276b84155615195b  ./src/userland/lib/event.c
+7157cd98a0abc82eb691b823881f2f86  ./src/userland/lib/uart.c
+27788121b38cd920c7ed648ac49c7b0c  ./src/userland/lib/#sync.c#
+4af80a70a6cf35be8646d030a135d5b8  ./src/userland/lib/cursor_control.c
+0463abfc0966ff809870dd836715f9eb  ./src/userland/lib/courier.c
+926bb52b9b3f699df3d8205821e0fb88  ./src/userland/lib/parser.c
+c6eed3ff0bc5ebd39b429b569ff5dd69  ./src/userland/drivers/clock_drv.c
+88f281e31be3ddeb9abc5fb1238fa43a  ./src/userland/drivers/uart_drv.c
+f4f59f17c0e84ed9a5418fea4dd33b36  ./src/userland/server/display_server.c
+6a1d4ca7f664b8c2d435a9914d46d4c2  ./src/userland/server/time_server.c
+28bc0be9ec969be7d37e0818e37a89fb  ./src/userland/server/semaphore_server.c
+7fc84523504601e6131cec4b340b3d10  ./src/sched.c
+99104d8cbfa2a5b2a7075f3abfafe63c  ./src/task_init.s
+650b264e1d9907492b0f093e60408a7a  ./src/task.c
+68ef8d87574d965db28e0a9525f62e05  ./src/kernel_shutdown.s
+5f4a8b6d75a267c2f275912e15ff40bc  ./src/interrupt.s
+fb0ab370d8cb7c49570f2412011998b5  ./src/interrupt_handler.c
+4278d60f8e7f1eb7e29871931a892468  ./src/watchdog.c
+b08067b13bb0b468d7f01951b4179a34  ./src/mem.c
+cdbdf92b78a229e0510c3ea5686ff8f7  ./src/cache.s
+e05902d8eb928f7b7f4a68be4675a768  ./src/context.c
+a604fc29d70c75a9cd9a012a772ca549  ./src/kill.s
+8a6d6a20176bd3091dfa72d3eb00ee5f  ./src/perf.c
+6fa43ff2a3e4feee196efe1dc76da6f2  ./src/abort.s
+68ef7f5873daa448353c800fd72361e0  ./src/abort_handle.c
+d41d8cd98f00b204e9800998ecf8427e  ./bin/.gitignore
+cd4a7a5279f10ced7f60eef49df0c91c  ./bin/pinball_p2.elf
+8fcb2c5497488b730319011a05d09e3c  ./inc/user/apps_entry.h
+f3c62c30209f8098840f659bcde50fab  ./inc/user/syscall.h
+b464efd6454e0bb66db5e16dda52d34a  ./inc/user/name_server.h
+33c4e1c849f6261744b44225f6593d28  ./inc/user/RPS_game.h
+0c84deec0ad775d3ffcfac712da9ad37  ./inc/user/lib/heap.h
+6eb5716df43a5efd08372510d62954d8  ./inc/user/lib/prng.h
+2330a928b4de65252440fccd51c3a455  ./inc/user/lib/sync.h
+faafd00effd9f33508ad4a30a4205fcb  ./inc/user/lib/math.h
+57be25c5c85e250c512570a09691bf61  ./inc/user/lib/cursor_control.h
+ab1071a14c3df5f78999cefafbc0b5b6  ./inc/user/lib/parser.h
+a9d7c713fa6a1e5d7a74c430ad9eae15  ./inc/user/servers_entry.h
+cb64e338d454c452343c560ebeee0f70  ./inc/user/devices/clock.h
+9559afbf455465941769de706a0a2a10  ./inc/user/devices/uart.h
+a7f38facae696a0857d5d2862ac63819  ./inc/user/protocals.h
+2a215744143e53f6a0314ea8efb5cbe4  ./inc/user/time.h
+5eb4d84e25105311513f7c1c4f1cc95a  ./inc/user/clock_server.h
+603fd157f217e9f4448269f9758c460b  ./inc/user/assert.h
+adad127968428f49cfed93548d4e35df  ./inc/user/event.h
+79be1919961082bd7893dd726a4044c1  ./inc/user/display.h
+b73f5cfd37530dab63c57b7a2d6ff4d3  ./inc/user/drivers_entry.h
+72740e67e0023e8479b1682ae45d9434  ./inc/user/dprint.h
+fe8c271666bb936c6c399ef59d8438d3  ./inc/user/uart.h
+94cff5de6265ca2af724e832d1506b98  ./inc/user/courier.h
+b403314ee2a3a9738a601be1cf4b6037  ./inc/user/semaphore.h
+22df14e5a1916f97c25c764c023de301  ./inc/task.h
+02c4361f40a7e2505bef66aa7cd4dc27  ./inc/kernel.h
+8eead4ce12a73222266300c83b7560c3  ./inc/types.h
+6e427d4b601baa94ffd0837fa4bb4d8f  ./inc/lib/str.h
+44a3a5203d6d9a2254e60474e340f1a0  ./inc/lib/rbuf.h
+3ba52c2201f42cbc4c29dd5d7a7ac509  ./inc/lib/list.h
+aa840cf18b553492af00337740c0a589  ./inc/lib/hashtable.h
+c5c38d8ed1cd98feb911c74dcdc3f976  ./inc/lib/valist.h
+ff2cfda94638ea8b32f098d3cb002881  ./inc/panic.h
+08c90dc54ac5c2efe37ff672c1364c2f  ./inc/err.h
+e94693d20830a66f5f4d07fac0790ab4  ./inc/regopts.h
+d117423d6a1b0af67f41bcdfc6d85ac9  ./inc/trap.h
+2df39fa680be7e8ab0c2499be03f1d44  ./inc/bwio.h
+e68be28124071b7bfdc826129c862d09  ./inc/config.h
+1d370f061cef5a04b47d0aa92366e189  ./inc/ts7200.h
+5295c901e1cdf8be78a7acc9370451e9  ./inc/devices/clock.h
+748a423fc63602fbc0bf0f19f3ba6fe6  ./inc/devices/console.h
+1b59fdaf2ccf1a72f418328151e66590  ./inc/sched.h
+b557805aeaa1dace38404995dab28b5c  ./inc/context.h
+29bea3aad55c6bb623279a3dbd6830b7  ./inc/trap_reason.h
+c43cfa95330540b4d28d90d93032d3ca  ./inc/watchdog.h
+c33fa0127b592dc024e50c754dda7dd5  ./inc/interrupt.h
+3fd4e32a82edc39a2703e4035a9ae2e2  ./inc/syscall.h
+4f9e1f65e1fda0a30500444e612ab105  ./inc/mem.h
+fe42a1e47a2a09050edbe4b69495688d  ./inc/session.h
+59f5d206fff94700c1288d57c6ff6f5a  ./inc/ep9302.h
+d32d3824ad7b8bede6a764f2298270e4  ./inc/perf.h
+ce329cc4552923d94ebcb33eafce95c9  ./inc/abort.h
+37cfacf70840b1478775a1994629132e  ./Makefile
+4aa618b9753c5292e5d9e5c95d297f10  ./build/orex.ld
+d41d8cd98f00b204e9800998ecf8427e  ./built/.gitignore
+e4fdcce89a48fd3c5636deaecbc7c8dd  ./built/userland/apps/srr_timing/main.s
+14131aac9a9aea88ba0166740ec81953  ./built/userland/apps/srr_timing/main.o
+7d04f65d13c591b2ba906944ed3c0361  ./upload
+6e021427eb3cce150bc2e81eea9caf41  ./out
