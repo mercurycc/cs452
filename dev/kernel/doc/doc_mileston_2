@@ -88,6 +88,14 @@ The train should restart its trip via an alternative route if a collision is
 found, or simply stop to wait for further instructions if it is on free run
 mode.
 
+As a sidenode, Current a live lock caused by re-routing might still exist.  We
+used existing properties in the system to break the live lock by making the
+earlier registered train to replan its trip first, so ideally the live lock will
+not persist forever.  We had other bugs in the system preventing us to properly
+create this case though, so it was not tested.  This is chosen because it
+integrates better with existing implementation.  A random backup can be easily
+implemented upon this once we have this mechanism tested.
+
 The reservation system also protects train from running out of an exit. When a
 train tries to reserve the track in front of it and find it is an exit, the
 reservation will fail, and the train will be forced to stop.
