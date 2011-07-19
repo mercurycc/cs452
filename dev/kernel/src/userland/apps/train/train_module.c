@@ -227,7 +227,7 @@ void train_module()
 			break;
 		}
 
-		/* Switch command timing */
+		/* Switch command timing *//*
 		switch( event.event_type ){
 		case TRAIN_SWITCH:
 		case TRAIN_SWITCH_ALL:
@@ -236,7 +236,7 @@ void train_module()
 			}
 			break;
 		}
-
+		*/
 		switch ( event.event_type ) {
 		case TRAIN_EXECUTE:
 			assert( executor_ready == 0 );

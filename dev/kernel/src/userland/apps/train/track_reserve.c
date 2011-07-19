@@ -96,7 +96,9 @@ static int track_reserve_node( Train* train, track_node* node, int direction )
 	/* reserve merge */
 	if ( node->edge[ direction ].dest->type == NODE_MERGE ) {
 		node = node->edge[ direction ].dest->reverse;
-		direction = DIR_AHEAD;
+		assert( node->type == NODE_BRANCH );
+
+		direction = DIR_STRAIGHT;
 		status = track_reserved( train, node, direction );
 		if( status != RESERVE_SUCCESS ){
 			return status;
@@ -104,6 +106,7 @@ static int track_reserve_node( Train* train, track_node* node, int direction )
 			node->edge[ direction ].train = train;
 			node->edge[ direction ].reserve_version = train->reserve_version;
 		}
+
 		direction = DIR_CURVED;
 		status = track_reserved( train, node, direction );
 		if( status != RESERVE_SUCCESS ){

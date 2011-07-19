@@ -149,6 +149,11 @@ reservation system, these can be done without much trouble.
 * Sensor Attribution and Error Tolerance
 ----------------------------------------
 
+The sensor attribution is accomplished by mainly recording two piece of information. First we record in train's data structure that the sensors it is expected to hit. Whenever a train is successfuly registered, it predicts 2 or 3 sensors that it would hit. At the same time, we will mark these sensor as being expected by some train. When the train moves on and hit one of the sensor it is expecting, it will clear the old predictions and predict next a couple sensors based on this sensor report. With this, when different trains are expecting different sensors, we can distinguish which train actually hit this sensor when multiple trains are running on the field.
+
+Sometimes, a sensor would fail. For example, train 23 cannot hit A04 on track B.
+
+However, it may comes to a situation where 2 trains
 
 
 * Improvements to Calibration and Tracking
