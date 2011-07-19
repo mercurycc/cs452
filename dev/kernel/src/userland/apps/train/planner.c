@@ -267,7 +267,7 @@ static inline void train_forward_set_speed( volatile Train_data* train, uint* st
 		*state = TRAVEL_5;
 	}
 
-	if( speed_level ){
+	if( speed_level && train->planner_control ){
 		dprintf( "Train %d change speed to %d\n", train->id, speed_level );
 		train_set_speed( module_tid, train->id, speed_level );
 		train_auto_set_speed( auto_tid, train->id, speed_level );
@@ -317,7 +317,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 				look_ahead += path_node->node->edge[ DIR_AHEAD ].dist;
 			}
 			
-			if( path_node->node->type == NODE_BRANCH ){
+			if( path_node->node->type == NODE_BRANCH && train->planner_control ){
 				track_node_id2name( name, path_node->node->group, path_node->node->id );
 				dprintf( "Switch %s to %c\n", name, path_node->direction );
 				train_switch( module_tid, path_node->node->id + 1, path_node->direction );
@@ -519,7 +519,7 @@ void train_planner()
 			while( train->planner_control && ( ! rbuf_empty( path ) ) ){
 				dprintf( "Planner filling forward path for train %d\n", train->id );
 			
-				if( plan_direction == PLANNER_BACKWARD ){
+				if( plan_direction == PLANNER_BACKWARD && train->planner_control ){
 					train_reverse( module_tid, train->id );
 					train_auto_set_reverse( auto_tid, train->id );
 					dprintf( "Reverse for %d\n", train->id );

@@ -30,6 +30,7 @@
 #define NUM_SPEED_LEVEL 30
 
 /* number of ticks needed to change speed */
+#define SPEED_CHANGE_TIME   350
 #define CLOSE_SPEED_CHANGE_TIME 220
 #define LOW_SPEED_BREAK_TIME    70
 #define CLOSE_SPEED_CHANGE_GAP  8
