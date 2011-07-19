@@ -37,6 +37,8 @@ static int track_reserved( Train* train, track_node* node, int direction )
 {
 	track_edge* edge;
 
+	assert( train && node );
+	
 	assert( ( direction == DIR_CURVED && node->type == NODE_BRANCH ) || direction == DIR_AHEAD );
 
 	switch ( node->type ){
@@ -218,9 +220,12 @@ int track_reserve_get_range( int tid, Train* train, int dist )
 	Track_reply reply;
 	int status;
 
+	assert( train );
+
 	request.type = TRACK_RESERVE_GET_RANGE;
 	request.train = train;
 	request.node = train->check_point;
+	assert( request.node );
 	request.range_dir = dist;
 
 	status = track_reserve_request( tid, &request, &reply );
@@ -233,6 +238,8 @@ int track_reserve_may_i( int tid, Train* train, track_node* node, int direction 
 	Track_request request;
 	Track_reply reply;
 	int status;
+
+	assert( train && node );
 
 	request.type = TRACK_RESERVE_MAY_I;
 	request.train = train;
@@ -250,6 +257,8 @@ int track_reserve_get( int tid, Train* train, track_node* node )
 	Track_reply reply;
 	int status;
 
+	assert( train && node );
+
 	request.type = TRACK_RESERVE_GET;
 	request.train = train;
 	request.node = node;
@@ -264,6 +273,8 @@ int track_reserve_put( int tid, Train* train, track_node* node )
 	Track_request request;
 	Track_reply reply;
 	int status;
+
+	assert( train && node );
 
 	request.type = TRACK_RESERVE_PUT;
 	request.train = train;
@@ -280,6 +291,8 @@ int track_reserve_free( int tid, Train* train )
 	Track_reply reply;
 	int status;
 
+	assert( train );
+	
 	request.type = TRACK_RESERVE_FREE;
 	request.train = train;
 	request.node = 0;
