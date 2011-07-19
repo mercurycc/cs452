@@ -620,8 +620,14 @@ void train_auto()
 					if( request.type == TRAIN_AUTO_WAKEUP ){
 						switch( current_train->init_state ){
 						default:
+							//dnotice( "before tracking update\n" );
+							//Delay( 10 );
+
 							train_tracking_update( current_train, current_time );
 							// TODO: if sensor has not hit any sensor for a long time => lost the train
+							//dnotice( "after tracking update\n" );
+							//Delay( 10 );
+
 
 						case TRAIN_STATE_INIT_1:
 						case TRAIN_STATE_INIT_2:
@@ -634,7 +640,7 @@ void train_auto()
 							if( current_time >= current_train->init_speed_timeout ){
 								current_train->init_state = TRAIN_STATE_INIT_5;
 								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME + SPEED_CHANGE_TIME;
-							
+								
 								train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
 							
 								/* Compose speed change request */
@@ -679,7 +685,7 @@ void train_auto()
 					default:
 						/* To be safe, free the reservations every time */
 						track_reserve_free( reserve_tid, current_train );
-						
+
 						if ( current_train->init_state == TRAIN_STATE_INIT_4 || current_train->init_state == TRAIN_STATE_INIT_5 ) {
 							/* Update reservation for init*/
 							status = track_reserve_get_range( reserve_tid, current_train,
@@ -730,6 +736,7 @@ void train_auto()
 						tracking_ui_nextmrk( tracking_ui_tid, current_train->id,
 								     current_train->next_check_point->group, current_train->next_check_point->id,
 								     train_tracking_eta( current_train ) );
+
 					}
 
 					sem_release( current_train->sem );

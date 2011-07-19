@@ -64,7 +64,9 @@ static int track_reserved( Train* train, track_node* node, int direction )
 static int track_reserve_node( Train* train, track_node* node, int direction )
 {
 	int status;
+	int other_direction;
 	
+	/* reserve desired direction */
 	status = track_reserved( train, node, direction );
 
 	if( status != RESERVE_SUCCESS ){
@@ -74,13 +76,51 @@ static int track_reserve_node( Train* train, track_node* node, int direction )
 		node->edge[ direction ].reserve_version = train->reserve_version;
 	}
 
+	/* reserve the other direction */
+	if ( node->type == NODE_BRANCH ) {
+		if ( direction == DIR_AHEAD ) {
+			other_direction = DIR_CURVED;
+		}
+		else {
+			other_direction = DIR_AHEAD;
+		}
+		status = track_reserved( train, node, other_direction );
+		if( status != RESERVE_SUCCESS ){
+			return status;
+		} else {
+			node->edge[ other_direction ].train = train;
+			node->edge[ other_direction ].reserve_version = train->reserve_version;
+		}
+	}
+
+	/* reserve merge */
+	if ( node->edge[ direction ].dest->type == NODE_MERGE ) {
+		node = node->edge[ direction ].dest->reverse;
+		direction = DIR_AHEAD;
+		status = track_reserved( train, node, direction );
+		if( status != RESERVE_SUCCESS ){
+			return status;
+		} else {
+			node->edge[ direction ].train = train;
+			node->edge[ direction ].reserve_version = train->reserve_version;
+		}
+		direction = DIR_CURVED;
+		status = track_reserved( train, node, direction );
+		if( status != RESERVE_SUCCESS ){
+			return status;
+		} else {
+			node->edge[ direction ].train = train;
+			node->edge[ direction ].reserve_version = train->reserve_version;
+		}
+	}
+
 	return RESERVE_SUCCESS;
 }
 
 static int track_reserve_hold_node( Train* train, track_node* node ){
 	int direction = DIR_AHEAD;
 
-	if ( node->edge[ direction ].train == train && node->edge[ direction ].reverse_version == train->reverse_version ) {
+	if ( node->edge[ direction ].train == train && node->edge[ direction ].reserve_version == train->reserve_version ) {
 		return RESERVE_HOLD;
 	}
 	
@@ -109,9 +149,11 @@ void track_reserve()
 		switch_table = request.train->switch_table;
 
 		/* Convert direction */
-		direction = DIR_AHEAD;
-		if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
-			direction = DIR_CURVED;
+                if( node ){
+			direction = DIR_AHEAD;
+			if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
+				direction = DIR_CURVED;
+			}
 		}
 
 		switch( request.type ){
