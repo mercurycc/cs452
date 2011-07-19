@@ -120,6 +120,7 @@ typedef struct Train_data_s {
 	int replan;
 	int replan_time;
 	volatile int planner_control;
+	volatile int planner_ready;
 	volatile int mark_dist;
 
 	/* Reservation */

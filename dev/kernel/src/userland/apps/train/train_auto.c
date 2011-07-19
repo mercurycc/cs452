@@ -313,7 +313,7 @@ void train_auto()
 
 		do {
 			if( reprocess ){
-				dnotice( "Reprocessing...\n" );
+				dprintf( "Reprocessing request %d\n", request.type );
 			}
 			
 			reprocess = 0;
@@ -382,6 +382,7 @@ void train_auto()
 
 					current_train->tracking.speed_change_time = SPEED_CHANGE_TIME;
 
+					current_train->planner_ready = 1;
 					current_train->replan = 0;
 
 					status = train_planner_init( current_train->planner_tid, current_train );
@@ -467,7 +468,7 @@ void train_auto()
 				current_train->current_dist_pass = request.data.plan.dist_pass;
 
 				/* Release planner control */
-				if( current_train->planner_control ){
+				if( current_train->planner_control || ( ! current_train->planner_ready ) ){
 					current_train->planner_control = 0;
 					current_train->replan = 1;
 					current_train->replan_time = current_time + STOP_SAFE_TIME;
@@ -637,6 +638,7 @@ void train_auto()
 											   current_train->current_dest->group,
 											   current_train->current_dest->id,
 											   current_train->current_dist_pass );
+								/* Replan should be reset by the process */
 								reprocess = 1;
 							}
 							train_tracking_update( current_train, current_time );
@@ -720,6 +722,7 @@ void train_auto()
 								reprocess = 1;
 							}
 							if( current_train->planner_control ){
+								dprintf( "Train %d in path execution, set replan\n", current_train->id );
 								current_train->planner_control = 0;
 								current_train->replan = 1;
 								current_train->replan_time = current_time + STOP_SAFE_TIME;

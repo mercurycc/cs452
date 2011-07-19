@@ -171,7 +171,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) != RESERVE_SUCCESS ){
+				if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE, DIR_AHEAD ) != RESERVE_SUCCESS ){
 					temp = ~0;
 				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
@@ -182,7 +182,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					if( track_reserve_may_i( reserve_tid, train, current_node, DIR_AHEAD ) != RESERVE_SUCCESS ){
+					if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE, DIR_AHEAD ) != RESERVE_SUCCESS ){
 						temp = ~0;
 					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
@@ -493,10 +493,13 @@ void train_planner()
 
 	while( 1 ){
 		train->planner_control = 0;
+		train->planner_ready = 1;
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
+		train->planner_ready = 0;
+		train->planner_control = 1;
+		
 		status = Reply( tid, ( char* )&status, sizeof( status ) );
 		assert( status == SYSCALL_SUCCESS );
-		train->planner_control = 1;
 
 		dprintf( "Request received, dist pass = %d\n", request.dist_pass );
 
@@ -580,6 +583,8 @@ void train_planner()
 					if( status < 0 ){
 						break;
 					}
+				} else {
+					dnotice( "Planner control taken away\n" );
 				}
 				
 				plan_direction = PLANNER_BACKWARD;

@@ -16,6 +16,7 @@
 enum Track_reserve_type {
 	TRACK_RESERVE_GET_RANGE,
 	TRACK_RESERVE_MAY_I,
+	TRACK_RESERVE_MAY_I_RANGE,
 	TRACK_RESERVE_GET,
 	TRACK_RESERVE_PUT,
 	TRACK_RESERVE_FREE,
@@ -26,7 +27,8 @@ typedef struct Track_reserve_request_s {
 	uint type;
 	Train* train;
 	track_node* node;
-	int range_dir;
+	int range;
+	int dir;
 } Track_request;
 
 typedef struct Track_reserve_reply_s {
@@ -160,8 +162,32 @@ void track_reserve()
 		}
 
 		switch( request.type ){
+		case TRACK_RESERVE_MAY_I_RANGE:
+			range = request.range;
+			direction = request.dir;
+			do {
+				reply.direction = track_reserved( request.train, node, direction );
+
+				if( reply.direction != RESERVE_SUCCESS ){
+					break;
+				}
+				
+				range -= node->edge[ direction ].dist;
+
+				node = track_next_node( node, switch_table );
+				if( ! node ){
+					reply.direction = RESERVE_FAIL_AGAINST_DIR;
+					range = 0;
+				}
+
+				direction = DIR_AHEAD;
+				if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
+					direction = DIR_CURVED;
+				}
+			} while( range > 0 );
+			break;
 		case TRACK_RESERVE_GET_RANGE:
-			range = request.range_dir;
+			range = request.range;
 			do {
 				direction = DIR_AHEAD;
 				if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
@@ -183,7 +209,7 @@ void track_reserve()
 			} while( range > 0 );
 			break;
 		case TRACK_RESERVE_MAY_I:
-			direction = request.range_dir;
+			direction = request.dir;
 			reply.direction = track_reserved( request.train, node, direction );
 			break;
 		case TRACK_RESERVE_GET:
@@ -217,6 +243,25 @@ static int track_reserve_request( int tid, Track_request* request, Track_reply* 
 	return ERR_NONE;
 }
 
+int track_reserve_may_i_range( int tid, Train* train, track_node* node, int dist, int direction )
+{
+	Track_request request;
+	Track_reply reply;
+	int status;
+
+	assert( train );
+
+	request.type = TRACK_RESERVE_MAY_I_RANGE;
+	request.train = train;
+	request.node = node;
+	request.range = dist;
+	request.dir = direction;
+
+	status = track_reserve_request( tid, &request, &reply );
+	
+	return reply.direction;
+}
+
 int track_reserve_get_range( int tid, Train* train, int dist )
 {
 	Track_request request;
@@ -229,7 +274,7 @@ int track_reserve_get_range( int tid, Train* train, int dist )
 	request.train = train;
 	request.node = train->check_point;
 	assert( request.node );
-	request.range_dir = dist;
+	request.range = dist;
 
 	status = track_reserve_request( tid, &request, &reply );
 	
@@ -247,7 +292,7 @@ int track_reserve_may_i( int tid, Train* train, track_node* node, int direction 
 	request.type = TRACK_RESERVE_MAY_I;
 	request.train = train;
 	request.node = node;
-	request.range_dir = direction;
+	request.dir = direction;
 
 	status = track_reserve_request( tid, &request, &reply );
 	

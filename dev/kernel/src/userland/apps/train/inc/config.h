@@ -37,6 +37,7 @@
 #define START_CHANGE_TIME   350     /* Time for pick up speed from 0 */
 #define STOP_SAFE_TIME      400
 #define COMMAND_DELAY_TIME  7
+#define SAFETY_DISTANCE     300     /* As defined in train_auto.c */
 
 /* Track reservation */
 #define TRACK_RESERVE_SAFE_DISTANCE   300

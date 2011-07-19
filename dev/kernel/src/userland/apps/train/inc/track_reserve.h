@@ -20,6 +20,7 @@ enum Track_reserve_holds_return {
 /* Server */
 void track_reserve();
 
+int track_reserve_may_i_range( int tid, Train* train, track_node* node, int dist, int direction );
 int track_reserve_get_range( int tid, Train* train, int dist );
 int track_reserve_get( int tid, Train* train, track_node* node );
 int track_reserve_may_i( int tid, Train* train, track_node* node, int direction );
