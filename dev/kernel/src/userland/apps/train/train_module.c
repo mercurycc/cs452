@@ -12,6 +12,9 @@
 #include "inc/train.h"
 #include "inc/warning.h"
 
+#define LOCAL_DEBUG
+#include <user/dprint.h>
+
 typedef struct Train_event_s Train_event;
 typedef struct Train_reply_s Train_reply;
 
@@ -151,7 +154,21 @@ static inline void buffer_command( Rbuf* command_buffer, uint command_type, int 
 	command.args[0] = arg0;
 	command.args[1] = arg1;
 	int status = rbuf_put( command_buffer, ( uchar* )&command );
-	assert( status == 0 );
+	if ( status != 0 ){
+		dprintf( "about to insert %d\nbuffer: ", command.command );
+		int counter = 0;
+		while ( !rbuf_empty( command_buffer ) ) {
+			rbuf_get( command_buffer, ( uchar* )&command );
+			dprintf( "%d", command.command );
+			counter++;
+			if (counter == 32){
+				dnotice( "\n" );
+				counter = 0;
+			}
+		}
+		Delay(100);
+		assert(0);
+	}
 }
 
 static inline void track_switch_all( int ui_tid, char direction ){
