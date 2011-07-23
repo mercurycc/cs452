@@ -301,6 +301,17 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "%s <train id> <land mark> <distance pass the landmard>\n", token_buf[ 0 ] );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "sctime" ) ){
+			int args[ 3 ];
+			if( token_filled == 4 ){
+				args[ 0 ] = ( int )stou( token_buf[ 1 ] );
+				args[ 1 ] = ( int )stou( token_buf[ 2 ] );
+				args[ 2 ] = ( int )stou( token_buf[ 3 ] );
+				train_auto_set_train_sc_time( auto_tid, args[ 0 ], args[ 1 ], args[ 2 ] );
+				region_printf( &result_reg, "Set train %d speed change time to %d - %d\n", args[ 0 ], args[ 1 ], args[ 2 ] );
+			} else {
+				region_printf( &result_reg, "sctime <train id> <min time(ticks)> <max time(ticks)>\n" );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}

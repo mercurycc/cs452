@@ -98,6 +98,10 @@ typedef struct Train_data_s {
 	uint tertiary_time_range;
 	uint tertiary_distance;			 /* so we can update speed when tertiary is hit */
 	int going_to_secondary;
+	
+	/* speed change time var */
+	uint min_sc_time;				/* in ticks */
+	uint max_sc_time;
 
 	/* Shared data lock */
 	Semaphore sem_body;
