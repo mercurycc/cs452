@@ -49,6 +49,9 @@ int task_setup( Context* ctx, Task** task, void (*code)(), Task* parent, uint pr
 	/* Allocate user stack */
 	status = mem_alloc( ctx, MEM_STACK, ( void** )&stack, 1 );
 	ASSERT( status == ERR_NONE );
+
+	/* Zero out the first context frame */
+	memset( ( char* )stack - 1024, 0, 1024 );
 	
 	newtask->stack_orig = stack;
 	newtask->stack = task_init( code, stack, 1 );

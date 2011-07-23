@@ -156,6 +156,10 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			break;
 		}
 
+		if( min_cost == ~0 ){
+			return -1;
+		}
+
 		temp = min_cost;
 		/* Update neighbor cost */
 		/* Reverse */
@@ -171,7 +175,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE, DIR_AHEAD ) != RESERVE_SUCCESS ){
+				if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE * 2, DIR_AHEAD ) != RESERVE_SUCCESS ){
 					temp = ~0;
 				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
@@ -182,7 +186,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE, DIR_AHEAD ) != RESERVE_SUCCESS ){
+					if( track_reserve_may_i_range( reserve_tid, train, current_node, SAFETY_DISTANCE * 2, DIR_AHEAD ) != RESERVE_SUCCESS ){
 						temp = ~0;
 					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );

@@ -250,7 +250,8 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 
 	// TODO: change err codes
 
-	if( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_IRQ ){
+	switch( ( mode & CPSR_MODE_MASK ) ){
+	case CPSR_MODE_IRQ:
 		DEBUG_NOTICE( DBG_TRAP, "coming from IRQ\n" );
 		{
 			Task* event_handler;
@@ -262,8 +263,18 @@ void trap_handler( Syscall* reason, uint sp_caller, uint mode, ptr kernelsp )
 			status = sched_signal( ctx, sched, event_handler );
 			ASSERT( status == ERR_NONE );
 		}
-	} else if ( ( mode & CPSR_MODE_MASK ) == CPSR_MODE_USER ){
+		break;
+	case CPSR_MODE_USER:
 		syscall_handler( ctx, sched, reason, kernelsp );
+		break;
+	case CPSR_MODE_UNDEF:
+		bwprintf( COM2, "PANIC: Undefined instruction, triggering pc: 0x%x\n", reason );
+		kernel_shutdown( kernelsp );
+		break;
+	case CPSR_MODE_ABRT:
+		bwprintf( COM2, "PANIC: Abort, triggering pc: 0x%x\n", reason );
+		kernel_shutdown( kernelsp );
+		break;
 	}
 
 	DEBUG_NOTICE( DBG_TRAP, "sched scheduling...\n" );

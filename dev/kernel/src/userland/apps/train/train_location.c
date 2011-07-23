@@ -66,6 +66,9 @@ int track_next_sensor_distance( const track_node* ptr, const int* switch_table )
 track_node* track_next_node( const track_node* node, const int* switch_table )
 {
 	int id;
+
+	assert( node );
+	assert( switch_table );
 	
 	switch ( node->type ) {
 	case NODE_SENSOR:
