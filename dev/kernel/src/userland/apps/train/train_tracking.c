@@ -71,9 +71,11 @@ static inline int train_tracking_sc_time( Train* train )
 
 	diff = fsqrt( diff );
 
+	/* new method, read from the train_data structure the min and max and calculate */
+	return ( int )( ( train->max_sc_time - train->min_sc_time ) * diff + train->min_sc_time );
 	/* So the speed change time is defined by this equation:
 	   maximum 350, minimum 200 for close speed change */
-	return ( int )( 150 * diff + 200 );
+	// return ( int )( 150 * diff + 200 );
 #endif
 }
 

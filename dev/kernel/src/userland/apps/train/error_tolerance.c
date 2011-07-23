@@ -101,7 +101,7 @@ int train_next_possible( Train_data* train, int* switch_table )
 			} 
 			break;
 		}
-	} while ( temp != secondary );
+	} while ( temp != primary );
 
 	if( temp == secondary ){
 		tertiary = 0;
@@ -126,8 +126,28 @@ int train_next_possible( Train_data* train, int* switch_table )
 	
 	
 	// dprintf( "last %c%d @ %d primary %c%d @ [ %d , %d ] range %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, a, b, range );
-	// dprintf( "last %c%d @ %d primary %c%d @ %d secondary %c%d @ %d\n", last->group+'A', last->id+1, train->tracking.speed_change_last_integration, primary->group+'A', primary->id+1, train->next_time_pred, secondary->group+'A', secondary->id+1, train->secondary_time_pred );
-
+	/*
+	int group[4] = { 13, 13, 13, 13 };
+	int id[4] = { 0, 0, 0, 0 };
+	if ( last ) {
+		group[0] = last->group+'A';
+		id[0] = last->id+1;
+	}
+	if ( primary ) {
+		group[1] = primary->group+'A';
+		id[1] = primary->id+1;
+	}
+	if ( secondary ) {
+		group[2] = secondary->group+'A';
+		id[2] = secondary->id+1;
+	}
+	if ( tertiary ) {
+		group[3] = tertiary->group+'A';
+		id[3] = tertiary->id+1;
+	}
+	
+	dprintf( "last %c%d primary %c%d secondary %c%d tertiary %c%d\n", group[0], id[0], group[1], id[1], group[2], id[2], group[3], id[3] );
+	*/
 	return 0;
 }
 

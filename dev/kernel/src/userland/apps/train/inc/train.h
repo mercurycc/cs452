@@ -53,6 +53,7 @@ int train_auto_query_switch( int tid, uint id, int* direction );
 int train_auto_query_sensor( int tid, int* group, int* id );
 int train_auto_hit_and_stop( int tid, int train_id, int group, int id, int distance );
 int train_auto_plan( int tid, int train_id, int group, int id, int dist_pass );
+int train_auto_set_train_sc_time( int tid, int train_id, int min, int max );
 
 /* switch event api */
 int switch_ui_update_id( int tid, int id, char direction );
