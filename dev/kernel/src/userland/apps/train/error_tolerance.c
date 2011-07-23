@@ -79,6 +79,10 @@ int train_next_possible( Train_data* train, int* switch_table )
 	/* find trustable secodnary */
 	secondary = primary;
 	do {
+		/* secondary has a chance to be null */
+		if ( !secondary ) {
+			break;
+		}
 		secondary = track_next_sensor( secondary, switch_table );
 	} while ( secondary && !sensor_trustable( secondary ) );
 
@@ -86,7 +90,7 @@ int train_next_possible( Train_data* train, int* switch_table )
 	do {
 		dist += node_distance( temp, switch_table );
 		temp = track_next_node( temp, switch_table );
-		if ( temp->type == NODE_BRANCH ) {
+		if ( temp && temp->type == NODE_BRANCH ) {
 			int id = SWID_TO_ARRAYID( temp->id + 1 );
 			if ( switch_table[id] == 'C' ) {
 				tertiary = temp->edge[DIR_STRAIGHT].dest;
@@ -101,9 +105,9 @@ int train_next_possible( Train_data* train, int* switch_table )
 			} 
 			break;
 		}
-	} while ( temp != primary );
+	} while ( primary && temp != primary );
 
-	if( temp == secondary ){
+	if( temp == primary ){
 		tertiary = 0;
 	}
 
