@@ -791,11 +791,17 @@ void train_auto()
 								direction = DIR_CURVED;
 							}
 							/* move the switch */
+							char set_dir = 0;
 							if ( direction == DIR_STRAIGHT && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'C' ){
-								train_switch( module_tid, current_node->id+1, 'S' );
+								set_dir = 'S';
 							}
 							else if ( direction == DIR_CURVED && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'S' ){
-								train_switch( module_tid, current_node->id+1, 'C' );
+								set_dir = 'C';
+							}
+							if ( set_dir ) {
+								train_switch( module_tid, current_node->id+1, set_dir );
+								switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] = set_dir;
+								dprintf( "switch %d set to %c at merge\n", current_node->id+1, set_dir );
 							}
 						}
 						
