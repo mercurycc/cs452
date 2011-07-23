@@ -169,6 +169,7 @@ void train_auto()
 	int status;
 	int hit_sensor;
 	int num_sensor_hit;
+	int direction;
 
 	/*
 	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
@@ -741,6 +742,35 @@ void train_auto()
 							Delay( 100 );
 							assert( 0 );
 						}
+						
+						/* turn the switch */
+						if ( current_train->next_check_point->type == NODE_MERGE ){
+							/* find which way the train is on */
+							current_node = current_train->next_check_point->reverse;
+							assert( current_node );
+							assert( current_node->type == NODE_BRANCH );
+							if ( current_node->edge[DIR_STRAIGHT].dest->reverse == current_train->check_point ) {
+								direction = DIR_STRAIGHT;
+							}
+							else {
+								direction = DIR_CURVED;
+							}
+							/* move the switch */
+							char set_dir = 0;
+							if ( direction == DIR_STRAIGHT && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'C' ){
+								set_dir = 'S';
+							}
+							else if ( direction == DIR_CURVED && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'S' ){
+								set_dir = 'C';
+							}
+							if ( set_dir ) {
+								train_switch( module_tid, current_node->id+1, set_dir );
+								switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] = set_dir;
+								dprintf( "switch %d set to %c at merge\n", current_node->id+1, set_dir );
+								Delay(10);
+							}
+						}
+						
 						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,
 								     current_train->check_point->group, current_train->check_point->id );
