@@ -737,9 +737,12 @@ void train_auto()
 						if( status != RESERVE_SUCCESS ){
 							track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
 							dprintf( "Reservation failure for train %d at node %s\n", current_train->id, name );
-
-							Delay( 100 );
-							assert( 0 );
+							/* Reverse */
+							if( current_train->state != TRAIN_STATE_STOP ){
+								train_set_speed( module_tid, current_train->id, 15 );
+								train_auto_recompose_set_speed( &request, current_train->id, 15 );
+								reprocess = 1;
+							}
 						}
 						/* Update UI */
 						tracking_ui_landmrk( tracking_ui_tid, current_train->id,

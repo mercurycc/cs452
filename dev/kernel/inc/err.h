@@ -96,14 +96,16 @@ static inline int DEBUG_ENABLE( uint x )
 	do {								\
 		if( ! ( cond ) ){					\
 			bwprintf( COM2, DEBUG_FORMAT "hit assert %s\n", DEBUG_FORMAT_PARAM, #cond ); \
-			while( 1 );					\
+			int* data = ( int* )0x1;			\
+			*data = 0;					\
 		}							\
 	} while( 0 )
 #define ASSERT_M( cond, fmt, arg... )					\
 	do {								\
 		if( ! (cond ) ){					\
 			bwprintf( COM2, DEBUG_FORMAT "hit assert %s: " fmt, DEBUG_FORMAT_PARAM, #cond, arg ); \
-			while( 1 );					\
+			int* data = ( int* )0x1;			\
+			*data = 0;					\
 		}							\
 	} while( 0 )
 #else
