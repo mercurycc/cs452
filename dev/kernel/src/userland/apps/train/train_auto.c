@@ -10,6 +10,7 @@
 #include <user/assert.h>
 #include <user/time.h>
 #include <user/name_server.h>
+#include <lib/rbuf.h>
 #include <config.h>
 #include <user/display.h>
 #include <user/semaphore.h>
@@ -170,7 +171,9 @@ void train_auto()
 	int module_tid;
 	uint current_time;
 	uint current_distance;
-	uint reprocess = 0;
+	Train_auto_request reprocess_buffer[ MAX_NUM_TRAINS ];
+	Rbuf reprocess_ring_body;
+	Rbuf* reprocess = &reprocess_ring_body;
 	char name[ 6 ];
 	int status;
 	int hit_sensor;
@@ -218,7 +221,10 @@ void train_auto()
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
 	assert( alarm_tid > 0 );
-	
+
+	/* Initialize reprocess buffer */
+	rbuf_init( reprocess, reprocess_buffer, sizeof( Train_auto_request ), sizeof( reprocess_buffer ) );
+		
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 
@@ -328,11 +334,12 @@ void train_auto()
 
 
 		do {
-			if( reprocess ){
+			if( ! rbuf_empty( reprocess ) ){
 				dprintf( "Reprocessing request %d\n", request.type );
+			} else {
+				rbuf_get( reprocess, ( uchar* )&request );
 			}
 			
-			reprocess = 0;
 			/* Process request */
 			switch( request.type ){
 			case TRAIN_AUTO_NEW_SENSOR_DATA:
@@ -424,7 +431,7 @@ void train_auto()
 				train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
 
 				/* Process the composed request */
-				reprocess = 1;
+				rbuf_put( reprocess, ( uchar* )&request );
 
 				dprintf( "Train %d register\n", current_train->id );
 				
@@ -518,7 +525,7 @@ void train_auto()
 
 			if( request.type == TRAIN_AUTO_SET_SWITCH_DIR || request.type == TRAIN_AUTO_SET_ALL_SWITCH ||
 			    request.type == TRAIN_AUTO_WAKEUP || request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
-				for( temp = 1; temp < available_train && ( ! reprocess ); temp += 1 ){
+				for( temp = 1; temp < available_train; temp += 1 ){
 					current_train = trains + temp;
 					/* Critical section */
 					sem_acquire_all( current_train->sem );
@@ -538,6 +545,8 @@ void train_auto()
 					}
 
 					/* Process train states */
+					/* New sensor */
+					/* Notice new sensor data must not trigger reprocess */
 					if( request.type == TRAIN_AUTO_NEW_SENSOR_DATA ){
 						switch( current_train->init_state ){
 						case TRAIN_STATE_INIT_1:
@@ -665,7 +674,7 @@ void train_auto()
 											   current_train->current_dest->id,
 											   current_train->current_dist_pass );
 								/* Replan should be reset by the process */
-								reprocess = 1;
+								rbuf_put( reprocess, ( uchar* )&request );
 							}
 							train_tracking_update( current_train, current_time );
 						case TRAIN_STATE_INIT_1:
@@ -686,7 +695,7 @@ void train_auto()
 								train_auto_recompose_set_speed( &request, current_train->id, TRAIN_AUTO_REG_SPEED_2 );
 
 								/* Process the composed request */
-								reprocess = 1;
+								rbuf_put( reprocess, ( uchar* )&request );
 
 								/* Break the loop */
 								temp = available_train;
@@ -705,7 +714,7 @@ void train_auto()
 								train_auto_recompose_set_speed( &request, current_train->id, 0 );
 
 								/* Process the composed request */
-								reprocess = 1;
+								rbuf_put( reprocess, ( uchar* )&request );
 
 								/* Break the loop */
 								temp = available_train;
@@ -745,7 +754,7 @@ void train_auto()
 								dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
 								train_set_speed( module_tid, current_train->id, 0 );
 								train_auto_recompose_set_speed( &request, current_train->id, 0 );
-								reprocess = 1;
+								rbuf_put( reprocess, ( uchar* )&request );
 							}
 							if( current_train->planner_control ){
 								dprintf( "Train %d in path execution, set replan\n", current_train->id );
@@ -766,7 +775,7 @@ void train_auto()
 							if( current_train->state != TRAIN_STATE_STOP ){
 								train_set_speed( module_tid, current_train->id, 15 );
 								train_auto_recompose_set_speed( &request, current_train->id, 15 );
-								reprocess = 1;
+								rbuf_put( reprocess, ( uchar* )&request );
 							}
 						}
 						
@@ -805,7 +814,7 @@ void train_auto()
 					sem_release( current_train->sem );
 				}
 			}
-		} while( reprocess );
+		} while( ! rbuf_empty( reprocess ) );
 
 		/* Late reply */
 		switch( request.type ){
