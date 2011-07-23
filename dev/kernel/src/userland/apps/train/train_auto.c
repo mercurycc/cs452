@@ -336,7 +336,6 @@ void train_auto()
 		do {
 			if( ! rbuf_empty( reprocess ) ){
 				dprintf( "Reprocessing request %d\n", request.type );
-			} else {
 				rbuf_get( reprocess, ( uchar* )&request );
 			}
 			
