@@ -451,6 +451,9 @@ void train_auto()
 				current_train->state = TRAIN_STATE_INIT_1;
 				current_train->init_state = TRAIN_STATE_INIT_1;
 				current_train->pickup = TRAIN_PICKUP_FRONT;
+				
+				/* release old reservation */
+				track_reserve_free( reserve_tid, current_train );
 
 				train_set_speed( module_tid, current_train->id, TRAIN_AUTO_REG_SPEED_1 );
 
