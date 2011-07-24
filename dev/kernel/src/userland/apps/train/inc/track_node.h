@@ -40,7 +40,7 @@ typedef struct track_edge track_edge;
 struct track_edge {
 	track_edge *reverse;
 	track_node *src, *dest;
-	int dist;             /* in millimetres */
+	uint dist;             /* in millimetres */
 	
 	/* Near-distance reservation */
 	int reserve_version;

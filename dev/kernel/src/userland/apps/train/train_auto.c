@@ -49,6 +49,8 @@ enum Train_auto_request_type {
 	TRAIN_AUTO_HIT_AND_STOP,
 	TRAIN_AUTO_PLAN,
 	TRAIN_AUTO_SET_TRAIN_SC_TIME,
+	TRAIN_AUTO_RESET_TRACK,
+	TRAIN_AUTO_SET_BAD_SWITCH,
 	TRAIN_AUTO_NONE
 };
 
@@ -99,6 +101,13 @@ typedef struct Train_auto_request_s {
 			uint min;
 			uint max;
 		} sc_time;
+		struct {
+			char track_id;
+		} reset_track;
+		struct {
+			uint switch_id;
+			char direction;
+		} set_bad_switch;
 	} data;
 } Train_auto_request;
 
@@ -139,6 +148,17 @@ static inline void train_auto_recompose_plan( Train_auto_request* request, int t
 	request->data.plan.group = group;
 	request->data.plan.id = id;
 	request->data.plan.dist_pass = dist_pass;
+}
+
+static inline void train_auto_bad_switch( track_node* node, char dir_char ){
+	int direction;
+	if ( dir_char == 'S' ) {
+		direction = DIR_CURVED;
+	}
+	else {
+		direction = DIR_STRAIGHT;
+	}
+	node->edge[ direction ].dist = ~0;
 }
 
 void train_auto()
@@ -273,6 +293,12 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 			assert( status == sizeof( request.data.sc_time ) );
 			break;
+		case TRAIN_AUTO_RESET_TRACK:
+			assert( status == sizeof( request.data.reset_track ) );
+			break;
+		case TRAIN_AUTO_SET_BAD_SWITCH:
+			assert( status == sizeof( request.data.set_bad_switch ) );
+			break;
 		default:
 			assert( 0 );
 			break;
@@ -290,6 +316,8 @@ void train_auto()
 		case TRAIN_AUTO_WAKEUP:
 		case TRAIN_AUTO_PLAN:
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
+		case TRAIN_AUTO_RESET_TRACK:
+		case TRAIN_AUTO_SET_BAD_SWITCH:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		default:
@@ -512,6 +540,22 @@ void train_auto()
 				current_train->min_sc_time = request.data.sc_time.min;
 				current_train->max_sc_time = request.data.sc_time.max;
 				dprintf( "Train %d now has speed change time %d - %d\n", current_train->id, current_train->min_sc_time, current_train->max_sc_time );
+				break;
+			case TRAIN_AUTO_RESET_TRACK:
+				if ( request.data.reset_track.track_id == 'A' || request.data.reset_track.track_id == 'a' ){
+					init_tracka( track_graph, node_map );
+					dnotice( "reset track a\n" );
+				}
+				else {
+					init_trackb( track_graph, node_map );
+					dnotice( "reset track b\n" );
+				}
+				break;
+			case TRAIN_AUTO_SET_BAD_SWITCH:
+				switch_table[ SWID_TO_ARRAYID( request.data.set_bad_switch.switch_id ) ] = request.data.set_bad_switch.direction;
+				current_node = track_graph + node_map[ GROUPBR ][ SWID_TO_ARRAYID( request.data.set_bad_switch.switch_id ) ];
+				train_auto_bad_switch( current_node, request.data.set_bad_switch.direction );
+				dprintf( "switch %d is set to be always %c\n", request.data.set_bad_switch.switch_id, request.data.set_bad_switch.direction );
 				break;
 			}
 
@@ -989,4 +1033,23 @@ int train_auto_set_train_sc_time( int tid, int train_id, int min, int max ){
 	request.data.sc_time.max = max;
 
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.sc_time ), 0, 0 );
+}
+
+int train_auto_reset_track( int tid, char track_id ){
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_RESET_TRACK;
+	request.data.reset_track.track_id = track_id;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.reset_track ), 0, 0 );
+}
+
+int train_auto_set_bad_switch( int tid, uint id, char direction ){
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_SET_BAD_SWITCH;
+	request.data.set_bad_switch.switch_id = id;
+	request.data.set_bad_switch.direction = direction;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_bad_switch ), 0, 0 );
 }
