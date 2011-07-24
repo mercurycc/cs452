@@ -13,7 +13,7 @@
 #define SENSOR_BYTE_COUNT    10
 #define SENSOR_NAME_LENGTH    3
 #define NUM_SWITCHES         22
-#define MAX_NUM_TRAINS       10
+#define MAX_NUM_TRAINS       5
 #define MAX_TRAIN_ID         128
 #define PATH_BUFFER_SIZE     128
 #define TARGET_BUFFER_SIZE   20     /* First for current chk pnt, others for future */
