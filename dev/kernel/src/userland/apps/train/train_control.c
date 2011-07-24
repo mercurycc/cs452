@@ -312,6 +312,46 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "sctime <train id> <min time(ticks)> <max time(ticks)>\n" );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "track" ) ){
+			char track_id;
+			if( token_filled == 2 ){
+				track_id = token_buf[ 1 ][ 0 ];
+				if ( track_id != 'A' && track_id != 'a' && track_id != 'B' && track_id != 'b' ){
+					region_printf( &result_reg, "Invalid track name %c, track must be A/a/B/b\n", track_id );
+					fail = 1;
+				}
+				if (!fail) {
+					train_auto_reset_track( auto_tid, track_id );
+					region_printf( &result_reg, "Reset track %c\n", track_id );
+				}
+			} else {
+				region_printf( &result_reg, "track <track id>\n" );
+			}
+		} else if( ! strcmp( token_buf[ 0 ], "badsw" ) ){
+			int switch_id;
+			char direction;
+			if( token_filled == 3 ){
+				switch_id = ( int )stou( token_buf[ 1 ] );
+				direction = token_buf[ 2 ][ 0 ];
+				if( direction == 'c' || direction == 's' ){
+					direction -= ( int )'a' - ( int )'A';
+				} else if( ! ( direction == 'C' || direction == 'S' ) ){
+					region_printf( &result_reg, "Direction can only be C or S\n" );
+					fail = 1;
+				}
+				if( switch_id <= 0 || ( switch_id > 18 && switch_id < 153 ) || switch_id > 156 ){
+					region_printf( &result_reg, "Switch %d is invalid\n", switch_id );
+					fail = 1;
+				}
+				if( ! fail ){
+					assert( direction == 'C' || direction == 'S' );
+					train_switch( module_tid, switch_id, direction );
+					train_auto_set_bad_switch( auto_tid, switch_id, direction );
+					region_printf( &result_reg, "Mark switch %d is broken, always set to %c\n", switch_id, direction );
+				}
+			} else {
+				region_printf( &result_reg, "badsw <switch id> <direction [C|S]>\n" );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}
