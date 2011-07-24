@@ -72,14 +72,12 @@ void clock_main()
 	int time_tid = MyParentTid();
 	uint current_time = 0;
 	uint current_cd = 0;
-	uint event_handling = 0;
 	uint cd_ticks;
 	int execute = 1;
 	int status = 0;
 
 	/* clk_reset to ensure the clock is fully reset */
-	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, ~0 );
-	clk_reset( &clock_1, ~0 );
+	clk_enable( &clock_1, CLK_1, CLK_MODE_INTERRUPT, CLOCK_CLK_SRC, CLOCK_USER_TICK_TO_SYSTEM_TICK( 1 ) );
 	clk_clear( &clock_1 );
 	clk_enable( &clock_3, CLK_3, CLK_MODE_FREE_RUN, CLOCK_CLK_SRC, ~0 );
 	clk_reset( &clock_3, ~0 );
@@ -104,6 +102,12 @@ void clock_main()
 #endif
 
 	DEBUG_NOTICE( DBG_CLK_DRV, "launch\n" );
+
+	clk_reset( &clock_1, CLOCK_USER_TICK_TO_SYSTEM_TICK( 1 ) );
+
+	/* Forever wait on event */
+	status = event_always( event_handler_tid );
+	assert( status == ERR_NONE );
 
 	while( execute ){
 		status = Receive( &request_tid, ( char* )&request, sizeof( request ) );
@@ -144,36 +148,23 @@ void clock_main()
 			break;
 		case CLOCK_COUNT_DOWN:
 			cd_ticks = CLOCK_USER_TICK_TO_SYSTEM_TICK( request.data );
-			if( cd_ticks >= current_time ){
-				cd_ticks -= current_time;
-
-				assert( cd_ticks <= 0xffff );
-
-				status = clk_value( &clock_1, &current_cd );
-				assert( status == ERR_NONE );
-		
-				/* Reset clock interrupt */
-				if( ( ! event_handling ) || ( cd_ticks + CLOCK_OPERATION_TICKS ) < current_cd ){
-					status = clk_reset( &clock_1, cd_ticks );
-					assert( status == ERR_NONE );
-				}
-
-				/* Send request to event_start */
-				if( ! event_handling ){
-					clk_clear( &clock_1 );
-					status = event_start( event_handler_tid );
-					assert( status == ERR_NONE );
-					event_handling = 1;
-				}
+			if( cd_ticks <= current_cd || current_cd == 0 ){
+				current_cd = cd_ticks;
+			}
+			
+			if( current_time < current_cd ){
 				break;
 			}
+			/* Otherwise fall through */
 		case CLOCK_COUNT_DOWN_COMPLETE:
 			clk_clear( &clock_1 );
-			event_handling = 0;
-			if( courier_ready ){
-				courier_ready = 0;
-				status = courier_go( courier_tid, time_tid, ( int )&courier_ready );
-				assert( status == ERR_NONE );
+			if( current_cd && current_time >= current_cd ){
+				if( courier_ready ){
+					courier_ready = 0;
+					status = courier_go( courier_tid, time_tid, ( int )&courier_ready );
+					assert( status == ERR_NONE );
+					current_cd = 0;
+				}
 			}
 			/* Otherwise there is a notification going on, no need to send another one */
 			break;

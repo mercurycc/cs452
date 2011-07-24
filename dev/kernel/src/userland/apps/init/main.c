@@ -14,13 +14,6 @@
 #include <bwio.h>
 #include <err.h>
 
-void watchdog_feeder()
-{
-	while( 1 ){
-		Delay( 100 );
-	}
-}
-
 void user_init()
 {
 	int tid;
@@ -53,10 +46,6 @@ void user_init()
 	tid = Create( IDLE_SERVICE_PRIORITY, display_server );
 	assert( tid > 0 );
 	DEBUG_PRINT( DBG_USER, "display_server created with tid %d\n", tid );
-
-	/* To detect infinite loop */
-	tid = Create( SLOW_DRIVER_PRIORITY, watchdog_feeder );
-	assert( tid > 0 );
 	
 	/* Driver initialization */
 	status = uart_init( UART_1, 2400, 1, 1, 1 );

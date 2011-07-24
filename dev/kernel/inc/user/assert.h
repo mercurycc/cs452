@@ -7,7 +7,8 @@
 	do {								\
 		if( ! ( cond ) ){					\
 			bwprintf( COM2, "%s (%d) %s assert: %s\n", __FILE__, __LINE__, __func__, #cond ); \
-			while( 1 );					\
+			int* data = ( int* )0xf0000000;			\
+			*data = 0;					\
 		}							\
 	} while( 0 )
 

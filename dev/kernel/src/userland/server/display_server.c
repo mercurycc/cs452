@@ -266,10 +266,10 @@ void display_server()
 	}
 
 	/* Initialize scrolling area for debugging */
-	display_drawer_cursor_request( DISPLAY_SCROLL, 24 + 1, 40 + 1 );
+	display_drawer_cursor_request( DISPLAY_SCROLL, 24 + 1, 60 + 1 );
 
 	/* Set initial cursor position */
-	display_drawer_cursor_request( DRAWER_SETPOSN, 1, 40 + 1 );
+	display_drawer_cursor_request( DRAWER_SETPOSN, 1, 60 + 1 );
 
 	status = rbuf_init( scroll_buf, ( uchar* )scroll_content, sizeof( char ), sizeof( scroll_content ) );
 	assert( status == ERR_NONE );
