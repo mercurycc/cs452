@@ -352,6 +352,26 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "badsw <switch id> <direction [C|S]>\n" );
 			}
+		}  else if( ! strcmp( token_buf[ 0 ], "pu" ) ){
+			int train_id;
+			char direction;
+			if( token_filled == 3 ){
+				train_id = ( int )stou( token_buf[ 1 ] );
+				direction = token_buf[ 2 ][ 0 ];
+				if( direction == 'f' || direction == 'b' ){
+					direction -= ( int )'a' - ( int )'A';
+				} else if( ! ( direction == 'F' || direction == 'B' ) ){
+					region_printf( &result_reg, "Pickup direction can only be F(frount) or B(back)\n" );
+					fail = 1;
+				}
+				if( ! fail ){
+					assert( direction == 'F' || direction == 'B' );
+					train_auto_set_pickup( auto_tid, train_id, direction );
+					region_printf( &result_reg, "Pickup of train %d is now %c\n", train_id, direction );
+				}
+			} else {
+				region_printf( &result_reg, "pu <train id> <pickup direction [F|B]>\n" );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}

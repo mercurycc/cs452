@@ -52,6 +52,7 @@ enum Train_auto_request_type {
 	TRAIN_AUTO_SET_TRAIN_SC_TIME,
 	TRAIN_AUTO_RESET_TRACK,
 	TRAIN_AUTO_SET_BAD_SWITCH,
+	TRAIN_AUTO_SET_PICKUP,
 	TRAIN_AUTO_NONE
 };
 
@@ -109,6 +110,10 @@ typedef struct Train_auto_request_s {
 			uint switch_id;
 			char direction;
 		} set_bad_switch;
+		struct {
+			uint train_id;
+			char direction;
+		} set_pickup;
 	} data;
 } Train_auto_request;
 
@@ -308,6 +313,9 @@ void train_auto()
 		case TRAIN_AUTO_SET_BAD_SWITCH:
 			assert( status == sizeof( request.data.set_bad_switch ) );
 			break;
+		case TRAIN_AUTO_SET_PICKUP:
+			assert( status == sizeof( request.data.set_pickup ) );
+			break;
 		default:
 			assert( 0 );
 			break;
@@ -327,6 +335,7 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 		case TRAIN_AUTO_RESET_TRACK:
 		case TRAIN_AUTO_SET_BAD_SWITCH:
+		case TRAIN_AUTO_SET_PICKUP:
 			status = Reply( tid, ( char* )&reply, sizeof( reply ) );
 			assert( status == SYSCALL_SUCCESS );
 		default:
@@ -354,6 +363,7 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_REVERSE:
 		case TRAIN_AUTO_PLAN:
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
+		case TRAIN_AUTO_SET_PICKUP:
 			if( ! temp ){
 				continue;
 			}
@@ -568,6 +578,18 @@ void train_auto()
 				current_node = track_graph + node_map[ GROUPBR ][ SWID_TO_ARRAYID( request.data.set_bad_switch.switch_id ) ];
 				train_auto_bad_switch( current_node, request.data.set_bad_switch.direction );
 				dprintf( "switch %d is set to be always %c\n", request.data.set_bad_switch.switch_id, request.data.set_bad_switch.direction );
+				break;
+			case TRAIN_AUTO_SET_PICKUP:
+				current_train = trains + train_map[ request.data.sc_time.train_id ];
+				assert( current_train );
+				if ( request.data.set_pickup.direction == 'F' ) {
+					current_train->pickup = TRAIN_PICKUP_FRONT;
+				} else {
+					current_train->pickup = TRAIN_PICKUP_BACK;
+				}
+				dprintf( "Train %d now set pickup to %c\n", current_train->id, request.data.set_pickup.direction );
+				break;
+			default:
 				break;
 			}
 
@@ -1061,3 +1083,15 @@ int train_auto_set_bad_switch( int tid, uint id, char direction ){
 
 	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_bad_switch ), 0, 0 );
 }
+
+int train_auto_set_pickup( int tid, uint train_id, char direction ){
+	Train_auto_request request;
+
+	request.type = TRAIN_AUTO_SET_PICKUP;
+	request.data.set_pickup.train_id = train_id;
+	request.data.set_pickup.direction = direction;
+
+	return train_auto_request( tid, &request, sizeof( uint ) + sizeof( request.data.set_pickup ), 0, 0 );
+
+}
+
