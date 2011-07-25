@@ -59,15 +59,16 @@ static inline int train_tracking_sc_time( Train* train )
 #ifdef CALIB_SPEED_CHANGE
 	return train->tracking.speed_change_time;
 #else
+	int diff_int;
 	float diff;
-
-	diff = train->tracking.old_speed_level - train->tracking.speed_level;
-	if( diff < 0 ){
-		diff = -diff;
+	
+	diff_int = train->tracking.old_speed_level - train->tracking.speed_level;
+	if( diff_int < 0 ){
+		diff_int = -diff_int;
 	}
 
-	assert( diff < NUM_SPEED_LEVEL );
-	diff = ( diff / NUM_SPEED_LEVEL );
+	ASSERT_M( diff_int < NUM_SPEED_LEVEL, "got %d\n", diff_int );
+	diff = ( ( float )diff_int / NUM_SPEED_LEVEL );
 
 	diff = fsqrt( diff );
 
@@ -316,7 +317,7 @@ int train_tracking_update_position( Train* train, int curtime )
 	switch( train->state ){
 	case TRAIN_STATE_SPEED_CHANGE:
 	case TRAIN_STATE_TRACKING:
-		if( dist_diff >= 0 ){
+		if( dist_diff >= 0 && train->tracking.remaining_distance > 0 ){
 			train->tracking.distance += dist_diff;
 			train->tracking.remaining_distance -= dist_diff;
 

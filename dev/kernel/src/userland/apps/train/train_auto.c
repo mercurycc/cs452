@@ -825,10 +825,10 @@ void train_auto()
 						if( status != RESERVE_SUCCESS ){
 							track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
 							dprintf( "Reservation failure for train %d at node %s\n", current_train->id, name );
-							/* Reverse */
-							if( current_train->state != TRAIN_STATE_STOP ){
-								train_set_speed( module_tid, current_train->id, 15 );
-								train_auto_recompose_set_speed( &request, current_train->id, 15 );
+							/* Stop */
+							if( current_train->state == TRAIN_STATE_TRACKING ){
+								train_set_speed( module_tid, current_train->id, 0 );
+								train_auto_recompose_set_speed( &request, current_train->id, 0 );
 								rbuf_put( reprocess, ( uchar* )&request );
 							}
 						}

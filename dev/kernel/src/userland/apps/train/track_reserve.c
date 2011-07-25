@@ -43,7 +43,7 @@ static inline int track_reserve_in_use( Track_reserve* reserve, Train* train )
 
 static inline int track_reserve_no_overlap( Track_reserve* reserve, int from, int to )
 {
-	return ( ( to > reserve->from ) || ( from > reserve->to ) );
+	return ( ( from > reserve->to ) || ( reserve->from > to ) );
 }
 
 static inline int track_find_free_reserve( Train* train, track_edge* edge, int from, int to )
@@ -250,6 +250,11 @@ void track_reserve()
 
 		section_from = request.from;
 
+		/* Given the inaccuracy of tracking system, these kind of stupid things are all over the place */
+		if( section_from < 0 ){
+			section_from = 0;
+		}
+		
 		switch( request.type ){
 		case TRACK_RESERVE_MAY_I_RANGE:
 			range = request.range;
