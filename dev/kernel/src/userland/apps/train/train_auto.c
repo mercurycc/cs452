@@ -132,7 +132,7 @@ static void train_auto_alarm()
 
 static inline int train_auto_safety_dist( Train* train )
 {
-	return 200 + 100 * train->tracking.speed_level / NUM_SPEED_LEVEL;
+	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * train->tracking.speed_level / NUM_SPEED_LEVEL;
 }
 
 static inline void train_auto_recompose_set_speed( Train_auto_request* request, int train_id, int speed_level )
@@ -856,6 +856,7 @@ void train_auto()
 							if ( set_dir ) {
 								train_switch( module_tid, current_node->id+1, set_dir );
 								train_auto_recompose_set_switch( &request, current_node->id + 1, set_dir );
+								rbuf_put( reprocess, ( uchar* )&request );
 								dprintf( "switch %d set to %c at merge\n", current_node->id+1, set_dir );
 							}
 						}
