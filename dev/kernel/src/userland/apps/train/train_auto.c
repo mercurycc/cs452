@@ -14,6 +14,7 @@
 #include <config.h>
 #include <user/display.h>
 #include <user/semaphore.h>
+#include <user/lib/prng.h>
 #include "inc/train.h"
 #include "inc/config.h"
 #include "inc/sensor_data.h"
@@ -150,6 +151,13 @@ static inline void train_auto_recompose_plan( Train_auto_request* request, int t
 	request->data.plan.dist_pass = dist_pass;
 }
 
+static inline void train_auto_recompose_set_switch( Train_auto_request* request, uint id, char direction )
+{
+	request->type = TRAIN_AUTO_SET_SWITCH_DIR;
+	request->data.set_switch.switch_id = id;
+	request->data.set_switch.direction = direction;
+}
+
 static inline void train_auto_bad_switch( track_node* node, char dir_char ){
 	int direction;
 	if ( dir_char == 'S' ) {
@@ -199,6 +207,7 @@ void train_auto()
 	int hit_sensor;
 	int num_sensor_hit;
 	int direction;
+	uint seed = 0xcafebabe;
 
 	/*
 	for ( i = 0; i < SENSOR_BYTE_COUNT; i++ ){
@@ -806,7 +815,7 @@ void train_auto()
 								dprintf( "Train %d in path execution, set replan\n", current_train->id );
 								current_train->planner_control = 0;
 								current_train->replan = 1;
-								current_train->replan_time = current_time + STOP_SAFE_TIME;
+								current_train->replan_time = current_time + STOP_SAFE_TIME + random( &seed ) % STOP_SAFE_TIME;
 							}
 							/* Wake up planner */
 							sem_release( current_train->update );
@@ -847,7 +856,7 @@ void train_auto()
 							}
 							if ( set_dir ) {
 								train_switch( module_tid, current_node->id+1, set_dir );
-								switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] = set_dir;
+								train_auto_recompose_set_switch( &request, current_node->id + 1, set_dir );
 								dprintf( "switch %d set to %c at merge\n", current_node->id+1, set_dir );
 							}
 						}
