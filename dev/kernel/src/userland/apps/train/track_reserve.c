@@ -248,6 +248,7 @@ void track_reserve()
 			}
 		}
 
+		range = request.range;
 		section_from = request.from;
 
 		/* Given the inaccuracy of tracking system, these kind of stupid things are all over the place */
@@ -257,13 +258,16 @@ void track_reserve()
 		
 		switch( request.type ){
 		case TRACK_RESERVE_MAY_I_RANGE:
-			range = request.range;
 			direction = request.dir;
 			do {
 				edge_length = node->edge[ direction ].dist;
 
-				if( section_from > edge_length ){
+ 				if( section_from > edge_length ){
 					section_from = edge_length;
+				}
+
+				if( section_from < 0 ){
+					section_from = 0;
 				}
 
 				section_to = range + section_from;
@@ -272,7 +276,11 @@ void track_reserve()
 					section_to = edge_length;
 				}
 
-				reply.direction = track_reserved( request.train, node, direction, section_from, section_to, &index );
+				if( request.type == TRACK_RESERVE_GET_RANGE ){
+					reply.direction = track_reserve_node( request.train, node, direction, section_from, section_to );
+				} else {
+					reply.direction = track_reserved( request.train, node, direction, section_from, section_to, &index );
+				}
 
 				if( reply.direction != RESERVE_SUCCESS ){
 					break;
@@ -288,46 +296,11 @@ void track_reserve()
 
 				section_from = 0;
 
-				direction = DIR_AHEAD;
-				if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
-					direction = DIR_CURVED;
-				}
-			} while( range > 0 );
-			break;
 		case TRACK_RESERVE_GET_RANGE:
-			range = request.range;
-			do {
 				direction = DIR_AHEAD;
 				if( node->type == NODE_BRANCH && switch_table[ SWID_TO_ARRAYID( node->id + 1 ) ] == 'C' ){
 					direction = DIR_CURVED;
 				}
-
-				edge_length = node->edge[ direction ].dist;
-
-				if( section_from > edge_length ){
-					section_from = edge_length;
-				}
-				
-				section_to = range + section_from;
-
-				if( section_to > edge_length ){
-					section_to = edge_length;
-				}
-
-				reply.direction = track_reserve_node( request.train, node, direction, section_from, section_to );
-				if( reply.direction != RESERVE_SUCCESS ){
-					break;
-				}
-				
-				range -= section_to - section_from;
-
-				node = track_next_node( node, switch_table );
-				if( ! node ){
-					reply.direction = RESERVE_FAIL_AGAINST_DIR;
-					range = 0;
-				}
-
-				section_from = 0;				
 			} while( range > 0 );
 			break;
 		case TRACK_RESERVE_MAY_I:

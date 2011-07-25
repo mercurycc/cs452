@@ -92,5 +92,7 @@ void train_planner();
 int train_planner_init( int tid, Train_data* train );
 int train_planner_path_plan( int tid, track_node* dst, int dist_pass );
 int train_planner_wakeup( int tid );
+/* UI */
+int train_ui_register( int tid, Train_data* train );
 
 #endif

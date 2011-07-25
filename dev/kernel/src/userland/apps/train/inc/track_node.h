@@ -35,7 +35,6 @@ enum Graph_node_group {
 #define TRACK_NUM_NODES   144
 
 struct track_node;
-//struct track_edge;
 typedef struct track_node track_node;
 typedef struct track_edge track_edge;
 typedef struct Track_reserve_s Track_reserve;

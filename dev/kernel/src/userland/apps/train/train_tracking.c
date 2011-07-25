@@ -105,6 +105,12 @@ static void train_tracking_update_check_point( Train* train, int check_point_tim
 
 	/* Notify whoever is waiting for an update */
 	sem_release( train->update );
+
+	/* Now we should have the semaphore.  Release it to make planner run. */
+	sem_release( train->sem );
+
+	/* Acquire back the semaphore */
+	sem_acquire_all( train->sem );
 }
 
 int train_tracking_init( Train* train )

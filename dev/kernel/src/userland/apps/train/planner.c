@@ -76,7 +76,6 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 	const track_node* track_graph = train->track_graph;
 	const track_node* check_point = train->check_point;
 	const track_node* next_check_point = train->next_check_point;
-	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	Train_path path_node;
 	char name[ 6 ];
 	int status;
@@ -197,8 +196,6 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 
 	i = min_index;
 
-	region_clear( &path_display );
-
 	/* Fill in path */
 	do {
 		if( ! ( cost[ i ] < ~0 ) ){
@@ -208,15 +205,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		path_node.node = current_node;
 
 		track_node_id2name( name, current_node->group, current_node->id );
-		region_append( &path_display, "<-%s", name );
-		if( current_node->type == NODE_BRANCH ){
-			region_append( &path_display, "%c", path_node.direction );
-		}
 
 		status = rbuf_put_front( path, ( uchar* )&path_node );
 		if( status == ERR_RBUF_FULL ){
-			region_printf( &path_display, "Train %d path finding failed: buffer full\n", train->id );
-			Delay( 100 );
 			return ERR_FAIL;
 		}
 
@@ -432,7 +423,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		train_auto_set_speed( auto_tid, train->id, 0 );
 		dprintf( "Train %d stop\n", train->id );
 
-		Delay( 320 );
+		Delay( train->min_sc_time );
 
 		dprintf( "Train %d forward execution completed\n", train->id );
 	}
@@ -464,11 +455,8 @@ void train_planner()
 	int module_tid;
 	int reserve_tid;
 	int auto_tid;
-	Region path_display = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
 	char name[ 6 ];
 	int status;
-
-	region_init( &path_display );
 
 	/* Receive init */
 	status = Receive( &tid, ( char* )&request, sizeof( request ) );
