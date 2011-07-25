@@ -56,6 +56,7 @@ int train_auto_plan( int tid, int train_id, int group, int id, int dist_pass );
 int train_auto_set_train_sc_time( int tid, int train_id, int min, int max );
 int train_auto_reset_track( int tid, char track_id );
 int train_auto_set_bad_switch( int tid, uint id, char direction );
+int train_auto_set_pickup( int tid, uint train_id, char direction );
 
 /* switch event api */
 int switch_ui_update_id( int tid, int id, char direction );
