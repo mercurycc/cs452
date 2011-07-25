@@ -498,8 +498,6 @@ void train_planner()
 
 		dprintf( "Request received, dist pass = %d\n", request.dist_pass );
 
-		Delay( 100 );
-
 		switch( request.type ){
 		case PLANNER_PATH_PLAN:
 			dist_pass = request.dist_pass;

@@ -573,7 +573,6 @@ void train_auto()
 
 			/* sensor report with no useful information, skip the whole section */
 			if ( request.type == TRAIN_AUTO_NEW_SENSOR_DATA && num_sensor_hit == 0 ) {
-				// dnotice( "no new sensor hit\n" );
 				break;
 			}
 			
@@ -672,9 +671,9 @@ void train_auto()
 								sensor_trust( current_train->next_sensor );
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->next_sensor;
-								// dprintf( "train hit primary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 								hit_sensor = 1;
-							} else if ( current_train->secondary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
+							} else if ( current_train->secondary_sensor &&
+								    train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
 								if ( track_reserve_holds( reserve_tid, current_train, current_train->secondary_sensor ) == RESERVE_NOT_HOLD ){
 									dprintf( "train %d ignores trigger of secondary sensor\n", current_train->id );
 									break;
@@ -685,15 +684,14 @@ void train_auto()
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->secondary_sensor;
 								current_train->tracking.trav_distance += track_next_sensor_distance( current_train->last_sensor, switch_table );
-								// dprintf( "train hit secondary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 								hit_sensor = 2;
-							} else if ( current_train->tertiary_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
+							} else if ( current_train->tertiary_sensor
+								    && train_loc_is_sensor_tripped( &sensor_data, current_train->tertiary_sensor ) ) {
 								sensor_trust( current_train->tertiary_sensor );
 								// TODO switch error
 								train_forget_sensors( current_train, sensor_expect );
 								current_train->last_sensor = current_train->tertiary_sensor;
 								current_train->tracking.trav_distance = current_train->tertiary_distance;
-								// dprintf( "train hit tertiary %c%d\n", current_train->last_sensor->group+'A', current_train->last_sensor->id+1);
 								hit_sensor = 3;
 							}
 
@@ -707,8 +705,6 @@ void train_auto()
 										    current_train->last_sensor->group, current_train->last_sensor->id,
 										    current_time + train_tracking_eta( current_train ),
 										    train_tracking_eta( current_train ) );
-
-								// dprintf( "train traveled %d\n", current_train->tracking.trav_distance );
 
 								train_tracking_new_sensor( current_train, sensor_data.last_sensor_time, current_time );
 
