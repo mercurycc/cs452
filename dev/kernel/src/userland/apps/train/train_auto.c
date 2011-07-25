@@ -252,7 +252,7 @@ void train_auto()
 	assert( alarm_tid > 0 );
 
 	/* Initialize reprocess buffer */
-	rbuf_init( reprocess, reprocess_buffer, sizeof( Train_auto_request ), sizeof( reprocess_buffer ) );
+	rbuf_init( reprocess, ( uchar* )reprocess_buffer, sizeof( Train_auto_request ), sizeof( reprocess_buffer ) );
 		
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -791,16 +791,13 @@ void train_auto()
 
 						if ( current_train->init_state == TRAIN_STATE_INIT_4 || current_train->init_state == TRAIN_STATE_INIT_5 ) {
 							/* Update reservation for init*/
-							status = track_reserve_get_range( reserve_tid, current_train,
-											    TRACK_RESERVE_INIT_DISTANCE );
-						}
-						else if ( current_train->state != TRAIN_STATE_STOP ){
+							status = track_reserve_get_range( reserve_tid, current_train, 0, TRACK_RESERVE_INIT_DISTANCE );
+						} else if ( current_train->state != TRAIN_STATE_STOP ){
 							/* Update track reservation */
 							status = track_reserve_get_range( reserve_tid, current_train,
-											  ( train_tracking_position( current_train )
-											    // + train_tracking_remaining_distance( current_train )
-											    + train_tracking_stop_distance( current_train )
-											    + train_auto_safety_dist( current_train ) ) );
+											  train_tracking_position( current_train ),
+											  train_tracking_stop_distance( current_train )
+											  + train_auto_safety_dist( current_train ) );
 						}
 
 						if( status != RESERVE_SUCCESS ){
@@ -822,7 +819,9 @@ void train_auto()
 						}
 
 						/* The check point must always be reservable */
-						status = track_reserve_get( reserve_tid, current_train, current_train->check_point );
+						status = track_reserve_get_range( reserve_tid, current_train,
+										  train_tracking_position( current_train ),
+										  train_auto_safety_dist( current_train ) ); /* Approximation of train length */
 						if( status != RESERVE_SUCCESS ){
 							track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
 							dprintf( "Reservation failure for train %d at node %s\n", current_train->id, name );

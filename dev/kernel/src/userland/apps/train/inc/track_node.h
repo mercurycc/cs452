@@ -1,6 +1,8 @@
 #ifndef _TRAIN_TRACK_NODE_H_
 #define _TRAIN_TRACK_NODE_H_
 
+#include "config.h"
+
 struct Train_data_s;
 
 typedef enum {
@@ -36,6 +38,14 @@ struct track_node;
 //struct track_edge;
 typedef struct track_node track_node;
 typedef struct track_edge track_edge;
+typedef struct Track_reserve_s Track_reserve;
+
+struct Track_reserve_s {
+	struct Train_data_s* train;
+	int version;
+	int from;
+	int to;
+};
 
 struct track_edge {
 	track_edge *reverse;
@@ -43,8 +53,7 @@ struct track_edge {
 	uint dist;             /* in millimetres */
 	
 	/* Near-distance reservation */
-	int reserve_version;
-	struct Train_data_s* train;
+	Track_reserve close_reserves[ MAX_NUM_TRAINS ];
 
 	/* Long term reservation */
 	int reserve_from;     /* Reserve time period */

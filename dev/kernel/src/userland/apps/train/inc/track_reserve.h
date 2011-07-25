@@ -20,11 +20,10 @@ enum Track_reserve_holds_return {
 /* Server */
 void track_reserve();
 
-int track_reserve_may_i_range( int tid, Train* train, track_node* node, int dist, int direction );
-int track_reserve_get_range( int tid, Train* train, int dist );
-int track_reserve_get( int tid, Train* train, track_node* node );
-int track_reserve_may_i( int tid, Train* train, track_node* node, int direction );
-int track_reserve_put( int tid, Train* train, track_node* node );
+int track_reserve_may_i_range( int tid, Train* train, track_node* node, int from, int dist, int direction );
+int track_reserve_get_range( int tid, Train* train, int from, int dist );
+int track_reserve_get( int tid, Train* train, track_node* node, int from, int dist );
+int track_reserve_may_i( int tid, Train* train, track_node* node, int direction, int from, int dist );
 int track_reserve_free( int tid, Train* train );
 
 /* check if a block is hold, returns RESERVE_HOLD or RESERVE_NOT_HOLD */
