@@ -857,6 +857,7 @@ void train_auto()
 							if ( set_dir ) {
 								train_switch( module_tid, current_node->id+1, set_dir );
 								train_auto_recompose_set_switch( &request, current_node->id + 1, set_dir );
+								rbuf_put( reprocess, ( uchar* )&request );
 								dprintf( "switch %d set to %c at merge\n", current_node->id+1, set_dir );
 							}
 						}
