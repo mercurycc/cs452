@@ -15,6 +15,9 @@
 #include "../inc/train_types.h"
 #include "../inc/track_node.h"
 
+#define LOCAL_DEBUG
+#include <user/dprint.h>
+
 typedef struct Planner_ui_s Planner_ui_request;
 
 enum Planner_ui_request_type {
@@ -30,10 +33,10 @@ struct Planner_ui_s {
 		struct {
 			int group;
 			int id;
-			uint pred_time;
+			uint deadline;
 		} new_plan;
 		struct {
-			uint actual_time;
+			uint deadline;
 		} arrival;
 	} data;
 };
@@ -44,9 +47,10 @@ void planner_ui(){
 	/* UI specific, see UIDesign */
 	Region title_reg = { 28, 12, 1, 44 - 28, 1, 0 };
 	Region data_reg = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
-	Region entry = { 29, 14, 1, 78 - 28, 0, 0 };
-	int train_map[ MAX_NUM_TRAINS ] = { 0 };
+	Region entry = { 30, 15, 1, 75 - 29, 0, 0 };
+	int train_map[ MAX_TRAIN_ID ] = { 0 };
 	char mark_name[ 16 ];
+	Timespec time;
 	int i;
 	int tid;
 	int status;
@@ -98,16 +102,29 @@ void planner_ui(){
 			break;
 		}
 		
-		entry.col = train_map[ request.train_id ] * 16 + 13;
+		entry.col = train_map[ request.train_id ] * 16 + 14;
 		
 		switch ( request.type ) {
 		case PLANNER_UI_NEW_TRAIN:
 			entry.width = 2;
+			// dprintf( "entry region c %d r %d h %d w %d m %d b %d", entry.col, entry.row, entry.height, entry.width, entry.margin, entry.boundary );
 			region_printf( &entry, "%d", request.train_id);
 			break;
 		case PLANNER_UI_NEW_PLAN:
+			entry.col += 3;
+			entry.width = 5;
+			track_node_id2name( mark_name, request.data.new_plan.group, request.data.new_plan.id );
+			region_printf( &entry, "%s\n", mark_name);
+			entry.col += 6;
+			entry.width = 5;
+			time_tick_to_spec( &time, request.data.new_plan.deadline );
+			region_printf( &entry, "%2u:%2u\n", time.minute, time.second );
 			break;
 		case PLANNER_UI_ARRIVAL:
+			entry.col += 9;
+			entry.width = 5;
+			time_tick_to_spec( &time, request.data.arrival.deadline );
+			region_printf( &entry, "%2u:%2u\n", time.minute, time.second );
 			break;
 		}
 		
@@ -134,4 +151,26 @@ int planner_ui_new_train( int tid, int train_id ) {
 	request.train_id = train_id;
 
 	return planner_ui_request( tid, &request, 0 );
+}
+
+int planner_ui_new_plan( int tid, int train_id, int group, int id, int deadline ){
+	Planner_ui_request request;
+
+	request.type = PLANNER_UI_NEW_PLAN;
+	request.train_id = train_id;
+	request.data.new_plan.group = group;
+	request.data.new_plan.id = id;
+	request.data.new_plan.deadline = deadline;
+
+	return planner_ui_request( tid, &request, sizeof( request.data.new_plan ) );
+}
+
+int planner_ui_arrival( int tid, int train_id, int deadline ){
+	Planner_ui_request request;
+
+	request.type = PLANNER_UI_NEW_PLAN;
+	request.train_id = train_id;
+	request.data.arrival.deadline = deadline;
+
+	return planner_ui_request( tid, &request, sizeof( request.data.arrival ) );
 }
