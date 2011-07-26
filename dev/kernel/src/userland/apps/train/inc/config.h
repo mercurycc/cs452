@@ -43,7 +43,7 @@
 
 /* Track reservation */
 #define TRACK_RESERVE_SAFE_DISTANCE   50
-#define TRACK_RESERVE_SAFE_MODIFIER   100
+#define TRACK_RESERVE_SAFE_MODIFIER   1/5	/* now this is a fraction telling how much of stop distance is needed for safety distance */
 #define TRACK_RESERVE_INIT_DISTANCE   800
 
 /* Train init */

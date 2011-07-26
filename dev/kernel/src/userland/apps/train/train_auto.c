@@ -138,7 +138,7 @@ static void train_auto_alarm()
 
 static inline int train_auto_safety_dist( Train* train )
 {
-	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * train->tracking.speed_level / NUM_SPEED_LEVEL;
+	return TRACK_RESERVE_SAFE_DISTANCE + train_tracking_stop_distance( train ) * TRACK_RESERVE_SAFE_MODIFIER;
 }
 
 static inline int train_auto_back_length( Train* train )
