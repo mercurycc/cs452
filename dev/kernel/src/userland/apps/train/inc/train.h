@@ -85,6 +85,7 @@ int sensor_ui_update( int tid, Sensor_data* data );
 void clock_ui();
 void switches_ui();
 void tracking_ui();
+void planner_ui();
 
 /* Train planner task */
 /* Server */
@@ -95,5 +96,7 @@ int train_planner_path_plan( int tid, track_node* dst, int dist_pass );
 int train_planner_wakeup( int tid );
 /* UI */
 int train_ui_register( int tid, Train_data* train );
+
+
 
 #endif

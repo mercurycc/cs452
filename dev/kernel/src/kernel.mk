@@ -61,6 +61,7 @@ KERNELSRC += userland/apps/train/ui/clock.c
 KERNELSRC += userland/apps/train/ui/sensor_monitor.c
 KERNELSRC += userland/apps/train/ui/switch_monitor.c
 KERNELSRC += userland/apps/train/ui/train_tracking.c
+KERNELSRC += userland/apps/train/ui/planner.c
 
 # Libraries
 KERNELSRC += userland/lib/syscall.c
