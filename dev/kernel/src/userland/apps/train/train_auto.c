@@ -374,6 +374,9 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 			temp = train_map[ request.data.sc_time.train_id ];
 			break;
+		case TRAIN_AUTO_SET_PICKUP:
+			temp = train_map[ request.data.set_pickup.train_id ];
+			break;
 		}
 		
 		switch( request.type ){
@@ -382,9 +385,16 @@ void train_auto()
 		case TRAIN_AUTO_PLAN:
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 		case TRAIN_AUTO_SET_PICKUP:
+			/* sctime and pu commands does not need to clear planner control */
 			if( ! temp ){
 				continue;
 			}
+		}
+		
+		switch( request.type ){
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+		case TRAIN_AUTO_PLAN:
 			/* Bring control back to manual if source is train_train */
 			/* Clear planner control if the request is from user */
 			if( tid == control_tid ){

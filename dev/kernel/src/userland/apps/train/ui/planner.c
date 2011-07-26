@@ -18,6 +18,7 @@
 typedef struct Planner_ui_s Planner_ui_request;
 
 enum Planner_ui_request_type {
+	PLANNER_UI_NEW_TRAIN,
 	PLANNER_UI_NEW_PLAN,
 	PLANNER_UI_ARRIVAL
 };
@@ -43,7 +44,7 @@ void planner_ui(){
 	/* UI specific, see UIDesign */
 	Region title_reg = { 28, 12, 1, 44 - 28, 1, 0 };
 	Region data_reg = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
-	Region entry;
+	Region entry = { 29, 14, 1, 78 - 28, 0, 0 };
 	int train_map[ MAX_NUM_TRAINS ] = { 0 };
 	char mark_name[ 16 ];
 	int i;
@@ -58,12 +59,18 @@ void planner_ui(){
 	region_init( &data_reg );
 	region_printf( &data_reg,
 		       " #|Dest.|Deadl|  #|Dest.|Deadl|  #|Dest.|Deadl" );
+	region_init( &entry );
+	region_printf( &entry,
+		       "  |     |     |   |     |     |   |     |     " );
 
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
 		status -= sizeof( uint ) * 2;
 
 		switch ( request.type ) {
+		case PLANNER_UI_NEW_TRAIN:
+			assert( status == 0 );
+			break;
 		case PLANNER_UI_NEW_PLAN:
 			assert( status == sizeof( request.data.new_plan ) );
 			break;
@@ -73,12 +80,58 @@ void planner_ui(){
 		default:
 			assert( 0 );
 		}
-
 		
 		status = Reply( tid, ( char* )&status, sizeof( status ) );
 		assert( status == SYSCALL_SUCCESS );
+
+		switch( request.type ){
+		case TRACKING_UI_NEW_TRAIN:
+			if (  train_map[ request.train_id ] ) {
+				/* re-register */
+				
+			}
+			else {
+				train_map[ request.train_id ] = available_slot;
+				available_slot += 1;
+			}
+		default:
+			break;
+		}
+		
+		entry.col = train_map[ request.train_id ] * 16 + 13;
+		
+		switch ( request.type ) {
+		case PLANNER_UI_NEW_TRAIN:
+			entry.width = 2;
+			region_printf( &entry, "%d", request.train_id);
+			break;
+		case PLANNER_UI_NEW_PLAN:
+			break;
+		case PLANNER_UI_ARRIVAL:
+			break;
+		}
+		
 	}
 }
 
+static int planner_ui_request( int tid, Planner_ui_request* request, uint size )
+{
+	int status;
+	int reply;
 
+	size += 2 * sizeof( uint );
 
+	status = Send( tid, ( char* )request, size, ( char* )&reply, sizeof( reply ) );
+	assert( status == sizeof( reply ) );
+
+	return ERR_NONE;
+}
+
+int planner_ui_new_train( uint tid, uint train_id ) {
+	Planner_ui_request request;
+
+	request.type = Planner_UI_NEW_TRAIN;
+	request.train_id = train_id;
+
+	return tracking_ui_request( tid, &request, 0 );
+}
