@@ -165,7 +165,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		next_node = current_node->reverse;
 		if( ! mark[ next_node->index ] ){
 			/* TODO: this 1500 is not accurate.  Should be around 2 stop distance at stop speed */
-			temp += 1500;
+			temp += 3000;
 			train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
 		}
 
