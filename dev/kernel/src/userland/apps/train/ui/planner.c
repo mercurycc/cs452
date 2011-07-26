@@ -127,7 +127,7 @@ static int planner_ui_request( int tid, Planner_ui_request* request, uint size )
 	return ERR_NONE;
 }
 
-int planner_ui_new_train( uint tid, uint train_id ) {
+int planner_ui_new_train( int tid, int train_id ) {
 	Planner_ui_request request;
 
 	request.type = PLANNER_UI_NEW_TRAIN;
