@@ -133,5 +133,5 @@ int planner_ui_new_train( int tid, int train_id ) {
 	request.type = PLANNER_UI_NEW_TRAIN;
 	request.train_id = train_id;
 
-	return tracking_ui_request( tid, &request, 0 );
+	return planner_ui_request( tid, &request, 0 );
 }
