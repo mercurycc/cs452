@@ -71,6 +71,9 @@ int tracking_ui_dist( int tid, int train_id, int dist );
 int tracking_ui_nextmrk( int tid, int train_id, int group, int id, int eta );
 int tracking_ui_speed( int tid, int train_id, int speed );
 
+/* Planner ui api */
+int planner_ui_new_train( int tid, int train_id );
+
 /* sensor api */
 /* Server */
 void train_sensor();

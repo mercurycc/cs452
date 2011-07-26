@@ -277,6 +277,8 @@ void train_control()
 			if( token_filled == 2 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
 				train_auto_new_train( auto_tid, train_id );
+				// test
+				planner_ui_new_train( WhoIs( PLANNER_UI_NAME ), train_id );
 				region_printf( &result_reg, "Register train %d\n", train_id );
 			} else {
 				region_printf( &result_reg, "%s <train id>\n", token_buf[ 0 ] );
