@@ -85,7 +85,7 @@ void planner_ui(){
 		assert( status == SYSCALL_SUCCESS );
 
 		switch( request.type ){
-		case TRACKING_UI_NEW_TRAIN:
+		case PLANNER_UI_NEW_TRAIN:
 			if (  train_map[ request.train_id ] ) {
 				/* re-register */
 				
@@ -130,7 +130,7 @@ static int planner_ui_request( int tid, Planner_ui_request* request, uint size )
 int planner_ui_new_train( uint tid, uint train_id ) {
 	Planner_ui_request request;
 
-	request.type = Planner_UI_NEW_TRAIN;
+	request.type = PLANNER_UI_NEW_TRAIN;
 	request.train_id = train_id;
 
 	return tracking_ui_request( tid, &request, 0 );
