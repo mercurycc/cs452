@@ -82,6 +82,7 @@
 #define TRACKING_UI_NAME    "tracking_ui"
 #define CONTROL_NAME        "train_ctl"
 #define RESERVE_NAME        "track_rsv"
+#define PLANNER_UI_NAME     "planner_ui"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */

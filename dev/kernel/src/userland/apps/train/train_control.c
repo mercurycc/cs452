@@ -37,6 +37,7 @@ void train_control()
 	int auto_tid;
 	int tracking_ui_tid;
 	int track_reserve_tid;
+	int planner_ui_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -115,6 +116,9 @@ void train_control()
 
 	track_reserve_tid = Create( TRAIN_AUTO_PRIROTY, track_reserve );
 	assert( track_reserve_tid > 0 );
+	
+	planner_ui_tid = Create( TRAIN_UI_PRIORITY, planner_ui );
+	assert( planner_ui_tid > 0 );
 
 	sync_wait();
 
@@ -277,6 +281,8 @@ void train_control()
 			if( token_filled == 2 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
 				train_auto_new_train( auto_tid, train_id );
+				// test
+				planner_ui_new_train( planner_ui_tid, train_id );
 				region_printf( &result_reg, "Register train %d\n", train_id );
 			} else {
 				region_printf( &result_reg, "%s <train id>\n", token_buf[ 0 ] );

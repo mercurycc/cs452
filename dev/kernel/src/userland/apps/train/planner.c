@@ -435,6 +435,7 @@ void train_planner()
 {
 	Planner_request request;
 	int tid;
+	int ui_tid;
 	Train_data* train;
 	const int* switch_table;
 	const track_node* track_graph;
@@ -485,6 +486,8 @@ void train_planner()
 	/* Initialize forward buffer */
 	status = rbuf_init( forward_path, ( uchar* )forward_path_buf, sizeof( Train_path ), sizeof( Train_path ) * PATH_BUFFER_SIZE );
 	assert( status == ERR_NONE );
+
+	ui_tid = WhoIs( PLANNER_UI_NAME );
 
 	while( 1 ){
 		train->planner_control = 0;

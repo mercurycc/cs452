@@ -374,6 +374,9 @@ void train_auto()
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 			temp = train_map[ request.data.sc_time.train_id ];
 			break;
+		case TRAIN_AUTO_SET_PICKUP:
+			temp = train_map[ request.data.set_pickup.train_id ];
+			break;
 		}
 		
 		switch( request.type ){
@@ -382,9 +385,16 @@ void train_auto()
 		case TRAIN_AUTO_PLAN:
 		case TRAIN_AUTO_SET_TRAIN_SC_TIME:
 		case TRAIN_AUTO_SET_PICKUP:
+			/* sctime and pu commands does not need to clear planner control */
 			if( ! temp ){
 				continue;
 			}
+		}
+		
+		switch( request.type ){
+		case TRAIN_AUTO_SET_TRAIN_SPEED:
+		case TRAIN_AUTO_SET_TRAIN_REVERSE:
+		case TRAIN_AUTO_PLAN:
 			/* Bring control back to manual if source is train_train */
 			/* Clear planner control if the request is from user */
 			if( tid == control_tid ){
@@ -629,12 +639,14 @@ void train_auto()
 						   if the next check point is before the switch then the next check point should
 						   be the switch, and if the train is on the switch the switch should not be
 						   switched, and if the train is off the switch then it does not matter */
-						train_forget_sensors( current_train, sensor_expect );
-						current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
-						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
-						train_next_possible( current_train, switch_table );
-						train_expect_sensors( current_train, sensor_expect );
-						track_reserve_free( reserve_tid, current_train );
+						if ( current_train->last_sensor ) {
+							train_forget_sensors( current_train, sensor_expect );
+							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+							current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
+							train_next_possible( current_train, switch_table );
+							train_expect_sensors( current_train, sensor_expect );
+							track_reserve_free( reserve_tid, current_train );
+						}
 					}
 
 					/* Process train states */

@@ -71,6 +71,9 @@ int tracking_ui_dist( int tid, int train_id, int dist );
 int tracking_ui_nextmrk( int tid, int train_id, int group, int id, int eta );
 int tracking_ui_speed( int tid, int train_id, int speed );
 
+/* Planner ui api */
+int planner_ui_new_train( int tid, int train_id );
+
 /* sensor api */
 /* Server */
 void train_sensor();
@@ -85,6 +88,7 @@ int sensor_ui_update( int tid, Sensor_data* data );
 void clock_ui();
 void switches_ui();
 void tracking_ui();
+void planner_ui();
 
 /* Train planner task */
 /* Server */
@@ -95,5 +99,7 @@ int train_planner_path_plan( int tid, track_node* dst, int dist_pass );
 int train_planner_wakeup( int tid );
 /* UI */
 int train_ui_register( int tid, Train_data* train );
+
+
 
 #endif
