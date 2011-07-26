@@ -25,6 +25,7 @@
 #include "inc/train_location.h"
 #include "inc/train_types.h"
 #include "inc/train_tracking.h"
+#include "inc/train_constants.h"
 #include "inc/error_tolerance.h"
 
 #define LOCAL_DEBUG
@@ -137,7 +138,24 @@ static void train_auto_alarm()
 
 static inline int train_auto_safety_dist( Train* train )
 {
-	return ( TRACK_RESERVE_SAFE_DISTANCE - TRACK_RESERVE_SAFE_MODIFIER ) + TRACK_RESERVE_SAFE_MODIFIER * train->tracking.speed_level / NUM_SPEED_LEVEL;
+	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * train->tracking.speed_level / NUM_SPEED_LEVEL;
+}
+
+static inline int train_auto_back_length( Train* train )
+{
+	int length;
+	if ( train->pickup == TRAIN_PICKUP_BACK ) {
+		length = PICKUP_SIZE + train_head_length( train->id );
+	}
+	else {
+		length = PICKUP_SIZE + train_tail_length( train->id );
+	}
+	return length;
+}
+
+static inline int train_auto_train_length( Train* train )
+{
+	return train_full_length( train->id );
 }
 
 static inline void train_auto_recompose_set_speed( Train_auto_request* request, int train_id, int speed_level )
@@ -197,13 +215,13 @@ void train_auto()
 	int available_train = 1;     /* Record 0 is not used, to distinguish non-registered car */
 	Train_data* current_train;
 	track_node* current_sensor;
-	track_node* next_sensor;
 	track_node* current_node;
+	track_node* current_check_point;
 	track_edge* current_edge;
 	int switch_table[ NUM_SWITCHES ] = { 0 };
 	int module_tid;
 	uint current_time;
-	uint current_distance;
+	uint leftover;
 	Train_auto_request reprocess_buffer[ MAX_NUM_TRAINS ];
 	Rbuf reprocess_ring_body;
 	Rbuf* reprocess = &reprocess_ring_body;
@@ -492,7 +510,6 @@ void train_auto()
 
 					current_train->state = TRAIN_STATE_SPEED_CHANGE;
 					train_tracking_speed_change( current_train, request.data.set_speed.speed_level, current_time );
-					train_update_time_pred( current_train, switch_table );
 					sem_release( current_train->sem );
 					break;
 				}
@@ -812,16 +829,24 @@ void train_auto()
 							status = track_reserve_get_range( reserve_tid, current_train, 0, TRACK_RESERVE_INIT_DISTANCE );
 						} else if ( current_train->state != TRAIN_STATE_STOP ){
 							/* Update track reservation */
+							leftover = 0;
+							if ( train_auto_back_length( current_train ) > train_tracking_position( current_train ) ) {
+								leftover = train_auto_back_length( current_train ) - train_tracking_position( current_train );
+							}
+							/* reserve this piece of track */
 							status = track_reserve_get_range( reserve_tid, current_train,
-											  train_tracking_position( current_train ),
-											  train_tracking_stop_distance( current_train )
-											  + train_auto_safety_dist( current_train ) );
+											  train_tracking_position( current_train )
+											  - train_auto_back_length( current_train ),
+											  train_auto_train_length( current_train )
+											  + train_tracking_stop_distance( current_train )
+											  + train_auto_safety_dist( current_train )
+											  - leftover );
 						}
 
 						if( status != RESERVE_SUCCESS ){
 							if( train_tracking_current_speed_level( current_train ) ){
 								track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-								dprintf( "Train %d look ahead reservation failed at %s, stopping\n", current_train->id, name );
+								dprintf( "Train %d look ahead reservation failed at %s from %d dist %d + %d + %d - %d, stopping\n", current_train->id, name, train_tracking_position( current_train ) - train_auto_back_length( current_train ), train_auto_train_length( current_train ), train_tracking_stop_distance( current_train ), train_auto_safety_dist( current_train ), leftover );
 								train_set_speed( module_tid, current_train->id, 0 );
 								train_auto_recompose_set_speed( &request, current_train->id, 0 );
 								rbuf_put( reprocess, ( uchar* )&request );
@@ -837,12 +862,32 @@ void train_auto()
 						}
 
 						/* The check point must always be reservable */
+						leftover = 0;
+						if ( train_auto_back_length( current_train ) > train_tracking_position( current_train ) ) {
+							leftover = train_auto_back_length( current_train ) - train_tracking_position( current_train );
+						}
 						status = track_reserve_get_range( reserve_tid, current_train,
-										  train_tracking_position( current_train ),
-										  train_auto_safety_dist( current_train ) ); /* Approximation of train length */
+										  train_tracking_position( current_train )
+										  - train_auto_back_length( current_train ),
+										  train_auto_train_length( current_train )
+										  - leftover );
+						if ( leftover > 0 && status == RESERVE_SUCCESS ) {
+							/* reserve the track for train's tail if it has not passed the checkpoint yet */
+							current_check_point = current_train->check_point;
+							current_train->check_point = current_train->check_point->reverse;
+							status = track_reserve_get_range( reserve_tid, current_train,
+										  	  0,
+										 	  leftover );
+							current_train->check_point = current_train->check_point->reverse; /* set back the correct checkpoint */
+							assert( current_train->check_point == current_check_point );
+						}
 						if( status != RESERVE_SUCCESS ){
 							track_node_id2name( name, current_train->check_point->group, current_train->check_point->id );
-							dprintf( "Reservation failure for train %d at node %s\n", current_train->id, name );
+							dprintf( "Reservation failure for train %d at node %s, from %d dist %d leftover %d\n",
+								 current_train->id, name,
+								 train_tracking_position( current_train ) - train_auto_back_length( current_train ),
+								 train_auto_train_length( current_train ) - leftover,
+								 leftover );
 							/* Stop */
 							if( current_train->state == TRAIN_STATE_TRACKING ){
 								train_set_speed( module_tid, current_train->id, 0 );
