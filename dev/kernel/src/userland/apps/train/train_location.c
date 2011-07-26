@@ -104,6 +104,8 @@ track_node* track_previous_node( const track_node* node, const int* switch_table
 track_node* track_next_sensor( const track_node* sensor, const int* switch_table ){
 	track_node* ptr = sensor;
 
+	assert( sensor );
+
 	do {
 		ptr = track_next_node( ptr, switch_table );
 	} while ( ptr && ptr->type != NODE_SENSOR );
