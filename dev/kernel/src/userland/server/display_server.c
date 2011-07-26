@@ -59,9 +59,10 @@ struct Display_reply_s {
 	uint magic;
 #endif
 	char* screen;
+	Rbuf* scroll_buf;
 };
 
-static int display_drawer_ready( char** screen );
+static int display_drawer_ready( char** screen, Rbuf** ring );
 
 static inline int display_drawer_cursor_request( uint type, uint col, uint row )
 {
@@ -99,6 +100,7 @@ static inline int display_drawer_cursor_request( uint type, uint col, uint row )
 static void display_drawer()
 {
 	char* screen;
+	Rbuf* scroll_buf;
 	int row, col;
 	int reloc;
 	int status;
@@ -108,12 +110,20 @@ static void display_drawer()
 		status = Delay( DISPLAY_REFRESH_RATE );
 		assert( status == SYSCALL_SUCCESS );
 
-		status = display_drawer_ready( &screen );
+		status = display_drawer_ready( &screen, &scroll_buf );
 		assert( status == ERR_NONE );
 
 		if( ! screen ){
 			break;
 		}
+
+		while( !( rbuf_empty( scroll_buf ) ) ){
+			status = rbuf_get( scroll_buf, ( uchar * )&ch );
+			assert( status == ERR_NONE );
+			Putc( COM2, ch );
+		}
+
+
 
 		DEBUG_PRINT( DBG_DISP, "receive screen 0x%x\n", screen );
 
@@ -236,7 +246,6 @@ void display_server()
 	char* editing = staging + DISPLAY_SIZE;
 	char* temp_buf;
 	char scroll_content[ 20 * 80 ];
-	char ch;
 	Rbuf scroll_buf_body;
 	Rbuf* scroll_buf = &scroll_buf_body;
 	int edited = 1;
@@ -273,6 +282,8 @@ void display_server()
 
 	status = rbuf_init( scroll_buf, ( uchar* )scroll_content, sizeof( char ), sizeof( scroll_content ) );
 	assert( status == ERR_NONE );
+
+	reply.scroll_buf = scroll_buf;
 
 	while( execute ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -326,12 +337,6 @@ void display_server()
 			break;
 		}
 
-		while( can_draw && !( rbuf_empty( scroll_buf ) ) ){
-			status = rbuf_get( scroll_buf, ( uchar * )&ch );
-			assert( status == ERR_NONE );
-			Putc( COM2, ch );
-		}
-
 		/* Reply drawer tid */
 		if( can_draw && edited ){
 			temp_buf = staging;
@@ -362,7 +367,7 @@ void display_server()
 	Exit();
 }
 
-static int display_request( uint type, Region* regspec, char* msg, uint msglen, char** screen )
+static inline int display_request( uint type, Region* regspec, char* msg, uint msglen, char** screen, Rbuf** ring )
 {
 	Display_request request;
 	Display_reply reply;
@@ -396,6 +401,10 @@ static int display_request( uint type, Region* regspec, char* msg, uint msglen, 
 		*screen = reply.screen;
 	}
 
+	if( ring ){
+		*ring = reply.scroll_buf;
+	}
+
 	DEBUG_PRINT( DBG_DISP, "request %d processed\n", type );
 
 	return ERR_NONE;
@@ -403,7 +412,7 @@ static int display_request( uint type, Region* regspec, char* msg, uint msglen, 
 
 int display_init()
 {
-	return display_request( DISPLAY_INIT, 0, 0, 0, 0 );
+	return display_request( DISPLAY_INIT, 0, 0, 0, 0, 0 );
 }
 
 int region_init( Region* region )
@@ -413,7 +422,7 @@ int region_init( Region* region )
 	region->col_append = 0;
 	region->row_append = 0;
 	
-	return display_request( DISPLAY_REGION_INIT, region, 0, 0, 0 );
+	return display_request( DISPLAY_REGION_INIT, region, 0, 0, 0, 0 );
 }
 
 static int region_print_append( Region* region, char* msg, int size )
@@ -422,7 +431,7 @@ static int region_print_append( Region* region, char* msg, int size )
 	int row_length;
 	int status;
 	
-	status = display_request( DISPLAY_REGION_DRAW, region, msg, size, 0 );
+	status = display_request( DISPLAY_REGION_DRAW, region, msg, size, 0, 0 );
 
 	boundary = region->boundary ? 1 : 0;
 
@@ -472,17 +481,17 @@ int region_clear( Region* region )
 	region->col_append = 0;
 	region->row_append = 0;
 	
-	return display_request( DISPLAY_REGION_CLEAR, region, 0, 0, 0 );
+	return display_request( DISPLAY_REGION_CLEAR, region, 0, 0, 0, 0 );
 }
 
 int display_quit()
 {
-	return display_request( DISPLAY_QUIT, 0, 0, 0, 0 );
+	return display_request( DISPLAY_QUIT, 0, 0, 0, 0, 0 );
 }
 
-static int display_drawer_ready( char** screen )
+static int display_drawer_ready( char** screen, Rbuf** ring )
 {
-	return display_request( DISPLAY_DRAWER_READY, 0, 0, 0, screen );
+	return display_request( DISPLAY_DRAWER_READY, 0, 0, 0, screen, ring );
 }
 
 int scroll_printf( char* fmt, ... )
@@ -496,5 +505,5 @@ int scroll_printf( char* fmt, ... )
 	size = sformat( dst, fmt, va );
 	va_end( va );
 
-	return display_request( DISPLAY_SCROLL_PRINT, &fake, dst, size, 0 );
+	return display_request( DISPLAY_SCROLL_PRINT, &fake, dst, size, 0, 0 );
 }
