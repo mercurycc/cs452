@@ -41,16 +41,16 @@ int sensor_error( track_node* sensor ){
 	assert( sensor );
 	if ( sensor_trustable( sensor ) ) {
 		sensor->broken += 1;
-		dprintf( "sensor %c%d is less trustable\n", sensor->group+'A', sensor->id+1 );
+		// dprintf( "sensor %c%d is less trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	else {
-		//dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
+		// dprintf( "sensor %c%d is considered not trustable\n", sensor->group+'A', sensor->id+1 );
 	}
 	return 0;
 }
 
 int sensor_trust( track_node* sensor ){
-	if ( sensor->broken && sensor_trustable( sensor ) ) sensor->broken -= 1;
+	if ( sensor->broken > 0 && sensor_trustable( sensor ) ) sensor->broken -= 1;
 	return 0;
 }
 

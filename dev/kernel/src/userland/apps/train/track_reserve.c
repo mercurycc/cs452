@@ -135,7 +135,16 @@ static int track_reserve_node( Train* train, track_node* node, int direction, in
 	int status;
 	int other_direction;
 	Track_reserve* reserve;
+	int distance;
+	int temp;
 	int index;
+	
+	if( from > to ) {
+		temp = from;
+		from = to;
+		to = temp;
+	}
+	assert( from <= to );
 	
 	/* reserve desired direction */
 	status = track_reserved( train, node, direction, from, to, &index );
@@ -158,36 +167,38 @@ static int track_reserve_node( Train* train, track_node* node, int direction, in
 		else {
 			other_direction = DIR_AHEAD;
 		}
-		status = track_reserved( train, node, other_direction, 0, TRACK_RESERVE_SAFE_DISTANCE, &index );
+		/* so in this case we have to reserve both block of the track to avoid collision on branch */
+		status = track_reserved( train, node, other_direction, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE, &index );
 		if( status != RESERVE_SUCCESS ){
 			return status;
 		} else {
-			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_SAFE_DISTANCE );
+			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE );
 		}
 	}
 
 	/* reserve merge */
-	if ( node->edge[ direction ].dest->type == NODE_MERGE ) {
+	if ( to + TRACK_RESERVE_BRANCH_SAFE_DISTANCE >= node->edge[direction].dist && node->edge[direction].dest->type == NODE_MERGE ) {
 		node = node->edge[ direction ].dest->reverse;
 		assert( node->type == NODE_BRANCH );
 
+		/* reserve safe distance on both track of a merge */
 		direction = DIR_STRAIGHT;
-		status = track_reserved( train, node, direction, 0, TRACK_RESERVE_SAFE_DISTANCE, &index );
+		status = track_reserved( train, node, direction, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE, &index );
 		if( status != RESERVE_SUCCESS ){
 			return status;
 		} else {
-			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_SAFE_DISTANCE );
+			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE );
 		}
 
 		direction = DIR_CURVED;
-		status = track_reserved( train, node, direction, 0, TRACK_RESERVE_SAFE_DISTANCE, &index );
+		status = track_reserved( train, node, direction, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE, &index );
 		if( status != RESERVE_SUCCESS ){
 			return status;
 		} else {
-			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_SAFE_DISTANCE );
+			track_take_reserve( node, direction, index, train, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE );
 		}
 	}
-
+	
 	return RESERVE_SUCCESS;
 }
 
