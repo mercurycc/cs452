@@ -34,7 +34,7 @@
 enum Train_pickup {
 	TRAIN_PICKUP_FRONT,
 	TRAIN_PICKUP_BACK,
-	TRAIN_PICKUP_UNKONWN
+	TRAIN_PICKUP_UNKNOWN
 };
 
 enum Train_auto_request_type {
@@ -155,6 +155,9 @@ static inline int train_auto_back_length( Train* train )
 
 static inline int train_auto_train_length( Train* train )
 {
+	if ( train->pickup == TRAIN_PICKUP_UNKNOWN ) {
+		return train_over_length( train->id );
+	}
 	return train_full_length( train->id );
 }
 
