@@ -634,3 +634,8 @@ int train_planner_init( int tid, Train_data* train )
 
 	return train_planner_request( tid, PLANNER_INIT, &request, sizeof( request ) );
 }
+
+int train_planner_have_control( Train_data* train )
+{
+	return train->planner_control || train->replan;
+}

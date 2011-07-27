@@ -323,7 +323,7 @@ int train_tracking_update_position( Train* train, int curtime )
 	switch( train->state ){
 	case TRAIN_STATE_SPEED_CHANGE:
 	case TRAIN_STATE_TRACKING:
-		if( dist_diff >= 0 && train->tracking.remaining_distance > 0 ){
+		if( dist_diff >= 0 ){
 			train->tracking.distance += dist_diff;
 			train->tracking.remaining_distance -= dist_diff;
 
