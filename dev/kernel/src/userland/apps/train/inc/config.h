@@ -5,9 +5,9 @@
 // #define CALIB_SPEED_CHANGE
 
 /* Train module transmission delays */
-#define SWITCH_XMIT_DELAY 15
-#define SWITCH_OFF_DELAY 15
-#define TRAIN_XMIT_DELAY 15
+#define SWITCH_XMIT_DELAY 18
+#define SWITCH_OFF_DELAY 20
+#define TRAIN_XMIT_DELAY 20
 #define SWITCH_ALL_DELAY 180
 
 #define SENSOR_BYTE_COUNT    10
