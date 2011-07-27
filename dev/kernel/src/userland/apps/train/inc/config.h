@@ -5,9 +5,9 @@
 // #define CALIB_SPEED_CHANGE
 
 /* Train module transmission delays */
-#define SWITCH_XMIT_DELAY 18
-#define SWITCH_OFF_DELAY 20
-#define TRAIN_XMIT_DELAY 20
+#define SWITCH_XMIT_DELAY 15
+#define SWITCH_OFF_DELAY 15
+#define TRAIN_XMIT_DELAY 15
 #define SWITCH_ALL_DELAY 180
 
 #define SENSOR_BYTE_COUNT    10
@@ -25,8 +25,6 @@
 // #define PATH_LOOK_AHEAD_ADJUST_DIST 800
 #define PATH_LOOK_AHEAD_DEFAULT_STOP    350
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
-
-#define SCHEDULER_BUFFER     64
 
 /* number of speed levels of train */
 #define NUM_SPEED_LEVEL 30
@@ -88,7 +86,6 @@
 #define CONTROL_NAME        "train_ctl"
 #define RESERVE_NAME        "track_rsv"
 #define PLANNER_UI_NAME     "planner_ui"
-#define TRAIN_SCHED_NAME    "train_sched"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */
