@@ -531,6 +531,31 @@ void train_auto()
 					current_train->pickup = TRAIN_PICKUP_FRONT;
 				}
 				sem_acquire_all( current_train->sem );
+				if ( current_train->next_check_point->type == NODE_MERGE ) {
+					/* find which way the train is on */
+					current_node = current_train->next_check_point->reverse;
+					assert( current_node );
+					assert( current_node->type == NODE_BRANCH );
+					if ( current_node->edge[DIR_STRAIGHT].dest->reverse == current_train->check_point ) {
+						direction = DIR_STRAIGHT;
+					}
+					else {
+						direction = DIR_CURVED;
+					}
+					/* move the switch */
+					char set_dir = 0;
+					if ( direction == DIR_STRAIGHT && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'C' ){
+						set_dir = 'S';
+					}
+					else if ( direction == DIR_CURVED && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'S' ){
+						set_dir = 'C';
+					}
+					if ( set_dir ) {
+						train_switch( module_tid, current_node->id+1, set_dir );
+						switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] = set_dir;
+						dprintf( "switch %d set to %c before reverse\n", current_node->id+1, set_dir );
+					}
+				}
 				current_train->check_point = current_train->next_check_point->reverse;
 				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
@@ -622,7 +647,7 @@ void train_auto()
 
 			/* sensor report with no useful information, skip the whole section */
 			if ( request.type == TRAIN_AUTO_NEW_SENSOR_DATA && num_sensor_hit == 0 ) {
-				dnotice( "No new sensor hits\n" );
+				// dnotice( "No new sensor hits\n" );
 				break;
 			}
 			
@@ -641,7 +666,15 @@ void train_auto()
 						   be the switch, and if the train is on the switch the switch should not be
 						   switched, and if the train is off the switch then it does not matter */
 						train_forget_sensors( current_train, sensor_expect );
-						current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+						if ( current_train->next_check_point ) {
+							current_train->next_sensor = track_next_sensor( current_train->next_check_point, switch_table );
+						}
+						else if ( current_train->check_point ) {
+							current_train->next_sensor = track_next_sensor( current_train->check_point, switch_table );
+						}
+						else {
+							current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
+						}
 						current_train->tracking.trav_distance = track_next_sensor_distance( current_train->last_sensor, switch_table );
 						train_next_possible( current_train, switch_table );
 						train_expect_sensors( current_train, sensor_expect );
@@ -681,6 +714,7 @@ void train_auto()
 						case TRAIN_STATE_INIT_3:
 							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
 								current_train->last_sensor = current_train->next_sensor;
+								current_train->check_point = current_train->last_sensor;
 								sensor_trust( current_train->next_sensor );
 								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 								train_next_possible( current_train, switch_table );
@@ -918,7 +952,9 @@ void train_auto()
 						}
 						
 						/* turn the switch */
-						if ( ( current_train->state == TRAIN_STATE_TRACKING || current_train->state == TRAIN_STATE_SPEED_CHANGE ) && current_train->next_check_point->type == NODE_MERGE ){
+						if ( current_train->state != TRAIN_STATE_STOP &&
+							 current_train->next_check_point->type == NODE_MERGE &&
+							 track_reserve_may_i_range( reserve_tid, current_train, current_train->next_check_point, 0, 1, DIR_AHEAD ) == RESERVE_SUCCESS ){
 							/* find which way the train is on */
 							current_node = current_train->next_check_point->reverse;
 							assert( current_node );

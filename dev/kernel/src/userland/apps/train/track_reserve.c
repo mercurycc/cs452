@@ -160,14 +160,16 @@ static int track_reserve_node( Train* train, track_node* node, int direction, in
 	}
 
 	/* reserve the other direction */
-	if ( node->type == NODE_BRANCH ) {
+	if ( node->type == NODE_BRANCH && from < TRACK_RESERVE_BRANCH_SAFE_DISTANCE ) {
 		if ( direction == DIR_AHEAD ) {
 			other_direction = DIR_CURVED;
 		}
 		else {
 			other_direction = DIR_AHEAD;
 		}
-		/* so in this case we have to reserve both block of the track to avoid collision on branch */
+		/* so in this case we have to reserve both block of the track
+		 * to avoid collision on branch and
+		 * to avoid lost of track on branch */
 		status = track_reserved( train, node, other_direction, 0, TRACK_RESERVE_BRANCH_SAFE_DISTANCE, &index );
 		if( status != RESERVE_SUCCESS ){
 			return status;
@@ -176,7 +178,7 @@ static int track_reserve_node( Train* train, track_node* node, int direction, in
 		}
 	}
 
-	/* reserve merge */
+	/* reserve merge if the train get within the safe distance from the branch */
 	if ( to + TRACK_RESERVE_BRANCH_SAFE_DISTANCE >= node->edge[direction].dist && node->edge[direction].dest->type == NODE_MERGE ) {
 		node = node->edge[ direction ].dest->reverse;
 		assert( node->type == NODE_BRANCH );
