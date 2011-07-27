@@ -138,7 +138,7 @@ static void train_auto_alarm()
 
 static inline int train_auto_safety_dist( Train* train )
 {
-	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * train->tracking.speed_level / NUM_SPEED_LEVEL;
+	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * ( train->tracking.speed_level ) / NUM_SPEED_LEVEL;
 }
 
 static inline int train_auto_back_length( Train* train )
@@ -622,6 +622,7 @@ void train_auto()
 
 			/* sensor report with no useful information, skip the whole section */
 			if ( request.type == TRAIN_AUTO_NEW_SENSOR_DATA && num_sensor_hit == 0 ) {
+				dnotice( "No new sensor hits\n" );
 				break;
 			}
 			
@@ -660,16 +661,17 @@ void train_auto()
 							dprintf( "Train %d init_1 pass\n", current_train->id );
 							break;
 						case TRAIN_STATE_INIT_2:
-							current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
-							if( current_sensor != current_train->next_sensor ){
-								current_train->init_retry += 1;
-								dprintf( "Train %d init_2 fail %d\n", current_train->id, current_train->init_retry );
-							} else {
-								current_train->last_sensor = current_sensor;
+							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
+								current_train->last_sensor = current_train->next_sensor;
+								sensor_trust( current_train->next_sensor );
 								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 								current_train->init_retry = 0;
 								current_train->init_state = TRAIN_STATE_INIT_3;
 								dprintf( "Train %d init_2 pass\n", current_train->id );
+							}
+							else {
+								current_train->init_retry += 1;
+								dprintf( "Train %d init_2 fail %d\n", current_train->id, current_train->init_retry );
 							}
 							if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
 								current_train->init_state = TRAIN_STATE_INIT_1;
@@ -677,12 +679,9 @@ void train_auto()
 							}
 							break;
 						case TRAIN_STATE_INIT_3:
-							current_sensor = track_graph + node_map[ last_sensor_group ][ last_sensor_id ];
-							if( current_sensor != current_train->next_sensor ){
-								current_train->init_retry += 1;
-								dprintf( "Train %d init_3 fail %d\n", current_train->id, current_train->init_retry );
-							} else {
-								current_train->last_sensor = current_sensor;
+							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
+								current_train->last_sensor = current_train->next_sensor;
+								sensor_trust( current_train->next_sensor );
 								current_train->next_sensor = track_next_sensor( current_train->last_sensor, switch_table );
 								train_next_possible( current_train, switch_table );
 								train_expect_sensors( current_train, sensor_expect );
@@ -700,6 +699,10 @@ void train_auto()
 								current_train->init_speed_timeout = current_time + TRAIN_AUTO_REG_SPEED_CALIB_TIME;
 
 								dprintf( "Train %d init_3 pass\n", current_train->id );
+							}
+							else {
+								current_train->init_retry += 1;
+								dprintf( "Train %d init_3 fail %d\n", current_train->id, current_train->init_retry );
 							}
 							if( !( current_train->init_retry < TRAIN_AUTO_REG_RETRY ) ){
 								current_train->init_state = TRAIN_STATE_INIT_1;
@@ -871,7 +874,9 @@ void train_auto()
 								dprintf( "Train %d in path execution, set replan\n", current_train->id );
 								current_train->planner_control = 0;
 								current_train->replan = 1;
-								current_train->replan_time = current_time + STOP_SAFE_TIME + random( &seed ) % STOP_SAFE_TIME;
+								// current_train->replan_time = current_time + STOP_SAFE_TIME + random( &seed ) % STOP_SAFE_TIME;
+								current_train->replan_time = current_time + STOP_SAFE_TIME + random( &seed ) % REPLAN_TIME_POOL_SIZE * PLAN_TIME;
+								dprintf( "train %d replan time %d\n", current_train->id, current_train->replan_time );
 							}
 							/* Wake up planner */
 							sem_release( current_train->update );
@@ -913,7 +918,7 @@ void train_auto()
 						}
 						
 						/* turn the switch */
-						if ( current_train->next_check_point->type == NODE_MERGE ){
+						if ( ( current_train->state == TRAIN_STATE_TRACKING || current_train->state == TRAIN_STATE_SPEED_CHANGE ) && current_train->next_check_point->type == NODE_MERGE ){
 							/* find which way the train is on */
 							current_node = current_train->next_check_point->reverse;
 							assert( current_node );
