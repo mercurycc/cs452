@@ -17,6 +17,9 @@
 #include "inc/warning.h"
 #include "inc/sched.h"
 
+#define LOCAL_DEBUG
+#include "user/dprint.h"
+
 #define MAX_BUFFER_SIZE 128
 #define MAX_SCREEN_SIZE 1024
 #define PARSE_INT_FAIL  -1
@@ -122,8 +125,8 @@ void train_control()
 	planner_ui_tid = Create( TRAIN_UI_PRIORITY, planner_ui );
 	assert( planner_ui_tid > 0 );
 
-	/* sched_tid = Create( TRAIN_SCHED_PRIORITY, train_sched ); */
-	/* assert( sched_tid > 0 ); */
+	sched_tid = Create( TRAIN_SCHED_PRIORITY, train_sched );
+	assert( sched_tid > 0 );
 
 	sync_wait();
 
@@ -391,6 +394,7 @@ void train_control()
 				int dest_group;
 				int dest_id;
 				int dest_dist;
+				int ticket;
 				status = track_node_name2id( token_buf[ 1 ], &src_group, &src_id );
 				if( status != ERR_NONE ){
 					region_printf( &result_reg, "%s is not a valid src\n", token_buf[ 1 ] );
@@ -404,7 +408,8 @@ void train_control()
 				}
 				dest_dist = ( int )stou( token_buf[ 4 ] );
 				if( ! fail ){
-					// TODO
+					ticket = train_sched_add( sched_tid, dest_group, dest_id, dest_dist, src_group, src_id, src_dist, 0 );
+					region_printf( &result_reg, "Schedule added with ticket %d\n", ticket );
 				}
 			} else {
 				region_printf( &result_reg, "%s <src> <distance> <dest> <distance>\n", token_buf[ 0 ] );				
