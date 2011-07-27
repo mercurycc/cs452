@@ -15,6 +15,7 @@
 #include "inc/config.h"
 #include "inc/sensor_data.h"
 #include "inc/warning.h"
+#include "inc/sched.h"
 
 #define MAX_BUFFER_SIZE 128
 #define MAX_SCREEN_SIZE 1024
@@ -38,6 +39,7 @@ void train_control()
 	int tracking_ui_tid;
 	int track_reserve_tid;
 	int planner_ui_tid;
+	int sched_tid;
 	int quit = 0;
 	char data;
 	char buf[MAX_BUFFER_SIZE] = {0};
@@ -119,6 +121,9 @@ void train_control()
 	
 	planner_ui_tid = Create( TRAIN_UI_PRIORITY, planner_ui );
 	assert( planner_ui_tid > 0 );
+
+	/* sched_tid = Create( TRAIN_SCHED_PRIORITY, train_sched ); */
+	/* assert( sched_tid > 0 ); */
 
 	sync_wait();
 
@@ -358,7 +363,7 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "badsw <switch id> <direction [C|S]>\n" );
 			}
-		}  else if( ! strcmp( token_buf[ 0 ], "pu" ) ){
+		} else if( ! strcmp( token_buf[ 0 ], "pu" ) ){
 			int train_id;
 			char direction;
 			if( token_filled == 3 ){
@@ -378,6 +383,32 @@ void train_control()
 			} else {
 				region_printf( &result_reg, "pu <train id> <pickup direction [F|B]>\n" );
 			}
+		} else if( ! strcmp( token_buf[ 0 ], "sched" ) ){
+			if( token_filled == 5 ){
+				int src_group;
+				int src_id;
+				int src_dist;
+				int dest_group;
+				int dest_id;
+				int dest_dist;
+				status = track_node_name2id( token_buf[ 1 ], &src_group, &src_id );
+				if( status != ERR_NONE ){
+					region_printf( &result_reg, "%s is not a valid src\n", token_buf[ 1 ] );
+					fail = 1;
+				}
+				src_dist = ( int )stou( token_buf[ 2 ] );
+				status = track_node_name2id( token_buf[ 3 ], &src_group, &src_id );
+				if( ! fail && status != ERR_NONE ){
+					region_printf( &result_reg, "%s is not a valid dest\n", token_buf[ 1 ] );
+					fail = 1;
+				}
+				dest_dist = ( int )stou( token_buf[ 4 ] );
+				if( ! fail ){
+					// TODO
+				}
+			} else {
+				region_printf( &result_reg, "%s <src> <distance> <dest> <distance>\n", token_buf[ 0 ] );				
+			}	
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}
