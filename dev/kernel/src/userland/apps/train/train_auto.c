@@ -531,6 +531,33 @@ void train_auto()
 					current_train->pickup = TRAIN_PICKUP_FRONT;
 				}
 				sem_acquire_all( current_train->sem );
+				
+				if ( current_train->next_check_point->type == NODE_MERGE ) {
+					/* find which way the train is on */
+					current_node = current_train->next_check_point->reverse;
+					assert( current_node );
+					assert( current_node->type == NODE_BRANCH );
+					if ( current_node->edge[DIR_STRAIGHT].dest->reverse == current_train->check_point ) {
+						direction = DIR_STRAIGHT;
+					}
+					else {
+						direction = DIR_CURVED;
+					}
+					/* move the switch */
+					char set_dir = 0;
+					if ( direction == DIR_STRAIGHT && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'C' ){
+						set_dir = 'S';
+					}
+					else if ( direction == DIR_CURVED && switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] == 'S' ){
+						set_dir = 'C';
+					}
+					if ( set_dir ) {
+						train_switch( module_tid, current_node->id+1, set_dir );
+						switch_table[SWID_TO_ARRAYID( current_node->id + 1 )] = set_dir;
+						dprintf( "switch %d set to %c before reverse\n", current_node->id+1, set_dir );
+					}
+				}
+				
 				current_train->check_point = current_train->next_check_point->reverse;
 				current_train->next_check_point = track_next_node( current_train->check_point, switch_table );
 				current_sensor = current_train->last_sensor;
@@ -622,7 +649,7 @@ void train_auto()
 
 			/* sensor report with no useful information, skip the whole section */
 			if ( request.type == TRAIN_AUTO_NEW_SENSOR_DATA && num_sensor_hit == 0 ) {
-				dnotice( "No new sensor hits\n" );
+				// dnotice( "No new sensor hits\n" );
 				break;
 			}
 			
