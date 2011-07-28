@@ -1,0 +1,57 @@
+
+
+
+Overview
+========
+
+- Reservation System
+
+  The reservation system is improved to allow more accurate and space efficient track reservation.
+
+- Improvements on Train Trackings
+
+  The train tracking algorithms also get modified so that trains are less likely to be lost when moving on the tracks or, more importantly, when reversing.
+
+- Console Commands
+
+  A few new console commands are added to specify certain parameters of a train. This allows the system to simulate the unique behaviours of each train so that it can get more accurate tracking of the trains.
+
+- Train Scheduler
+
+  A train scheduler is built to schedule trains. For each request, the scheduler would pick a free train and make a trip from the given source to the given destination.
+
+
+Details
+=======
+
+* New Reservation System
+------------------------
+
+( To be continued... )
+
+* Improvements on Train Tracking
+--------------------------------
+
+The train tracking is improved a little bit at this point. The stop distance is now calculated based how long it needs to complete the stop change, and which speed level is the train stopped from. These numbers are now dynamically calculated, with the data collected from real-time calibration, and the parameters given through the console commands (which will be talked about later).
+
+In order not to lose the tracking of the train when the train is reversing, the train tracking system cooperates a little bit with the tracks. When a train comes close to a MERGE, the tracking system will catch this and check which way is the train on when passing through the MERGE, and it will turn the switch to the corresponding way where the train is on. The system does the same thing too when the train is reverse on a MERGE. The reason we do this is to ensure that the system will correctly find the train after the train is reversed on a switch, and makes sure the train does not de-rail.
+
+* Console Commands
+------------------
+
+There are some new console commands are added to the system. The goal of these console command is to set some parameters of trains for each different ones. During the previous assignments, we find that some parameters are different for each trains, and they may even varies for the same train at different point of time. In this situation, giving these parameter by commands seem to be the best solution.
+
+For example, one parameter that is unique to each train is the time for which the train needs to change the speed. For this parameter, we have a command to input different different time range for different trains. Thus we can get more accurate tracking on each train.
+
+Besides commands for these essential attribution variables, there are also other commands. For instance, there is a command to tell system which way is the train's pickup at (Forward or Backward). This value is unknown to the system at the begining, and the system can do fairly good reservation when this value is not known. However, if we tell system the setup of pickups, the system can do more accurate reservation of a train. Especially which our new reservation system, input the pickup location can allow the trains to come as close as only 5cm away from each other.
+
+* Train Scheduler
+-----------------
+
+The scheduler will schedule any free trains it has to complete the given routines. A routine has a source location and a destination location. A train is meant to go to a source location first, and then travel from the source location to the destination location. You can think it as a shipping request. A free train needs to go to the start location to pickup some cargo, and escort the cargo to the destination location.
+
+A train can be running on one routine at the same time. When multiple routines are given, the scheduler will use as many trains as it has to try to complete the routines. It there are more routines than the number of the free trains, the scheduler will just issue each free train it has to try to complete the routines. If a train completes its routine, then it becomes free again. Now if there are still un-scheduled routines left, the scheduler will get this free train to start running next routine.
+
+Routines are given as commands. They are buffered, unable to run, until the user inputs "resumesched". After that, the scheduler will pickup free trains to run all the routines from user side.
+
+( To be continued... )
