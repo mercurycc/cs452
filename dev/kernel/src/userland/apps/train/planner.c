@@ -62,6 +62,22 @@ static inline int train_planner_is_dst( const track_node* current, const track_n
 	return  DST_DIRECT( current, dst ) || DST_REVERSE( current, dst ) || DST_REVERSE_BR( current, dst );
 }
 
+static inline int train_planner_able_to_reserve_backward( int reserve_tid, Train* train, track_node* check_point ){
+	int dir = DIR_AHEAD;
+	if ( check_point->type == NODE_BRANCH && check_point->edge[ DIR_CURVED ].dest == train->next_check_point ) {
+		dir = DIR_CURVED;
+	}
+	return track_reserve_may_i_range( reserve_tid, train, check_point, 0, train_tracking_position( train ), dir ) == RESERVE_SUCCESS;
+}
+
+static inline int train_planner_able_to_reserve_forward( int reserve_tid, Train* train, track_node* reverse_check_point ){
+	int dir = DIR_AHEAD;
+	if ( reverse_check_point->type == NODE_BRANCH && reverse_check_point->edge[ DIR_CURVED ].dest->reverse == train->check_point ) {
+		dir = DIR_CURVED;
+	}
+	return track_reserve_may_i_range( reserve_tid, train, reverse_check_point, 0, train_tracking_remaining_distance( train ), dir ) == RESERVE_SUCCESS;
+}
+
 static int train_planner_plan( const track_node* dst, int* dist_pass, const Train_data* train, Rbuf* path, uint* direction, int reserve_tid )
 {
 	uint cost[ TRACK_NUM_NODES ];                /* ~0 for infinity */
@@ -116,7 +132,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 	
 	/* Assign initial cost */
 	sem_acquire_all( train->sem );
-	if ( track_reserve_may_i_range( reserve_tid, train, check_point, 0, train_tracking_position( train ), DIR_AHEAD ) == RESERVE_SUCCESS ) {
+	if ( train_planner_able_to_reserve_backward( reserve_tid, train, check_point ) ) {
 		cost[ check_point->reverse->index ] = train_tracking_position( train );
 		parent[ check_point->reverse->index ][ 0 ] = -1;
 	}
@@ -125,7 +141,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 		dprintf( "cannot reserve at %s from 0 - %d\n", name, train_tracking_position( train ) );
 		cost[ check_point->reverse->index ] = ~0;
 	}
-	if ( track_reserve_may_i_range( reserve_tid, train, next_check_point->reverse, 0, train_tracking_remaining_distance( train ), DIR_AHEAD ) == RESERVE_SUCCESS ) {
+	if ( train_planner_able_to_reserve_forward( reserve_tid, train, next_check_point->reverse ) ) {
 		cost[ next_check_point->index ] = train_tracking_remaining_distance( train );
 		parent[ next_check_point->index ][ 0 ] = -1;
 	}
