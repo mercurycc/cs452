@@ -1,6 +1,6 @@
                            ==========================
                            Pinball System for TS-7200
-                                   Release K4
+                                   Release P3
                                  Kernel Design
                            ==========================
                                     cs452_08
@@ -415,3 +415,17 @@ process is issued:
   subs pc, lr, #4
 
   as instructed by the EP9302 manual to return to the interrupted user program.
+
+
+* Abort
+-------
+
+To aid debugging, an abort handler is implemented to indicate an abort and
+obtain a stack trace of the aborted task.
+
+The abort handler is like the trap handler only that it will not return to user
+space but leave the stack trace for the user to examine.
+
+The stack trace is based on the frame pointer as it is known that fp - 4 is the
+lr of the caller and fp - 12 is the fp of the caller.  Following this pattern
+the full stack trace can be found.

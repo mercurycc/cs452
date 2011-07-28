@@ -42,6 +42,29 @@ Overview
 Details
 =======
 
+* Train Scheduling
+------------------
+
+The train scheduling component of the train application is a simple server that
+take in schedules in forms of source and destination, and chooses a free train
+to travel to the source and then to the destination.  It could be thought that
+the train is going to the source to pick up an item and drop it down at
+destination.
+
+The schedules are kept in a queue to be scheduled in the sequence they came in.
+The choic of train is totally based on which train is free and the first free
+train will be chosen as the one that carry out the schedule.
+
+The scheduler depends on the reservation system to ensure the trains does not
+crash, and to reroute if a crash is avoided.
+
+The original proposal included a better scheduler that schedules the path in
+advance so that the trains will have very low possiblity of being saved by the
+reservation system.  This proposal was not implemented because the tracking of
+the train is not trustworthy enough to make schedules in advance to acceptable
+precision.
+
+
 * Reservation System
 --------------------
 
@@ -49,22 +72,25 @@ The reservation system is a task that manipulates the track and train data to
 implement track reservations.
 
 The reservation algorithm is implemented based on modifications to the
-track/train data structure.  Now each edge of the track contains a pointer to a
-train structure indicating which train might be reserving the track, and a
+track/train data structure.  Now each edge of the track contains an array of
+reservation structurs mapping to all the trains, each contain a pair of integers
+indicating which portion of the edge the train is reserving, a pointer to a
+train structure indicating which train might be reserving the track, and an
 integer passcode for verifying the reservation.  In the train structure there is
 a field of matching integer passcode.
 
 To reserve, the train asks the reservation system for a range to reserve ahead
 of the train.  The reservation system follows the path from the train's last
 landmark, reserving each edge possible, until the whole range is convered.
-While reserving each edge, the train and its passcode is written to the edge to
-indicate a successful reservation. If the edge or its reverse edge is reserved,
-a reservation failure is returned. 
+While reserving each edge, the train and its passcode is written to the
+reservation structure in the edge to indicate a successful reservation. If the
+range requested on the edge or its reverse edge is reserved, a reservation
+failure is returned.
 
-To release one edge, the pointer to the train in the edge is set to 0.  This is
-rarely done given the implementation of reservation policy.  Almost always the
-train simply give up all its reservations and re-reserve the path ahead of the
-train to simplify the algorithm.  This also makes the algorithm more robust.
+The system does not support release of only one edge but to release all the
+edges reserved all at once.  The train always simply give up all its
+reservations and re-reserve the path ahead of the train to simplify the
+algorithm.  This also makes the algorithm more robust.
 
 The criteria for an edge being reserved allowed releasing all reservations of a
 train to be cheap.  An edge is reserved if the edge or its reversed edge fulfill
@@ -88,13 +114,10 @@ The train should restart its trip via an alternative route if a collision is
 found, or simply stop to wait for further instructions if it is on free run
 mode.
 
-As a sidenode, Current a live lock caused by re-routing might still exist.  We
-used existing properties in the system to break the live lock by making the
-earlier registered train to replan its trip first, so ideally the live lock will
-not persist forever.  We had other bugs in the system preventing us to properly
-create this case though, so it was not tested.  This is chosen because it
-integrates better with existing implementation.  A random backup can be easily
-implemented upon this once we have this mechanism tested.
+To break a live lock caused by re-routing we used existing properties in the
+system to break the live lock by making the earlier registered train to replan
+its trip first, so ideally the live lock will not persist forever.  A random
+backup is also implemented to ensure the behavior.
 
 The reservation system also protects train from running out of an exit. When a
 train tries to reserve the track in front of it and find it is an exit, the

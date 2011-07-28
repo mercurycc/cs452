@@ -1,6 +1,6 @@
                            ==========================
                            Pinball System for TS-7200
-                                   Release P1
+                                   Release P3
                                 Userland Design
                            ==========================
                                     cs452_08
@@ -130,25 +130,13 @@ find out how long clock 3 has been running, and calculate the current time from
 this data.  Clock 3 is a 32 bit clock which runs 24 days with the 2000Hz clock
 source.
 
-We are not using constant clock interrupt to implement clock server as we think
-it is too expensive to trigger a kernel access and context switches every 50 ms
-than to simply read time from clk_3.  Interrupt is only used to implement count
-down requests as requested by the time server.
+A constant clock interrupt generated from clock 1 will constantly wakeup the
+clock driver in order to bring up the check for count down.  Once the count down
+is reached, the clock driver notifies the time server for the most recently
+completed count down and thus wake up the task that is delayed.
 
-When the clock driver receives a count down request, it checks if there is a
-undergoing count down and how much time the current count down has left.  If
-there is no count down going on or the current count down has more time left
-than the requested count down, the driver will reset the clock to generate an
-interrupt after the requested count down, and if no count down is going on, the
-driver notifies the clock interrupt handler to wait for the interrupt.
-Otherwise the clock interrupt handler must have been waiting on a shorter count
-down, and the count down request is discarded.
-
-The reason that the longer count down request can be discarded (either by
-ignoring a longer request or replacing current count down with a shorter
-request) is due to the way time server is implemented.  The time server will
-always restore the task that has least amount of delay.  Therefore the clock
-server will only keep track the shortest count down.
+When the clock driver receives a count down request, it will update the current
+count down if the request is more recent.
 
 Each tick is defined to be 10 ms, which is equivalent to 20 ticks on the clock,
 as required by the kernel specification.
