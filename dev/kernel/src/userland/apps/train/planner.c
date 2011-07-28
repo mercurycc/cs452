@@ -524,7 +524,7 @@ void train_planner()
 					train_reverse( module_tid, train->id );
 					train_auto_set_reverse( auto_tid, train->id );
 					dprintf( "Reverse for %d\n", train->id );
-					// Delay( 50 );
+					Delay( 50 );
 				}
 
 				previous_node = 0;

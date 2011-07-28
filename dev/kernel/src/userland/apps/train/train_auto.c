@@ -27,6 +27,7 @@
 #include "inc/train_tracking.h"
 #include "inc/train_constants.h"
 #include "inc/error_tolerance.h"
+#include "inc/sched.h"
 
 #define LOCAL_DEBUG
 #include <user/dprint.h>
@@ -205,6 +206,7 @@ void train_auto()
 	int alarm_tid;
 	int control_tid;
 	int reserve_tid;
+	int sched_tid;
 	int tid;
 	int i;
 	int temp;
@@ -269,6 +271,9 @@ void train_auto()
 
 	reserve_tid = WhoIs( RESERVE_NAME );
 	assert( reserve_tid > 0 );
+
+	sched_tid = WhoIs( TRAIN_SCHED_NAME );
+	assert( sched_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
@@ -487,6 +492,8 @@ void train_auto()
 					
 					current_train->min_sc_time = DEFAULT_MIN_SC_TIME;
 					current_train->max_sc_time = DEFAULT_MAX_SC_TIME;
+
+					train_sched_new_train( sched_tid, current_train );
 
 					/* Update UI */
 					tracking_ui_new_train( tracking_ui_tid, request.data.new_train.train_id );

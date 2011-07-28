@@ -26,6 +26,8 @@
 #define PATH_LOOK_AHEAD_DEFAULT_STOP    350
 #define PLANNER_WAKE_UP      2      /* Length of time between each check when the train is stopping */
 
+#define SCHEDULER_BUFFER     32
+
 /* number of speed levels of train */
 #define NUM_SPEED_LEVEL 30
 
@@ -86,6 +88,7 @@
 #define CONTROL_NAME        "train_ctl"
 #define RESERVE_NAME        "track_rsv"
 #define PLANNER_UI_NAME     "planner_ui"
+#define TRAIN_SCHED_NAME    "t_sched"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */

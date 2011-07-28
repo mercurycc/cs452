@@ -119,12 +119,12 @@ void train_control()
 	tracking_ui_tid = Create( TRAIN_UI_PRIORITY, tracking_ui );
 	assert( tracking_ui_tid > 0 );
 
-	track_reserve_tid = Create( TRAIN_AUTO_PRIROTY, track_reserve );
-	assert( track_reserve_tid > 0 );
-	
 	planner_ui_tid = Create( TRAIN_UI_PRIORITY, planner_ui );
 	assert( planner_ui_tid > 0 );
 
+	track_reserve_tid = Create( TRAIN_AUTO_PRIROTY, track_reserve );
+	assert( track_reserve_tid > 0 );
+	
 	sched_tid = Create( TRAIN_SCHED_PRIORITY, train_sched );
 	assert( sched_tid > 0 );
 
@@ -401,9 +401,9 @@ void train_control()
 					fail = 1;
 				}
 				src_dist = ( int )stou( token_buf[ 2 ] );
-				status = track_node_name2id( token_buf[ 3 ], &src_group, &src_id );
+				status = track_node_name2id( token_buf[ 3 ], &dest_group, &dest_id );
 				if( ! fail && status != ERR_NONE ){
-					region_printf( &result_reg, "%s is not a valid dest\n", token_buf[ 1 ] );
+					region_printf( &result_reg, "%s is not a valid dest\n", token_buf[ 3 ] );
 					fail = 1;
 				}
 				dest_dist = ( int )stou( token_buf[ 4 ] );
@@ -412,8 +412,22 @@ void train_control()
 					region_printf( &result_reg, "Schedule added with ticket %d\n", ticket );
 				}
 			} else {
-				region_printf( &result_reg, "%s <src> <distance> <dest> <distance>\n", token_buf[ 0 ] );				
-			}	
+				region_printf( &result_reg, "%s <src> <distance> <dest> <distance>\n", token_buf[ 0 ] );
+			}
+		} else if( ! strcmp( token_buf[ 0 ], "pausesched" ) ){
+			if( token_filled == 1 ){
+				train_sched_suspend( sched_tid );
+				region_printf( &result_reg, "Suspending scheduler operation\n" );
+			} else {
+				region_printf( &result_reg, "%s\n", token_buf[ 0 ] );
+			}
+		} else if( ! strcmp( token_buf[ 0 ], "resumesched" ) ){
+			if( token_filled == 1 ){
+				train_sched_resume( sched_tid );
+				region_printf( &result_reg, "Resuming scheduler operation\n" );
+			} else {
+				region_printf( &result_reg, "%s\n", token_buf[ 0 ] );
+			}
 		} else {
 			region_printf( &result_reg, "Unknown command %s\n", token_buf[ 0 ] );
 		}

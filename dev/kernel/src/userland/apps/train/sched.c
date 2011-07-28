@@ -10,6 +10,9 @@
 #include "inc/train.h"
 #include "inc/sched.h"
 
+#define LOCAL_DEBUG
+#include <user/dprint.h>
+
 enum Train_sched_request_types {
 	TRAIN_SCHED_NEW_TRAIN,
 	TRAIN_SCHED_ADD,
@@ -57,7 +60,7 @@ void train_sched()
 {
 	Sched_request request;
 	Sched_reply reply;
-	Train_assign trains[ MAX_NUM_TRAINS ] = { { 0 } };
+	Train_assign trains[ MAX_NUM_TRAINS ];
 	Train_assign* current_assign;
 	Sched_request request_buf[ SCHEDULER_BUFFER ];
 	Rbuf ring_body;
@@ -68,7 +71,10 @@ void train_sched()
 	int control = 1;
 	int auto_tid;
 	int i;
+	int temp;
 	int tid;
+
+	dnotice( "Sched launched\n" );
 
 	status = RegisterAs( TRAIN_SCHED_NAME );
 	assert( status == REGISTER_AS_SUCCESS );
@@ -76,20 +82,24 @@ void train_sched()
 	auto_tid = WhoIs( TRAIN_AUTO_NAME );
 	assert( auto_tid > 0 );
 
-	status = Create( TRAIN_SCHED_PRIORITY + 1, train_sched_alarm );
-	assert( status > 0 );
-
 	status = rbuf_init( request_pool, ( uchar* )request_buf, sizeof( Sched_request ), sizeof( Sched_request ) * SCHEDULER_BUFFER );
 	assert( status == ERR_NONE );
 
+	status = Create( TRAIN_SCHED_PRIORITY + 1, train_sched_alarm );
+	assert( status > 0 );
+
+	temp = 1;
+	control = 1;
+
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
-		assert( status == sizeof( request ) );
+		ASSERT_M( status == sizeof( request ), "expect %d, got %d\n", sizeof( request ), status );
 
 		switch( request.type ){
 		case TRAIN_SCHED_NEW_TRAIN:
 			memcpy( ( uchar* )( trains + available_trains ), ( uchar* )&request.assign, sizeof( request.assign ) );
 			available_trains += 1;
+			dprintf( "Received registration of train %d\n", request.assign.train->id );
 			break;
 		case TRAIN_SCHED_ADD:
 			request.ticket = ticket;
@@ -98,8 +108,8 @@ void train_sched()
 			break;
 		case TRAIN_SCHED_CANCEL:
 			{
-				int temp = 0;
 				int request_ticket = request.ticket;
+				temp = 0;
 				while( ! rbuf_empty( request_pool ) ){
 					status = rbuf_get( request_pool, ( uchar* )&request );
 					if( ! temp ){
@@ -132,31 +142,40 @@ void train_sched()
 		if( control ){
 			for( i = 0; i < available_trains; i += 1 ){
 				current_assign = trains + i;
-				sem_acquire_all( current_assign->train->sem );
-				while( ! train_planner_have_control( current_assign->train ) ){
+				while( 1 ){
+					sem_acquire_all( current_assign->train->sem );
+					temp = train_planner_have_control( current_assign->train );
+					sem_release( current_assign->train->sem );
+
+					if( temp ){
+						break;
+					}
+				
 					if( current_assign->src_assign ){
 						train_auto_plan( auto_tid, current_assign->train->id,
 								 current_assign->src_group,
 								 current_assign->src_id,
 								 current_assign->src_dist );
+						dprintf( "Plan source trip for train %d\n", current_assign->train->id );
 						current_assign->src_assign = 0;
 					} else if( current_assign->dest_assign ){
 						train_auto_plan( auto_tid, current_assign->train->id,
 								 current_assign->dest_group,
 								 current_assign->dest_id,
 								 current_assign->dest_dist );
+						dprintf( "Plan destination trip for train %d\n", current_assign->train->id );
 						current_assign->dest_assign = 0;
 					} else if( !rbuf_empty( request_pool ) ){
 						rbuf_get( request_pool, ( uchar* )&request );
 						request.assign.train = current_assign->train;
 						request.assign.dest_assign = 1;
 						request.assign.src_assign = 1;
+						dprintf( "Assigning trip %d for train %d\n", request.ticket, current_assign->train->id );
 						memcpy( ( uchar* )current_assign, ( uchar* )&request.assign, sizeof( request.assign ) );
 						continue;
 					}
 					break;
 				}
-				sem_release( current_assign->train->sem );
 			}					
 		}
 	}
@@ -175,11 +194,11 @@ static inline int train_sched_request( int tid, int type, int ticket, Train_assi
 		memcpy( ( uchar* )&request.assign, ( uchar* )assign, sizeof( request.assign ) );
 	}
 
-	if( !reply ){
+	if( ! reply ){
 		reply = &local_reply;
 	}
 
-	status = Send( tid, ( char* )&request, sizeof( Sched_request ), ( char* )reply, sizeof( Sched_reply ) );
+	status = Send( tid, ( char* )&request, sizeof( request ), ( char* )reply, sizeof( local_reply ) );
 	assert( status == sizeof( Sched_reply ) );
 
 	return ERR_NONE;
