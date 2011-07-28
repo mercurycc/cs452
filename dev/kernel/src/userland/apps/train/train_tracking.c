@@ -331,7 +331,7 @@ int train_tracking_update_position( Train* train, int curtime )
 				train->mark_dist -= dist_diff;
 			}
 		
-			while( train->tracking.remaining_distance <= 0 && ( train->next_check_point->type != NODE_SENSOR || !sensor_trustable( train->next_check_point ) ) ){
+			while( train->tracking.remaining_distance <= 0 && train->next_check_point->type != NODE_EXIT && ( train->next_check_point->type != NODE_SENSOR || !sensor_trustable( train->next_check_point ) ) ){
 				train_tracking_update_check_point( train, curtime, curtime );
 			}
 		}
