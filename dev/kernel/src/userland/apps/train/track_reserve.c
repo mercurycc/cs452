@@ -93,6 +93,10 @@ static int track_reserved( Train* train, track_node* node, int direction, int fr
 	}
 
 	edge = node->edge + direction;
+	if ( from > to ) {
+		dprintf( "dist %d from %d to %d\n", edge->dist, from, to );
+		Delay(5);
+	}
 	*index = track_find_free_reserve( train, edge, from, to );
 	if( *index < 0 ){
 		return RESERVE_FAIL_SAME_DIR;
@@ -101,6 +105,10 @@ static int track_reserved( Train* train, track_node* node, int direction, int fr
 	edge = edge->reverse;
 	reverse_from = edge->dist - to;
 	reverse_to = edge->dist - from;
+	if ( reverse_from > reverse_to ) {
+		dprintf( "dist %d from %d to %d; reverse dist %d from %d to %d\n", edge->reverse->dist, from, to, edge->dist, reverse_from, reverse_to );
+		Delay(5);
+	}
 	temp = track_find_free_reserve( train, edge, reverse_from, reverse_to );
 	if( temp < 0 ){
 		return RESERVE_FAIL_AGAINST_DIR;
@@ -260,6 +268,9 @@ void track_reserve()
 		}
 
 		range = request.range;
+		if ( range < 0 ){
+			range = 0;
+		}
 		section_from = request.from;
 
 		/* Given the inaccuracy of tracking system, these kind of stupid things are all over the place */
@@ -297,7 +308,7 @@ void track_reserve()
 					break;
 				}
 				
-				range -= section_to - section_from;
+				range -= ( section_to - section_from );
 
 				node = track_next_node( node, switch_table );
 				if( ! node ){
