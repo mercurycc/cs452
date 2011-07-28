@@ -37,8 +37,10 @@ such as position, speed and route finding information.
 Track Node Structure
 --------------------
 
-The track nodes are stored in the track structure offered on class webside. 
-We did some modification to make it fit in our design, added a few data field using regular expressions, such as group, id, index, and fields for reservation systems.
+The track nodes are stored in the track structure offered on class webside.  We
+did some modification to make it fit in our design, added a few data field using
+regular expressions, such as group, id, index, and fields for reservation
+systems.
 
 
 Speed Table
@@ -50,13 +52,23 @@ speed level than when decelerate into that speed level. However, actually only
 28 levels will be used, since the train would not accelerate into speed 0, or
 decelerate into speed 14( highest ). 
 
-The speed table is supposed to record average speed a train has at certain speed level. Initially, it will automatically generate the speed for the new train according to a function. Different trains has different function models, and we will choose the correct one depending on which train we are initializing. When trains running on the track, everytime it hits a sensor, and if our program thinks it is running at a constant speed, it will update the speed table with an more accurate average speed.
+The speed table is supposed to record average speed a train has at certain speed
+level. Initially, it will automatically generate the speed for the new train
+according to a function. Different trains has different function models, and we
+will choose the correct one depending on which train we are initializing. When
+trains running on the track, everytime it hits a sensor, and if our program
+thinks it is running at a constant speed, it will update the speed table with an
+more accurate average speed.
 
 
 Tracking Info
 -------------
 
-Tracking info of the train is stored as a structure called tracking. In this structure it stored all information the system needs in order to track the train. It contains last sensor hit, next sensor to hit, last and next check points, position (distance away from last checkpoint), and speed related variables.
+Tracking info of the train is stored as a structure called tracking. In this
+structure it stored all information the system needs in order to track the
+train. It contains last sensor hit, next sensor to hit, last and next check
+points, position (distance away from last checkpoint), and speed related
+variables.
 
 
 Functional Units
@@ -96,14 +108,25 @@ The train_module is the task that communicates with the track. For any
 instruction needs to send to the track, the train_module will communicate with
 the UART server and send the corresponding bytes. 
 
-Since the speed of sending instructions to the track cannot be too fast, so our module needs to insert delays between them. It achieves this by buffering all the commands it needs to send and has a delay notifier. Everytime an instruction is send to the track, the module replies the notifier about how long it should wait. After the notifier waited for enough time, it sends back to the module that telling module it is OK to send next instruction now. The module then send the next instruction. To get max efficiency, module may change the order of the instructions that it has buffered, or even discard some unnecessary ones, for instance, duplicate instruction of turning off the solenoid of the switch (So only the last one will be sent).
+Since the speed of sending instructions to the track cannot be too fast, so our
+module needs to insert delays between them. It achieves this by buffering all
+the commands it needs to send and has a delay notifier. Everytime an instruction
+is send to the track, the module replies the notifier about how long it should
+wait. After the notifier waited for enough time, it sends back to the module
+that telling module it is OK to send next instruction now. The module then send
+the next instruction. To get max efficiency, module may change the order of the
+instructions that it has buffered, or even discard some unnecessary ones, for
+instance, duplicate instruction of turning off the solenoid of the switch (So
+only the last one will be sent).
 
 
 Reservation Server (Reservation)
 ------------------
 
-The reservation server is in charge of all the track reservation requests. Whenever a train needs to reserve a piece of track, it sends request to the reservation server and wait for its response. The detailed algorithm for the server is in the later Algorithm section.
-
+The reservation server is in charge of all the track reservation
+requests. Whenever a train needs to reserve a piece of track, it sends request
+to the reservation server and wait for its response. The detailed algorithm for
+the server is in the later Algorithm section.
 
 
 Train Control and Display Server (User Interface)
@@ -116,23 +139,33 @@ of the command line prompt. It reads input from the user, and buffer the input
 until user pulls the trigger (e.g. hit enter key). Then the control task parse
 the input, and do the corresponding work.
 
-The Display server is in charge of all kind of displaying job. Whenever a task needs to display anything on screen, it sends to the display server with the information it wishes to show and the position it prefers. The display server will buffer these information and update the screen every 3 ticks of system time.
+The Display server is in charge of all kind of displaying job. Whenever a task
+needs to display anything on screen, it sends to the display server with the
+information it wishes to show and the position it prefers. The display server
+will buffer these information and update the screen every 3 ticks of system
+time.
 
 
 Train Planner ( Path Finding )
 -------------
 
-The train planner is a task binds to a train, planning the path for the train, and executing the plans.
-
+The train planner is a task binds to a train, planning the path for the train,
+and executing the plans.
 
 
 Train Schedule Server ( Train Scheduling )
 ---------------------
 
-The scheduler will schedule any free trains it has to complete the given routines. A routine has a source location and a destination location. A train is meant to go to a source location first, and then travel from the source location to the destination location. You can think it as a shipping request. A free train needs to go to the start location to pickup some cargo, and escort the cargo to the destination location.
+The scheduler will schedule any free trains it has to complete the given
+routines. A routine has a source location and a destination location. A train is
+meant to go to a source location first, and then travel from the source location
+to the destination location. You can think it as a shipping request. A free
+train needs to go to the start location to pickup some cargo, and escort the
+cargo to the destination location.
 
-The scheduler depends heavily on the planner, as it requires the planner to carry out the path finding and the actual execution.How these two cooperates will be discussed in Algorithm section.
-
+The scheduler depends heavily on the planner, as it requires the planner to
+carry out the path finding and the actual execution.How these two cooperates
+will be discussed in Algorithm section.
 
 
 
@@ -142,9 +175,16 @@ Calibration and Algorithms
 Initial Calibration
 -------------------
 
-The initial calibration is important to our system, since our system predict the speeds of different level of a train depending on this calibration.
+The initial calibration is important to our system, since our system predict the
+speeds of different level of a train depending on this calibration.
 
-The procedure works like this: The train will first hit 3 continuous sensors so that the system can determine its position. Then the train will run at speed 8 and speed 12 for 5 seconds each, not include the speed change time, to get accurate speed for speed 8 and speed 12. Then it will calculate all the speeds using these two readings. Different trains has rather different speed models. For the working trains now, train 21 has a nice curve, train 23 has a linear distribution, and train 24 has linear, step-like speed distribution.
+The procedure works like this: The train will first hit 3 continuous sensors so
+that the system can determine its position. Then the train will run at speed 8
+and speed 12 for 5 seconds each, not include the speed change time, to get
+accurate speed for speed 8 and speed 12. Then it will calculate all the speeds
+using these two readings. Different trains has rather different speed
+models. For the working trains now, train 21 has a nice curve, train 23 has a
+linear distribution, and train 24 has linear, step-like speed distribution.
 
 
 Speed Calculation
@@ -241,7 +281,11 @@ records the time when the speed change is issued, and using init speed value and
 end speed value for the speed table to calculate the distance the train has
 traveled at a certain point of time.
 
-This model's correctness depends on the correctness of train's speed change time. Since each trains are different, we need manually input the speed change time parameter for each train. For this and some other situations, we added a few commands to modify arguments directly from the prompt. The commands will be talked later.
+This model's correctness depends on the correctness of train's speed change
+time. Since each trains are different, we need manually input the speed change
+time parameter for each train. For this and some other situations, we added a
+few commands to modify arguments directly from the prompt. The commands will be
+talked later.
 
 
 Reservation System
@@ -379,22 +423,205 @@ the train is not trustworthy enough to make schedules in advance to acceptable
 precision.
 
 
-
-
 * Console Commands
 ------------------
 
-There are some new console commands are added to the system. The goal of these console command is to set some parameters of trains for each different ones. During the previous assignments, we find that some parameters are different for each trains, and they may even varies for the same train at different point of time. In this situation, giving these parameter by commands seem to be the best solution.
+There are some new console commands are added to the system. The goal of these
+console command is to set some parameters of trains for each different
+ones. During the previous assignments, we find that some parameters are
+different for each trains, and they may even varies for the same train at
+different point of time. In this situation, giving these parameter by commands
+seem to be the best solution.
 
-For example, one parameter that is unique to each train is the time for which the train needs to change the speed. For this parameter, we have a command to input different different time range for different trains. Thus we can get more accurate tracking on each train.
+For example, one parameter that is unique to each train is the time for which
+the train needs to change the speed. For this parameter, we have a command to
+input different different time range for different trains. Thus we can get more
+accurate tracking on each train.
 
-Besides commands for these essential attribution variables, there are also other commands. For instance, there is a command to tell system which way is the train's pickup at (Forward or Backward). This value is unknown to the system at the begining, and the system can do fairly good reservation when this value is not known. However, if we tell system the setup of pickups, the system can do more accurate reservation of a train. Especially which our new reservation system, input the pickup location can allow the trains to come as close as only 5cm away from each other.
-
+Besides commands for these essential attribution variables, there are also other
+commands. For instance, there is a command to tell system which way is the
+train's pickup at (Forward or Backward). This value is unknown to the system at
+the begining, and the system can do fairly good reservation when this value is
+not known. However, if we tell system the setup of pickups, the system can do
+more accurate reservation of a train. Especially which our new reservation
+system, input the pickup location can allow the trains to come as close as only
+5cm away from each other.
 
 
 Submitted files
 ===============
 
+$ cd /u9/z2long/rt/rel/p3
+$ find . -type f | xargs md5sum
+29933296247039d58b28860f01fe1f32  ./doc/desc
+8f935647a400fbf25c08c442833a42c8  ./doc/KernelDesign
+141b3549784777158a94534240437d10  ./doc/README
+df0b51e5b673fbbb35ec427b63ad0422  ./doc/desc_2
+c4aee076bd493800ee6139e47da9074d  ./doc/SendReceiveMesurement
+b8b17f7bb08134a5c020db44782d5cb5  ./doc/desc_3
+a41435999a3f388b1098f5f49fae391b  ./doc/user
+6c290e74dc90132ad90e6a3f23b61392  ./doc/desc_4
+8b6d1e20c09a3ddbbfe1c8de5bd50dcb  ./doc/UserlandDesign
+2221f267f13f074109016e8f49c19c5d  ./doc/doc_milestone_1
+20e340a977a2940f0f9d25eb6b2a6c50  ./doc/pathFinding
+e57e1239b4ffc55549c99142b6a69367  ./doc/doc_mileston_2
+9a77ac18d4a9336f1a665826e6d5cedc  ./doc/project_proposal
+706ca50bfac95f6c60a6afc6793138b1  ./doc/doc_project
+9ee635b105b00563d471031e78d8f4e7  ./src/trap_handler.c
+65268249112d2fb334aa5013cc88edfc  ./src/kernel.mk
+ee4f869f352e1e1ae178ddc9ed09cc6e  ./src/lib/str.c
+b93ab2b91d8aea5710f11ee1d38e3d36  ./src/lib/rbuf.c
+4d9e149a10e132633e723895196fdb10  ./src/lib/list.c
+b5257919645efcbad316803de92bf3d7  ./src/lib/hashtable.c
+cc7c2b16764f36e55de0e0a652a78559  ./src/lib/strprintf.c
+092c25aead2469df95fa67ff3d51ac57  ./src/trap.s
+7fc84523504601e6131cec4b340b3d10  ./src/sched.c
+c311d59e4740adbb4e54abf00d0a2439  ./src/init.c
+ef839b83d37e9b6e1f44d5823d95afc8  ./src/entry.c
+e4da8cae9acb838a0527fc585f2d7055  ./src/session_start.s
+d73b46de71ffbe57390c148513c36524  ./src/devices/clock.c
+485f1a99e81baa5d5f27199a30ff3d38  ./src/devices/console.c
+5740f18810cd052b5633882123e20d06  ./src/devices/bwio.c
+40c73b20cfec47bb4e8f4cb964a473d7  ./src/userland/apps/init_user/main.c
+217f3ae063db63ae24e5c5296d42dbb3  ./src/userland/apps/noise/main.c
+1e3396073ab0a8770dff4694aa61567f  ./src/userland/apps/init/main.c
+dc5b88c7489b689354727f56091b63cf  ./src/userland/apps/rps_client/main.c
+5e1ca4caf7a173f7ee2fd5ce0003ebf5  ./src/userland/apps/RPSServer/main.c
+b0beb2a32a5cab61b50b614f3ed3f9b3  ./src/userland/apps/srr_timing/main.c
+cdfa2f296c1437da1048efbf68b350ea  ./src/userland/apps/train/train_control.c
+ea3ecf302bdca616ce6242f24640575c  ./src/userland/apps/train/train_module.c
+fb994ef3b980973f3551d6f87559bb2e  ./src/userland/apps/train/sensor.c
+a7f5d30303fee4d1857992a3aed90f30  ./src/userland/apps/train/inc/train.h
+bf2689b8b6a2a0ca2bcb2d789a123ed6  ./src/userland/apps/train/inc/sensor_data.h
+744789b21aa77f1c97f601b5aa21f9ca  ./src/userland/apps/train/inc/track_data.h
+b0a24c4735fec12d187b40519f11212c  ./src/userland/apps/train/inc/config.h
+1cd5d5077f84efce07719666d0c20b10  ./src/userland/apps/train/inc/warning.h
+e877df3f97e3c1ff337303d8846bf905  ./src/userland/apps/train/inc/train_location.h
+3d6fcb2f59b07ff40865f929427bb080  ./src/userland/apps/train/inc/track_node.h
+d27e60eb46545f3ba0336d821386cba2  ./src/userland/apps/train/inc/train_types.h
+e6e4c692cb8945655404b9a480db7ccc  ./src/userland/apps/train/inc/speed.h
+ace72cccd7394504327d09609a7ea30a  ./src/userland/apps/train/inc/error_tolerance.h
+f728e607b4cf9169da630e48afbb60d6  ./src/userland/apps/train/inc/timing.h
+5ddd727d870dbab2080b14c6bf036523  ./src/userland/apps/train/inc/train_tracking.h
+72f41a80455b0d17bc48ff8b61505525  ./src/userland/apps/train/inc/train_constants.h
+7366d2fa67b4f236b1e9871040a7f3dc  ./src/userland/apps/train/inc/track_reserve.h
+5f47e71a14ba4b4ac4fb1feaadbb58ff  ./src/userland/apps/train/inc/sched.h
+3edb7a5a5a5624f795d9d7a057448d4f  ./src/userland/apps/train/import/track_data.c
+9e98181f13ede0c2942dd06b88d053b7  ./src/userland/apps/train/import/track_node.h
+1352f3743944badbb8c2399e6fb2ccd4  ./src/userland/apps/train/import/track_data.h
+284030840b56ece74c716fd56328800d  ./src/userland/apps/train/ui/clock.c
+a79cd763b331805e115a8abf1893603e  ./src/userland/apps/train/ui/train_tracking.c
+d4957ac64569f0fb62bfbc48441067cb  ./src/userland/apps/train/ui/sensor_monitor.c
+7e820bf77b2f6a88d9a9e20549bc9daf  ./src/userland/apps/train/ui/switch_monitor.c
+584a653764a7b8bee2e1f4228ffd0f14  ./src/userland/apps/train/ui/planner.c
+1e78ea7fd0cf64234ddd06d55b5b3d6f  ./src/userland/apps/train/ui/train_plan.c
+21eb9ca63dc32ae9c73dbe11891eed2c  ./src/userland/apps/train/ui/sched_ui.c
+d9a3288d2f795b809bb0bb5d46a3de63  ./src/userland/apps/train/UIDesign
+821819a1b3ab78e660b8330a32d37816  ./src/userland/apps/train/track_data.c
+ee799bb8b14612cc2859d17f5bfd3327  ./src/userland/apps/train/train_auto.c
+a3f0dd7f03641fd96144400399c2bdde  ./src/userland/apps/train/train_location.c
+2aa5b42c9aea7562c5f3ec22610375e3  ./src/userland/apps/train/train_data_edit.regexp
+1d5583779293f77fa56c9d32023daf1e  ./src/userland/apps/train/planner.c
+63eb9083962f391db39189bdaecc0d20  ./src/userland/apps/train/speed.c
+81bef1c515abda6518f3197233e7f059  ./src/userland/apps/train/error_tolerance.c
+5e10afa4b629b3a2fb0625828331e323  ./src/userland/apps/train/train_tracking.c
+e4f05ea2dc9e1f7b9a054e4d90d60acf  ./src/userland/apps/train/train_module_executor.c
+ecd0126449ef9b53a2599b9256d0fae2  ./src/userland/apps/train/track_reserve.c
+27bbdbee118bf44653407a7d7f609f0e  ./src/userland/apps/train/sched.c
+78d2ebd6f39ef3cc204434eefd0612c8  ./src/userland/apps/rps_game/main.c
+20327d4f4e6a71e33f33418eccbbc617  ./src/userland/apps/lazy_dog/main.c
+9b9cc4eeb2471737f65c414fd9fec11a  ./src/userland/lib/name_server.c
+2a21316c69dcffddd5f5198851e5f64a  ./src/userland/lib/syscall.c
+5654c4de4ae067b3b4710490a09f003b  ./src/userland/lib/heap.c
+8062b65488e82042a43e0ff9dabefef2  ./src/userland/lib/prng.c
+bdd14a2f187303a274295e44fe9f34ae  ./src/userland/lib/sync.c
+2c529c39706de121bdc6bd4f670a71f9  ./src/userland/lib/math.c
+f679f0c29284aa4e2e5e26cea68d69f5  ./src/userland/lib/event.c
+7157cd98a0abc82eb691b823881f2f86  ./src/userland/lib/uart.c
+27788121b38cd920c7ed648ac49c7b0c  ./src/userland/lib/#sync.c#
+4af80a70a6cf35be8646d030a135d5b8  ./src/userland/lib/cursor_control.c
+0463abfc0966ff809870dd836715f9eb  ./src/userland/lib/courier.c
+926bb52b9b3f699df3d8205821e0fb88  ./src/userland/lib/parser.c
+f9b9bd87a03bc3eb236b103a3e515415  ./src/userland/drivers/clock_drv.c
+88f281e31be3ddeb9abc5fb1238fa43a  ./src/userland/drivers/uart_drv.c
+0db7a8533f5cf2c7a43380c1d1ac4e4b  ./src/userland/server/display_server.c
+6a1d4ca7f664b8c2d435a9914d46d4c2  ./src/userland/server/time_server.c
+28bc0be9ec969be7d37e0818e37a89fb  ./src/userland/server/semaphore_server.c
+99104d8cbfa2a5b2a7075f3abfafe63c  ./src/task_init.s
+7ad4b6e446c7d9edd4ebb92c2652811b  ./src/task.c
+68ef8d87574d965db28e0a9525f62e05  ./src/kernel_shutdown.s
+5f4a8b6d75a267c2f275912e15ff40bc  ./src/interrupt.s
+fb0ab370d8cb7c49570f2412011998b5  ./src/interrupt_handler.c
+4278d60f8e7f1eb7e29871931a892468  ./src/watchdog.c
+b08067b13bb0b468d7f01951b4179a34  ./src/mem.c
+cdbdf92b78a229e0510c3ea5686ff8f7  ./src/cache.s
+e05902d8eb928f7b7f4a68be4675a768  ./src/context.c
+a604fc29d70c75a9cd9a012a772ca549  ./src/kill.s
+8a6d6a20176bd3091dfa72d3eb00ee5f  ./src/perf.c
+bff4bdce3041e160831391466c91ea73  ./src/abort.s
+402c90fe032995182d91ef35826d5447  ./src/abort_handle.c
+d41d8cd98f00b204e9800998ecf8427e  ./bin/.gitignore
+39dfffa26195849e535c6ec047151b51  ./bin/dump
+9c0b8e692a74b39730a1539b2ec3ec78  ./bin/pinball_p3.elf
+8fcb2c5497488b730319011a05d09e3c  ./inc/user/apps_entry.h
+f3c62c30209f8098840f659bcde50fab  ./inc/user/syscall.h
+b464efd6454e0bb66db5e16dda52d34a  ./inc/user/name_server.h
+33c4e1c849f6261744b44225f6593d28  ./inc/user/RPS_game.h
+0c84deec0ad775d3ffcfac712da9ad37  ./inc/user/lib/heap.h
+6eb5716df43a5efd08372510d62954d8  ./inc/user/lib/prng.h
+2330a928b4de65252440fccd51c3a455  ./inc/user/lib/sync.h
+faafd00effd9f33508ad4a30a4205fcb  ./inc/user/lib/math.h
+57be25c5c85e250c512570a09691bf61  ./inc/user/lib/cursor_control.h
+ab1071a14c3df5f78999cefafbc0b5b6  ./inc/user/lib/parser.h
+a9d7c713fa6a1e5d7a74c430ad9eae15  ./inc/user/servers_entry.h
+cb64e338d454c452343c560ebeee0f70  ./inc/user/devices/clock.h
+9559afbf455465941769de706a0a2a10  ./inc/user/devices/uart.h
+a7f38facae696a0857d5d2862ac63819  ./inc/user/protocals.h
+2a215744143e53f6a0314ea8efb5cbe4  ./inc/user/time.h
+5eb4d84e25105311513f7c1c4f1cc95a  ./inc/user/clock_server.h
+09be738ad3370e955f2eebc0b9b48be4  ./inc/user/assert.h
+adad127968428f49cfed93548d4e35df  ./inc/user/event.h
+79be1919961082bd7893dd726a4044c1  ./inc/user/display.h
+b73f5cfd37530dab63c57b7a2d6ff4d3  ./inc/user/drivers_entry.h
+72740e67e0023e8479b1682ae45d9434  ./inc/user/dprint.h
+fe8c271666bb936c6c399ef59d8438d3  ./inc/user/uart.h
+94cff5de6265ca2af724e832d1506b98  ./inc/user/courier.h
+b403314ee2a3a9738a601be1cf4b6037  ./inc/user/semaphore.h
+22df14e5a1916f97c25c764c023de301  ./inc/task.h
+02c4361f40a7e2505bef66aa7cd4dc27  ./inc/kernel.h
+8eead4ce12a73222266300c83b7560c3  ./inc/types.h
+6e427d4b601baa94ffd0837fa4bb4d8f  ./inc/lib/str.h
+44a3a5203d6d9a2254e60474e340f1a0  ./inc/lib/rbuf.h
+3ba52c2201f42cbc4c29dd5d7a7ac509  ./inc/lib/list.h
+aa840cf18b553492af00337740c0a589  ./inc/lib/hashtable.h
+c5c38d8ed1cd98feb911c74dcdc3f976  ./inc/lib/valist.h
+ff2cfda94638ea8b32f098d3cb002881  ./inc/panic.h
+d88e3e4af19dc90cdae671d6d7a2c1a4  ./inc/err.h
+e94693d20830a66f5f4d07fac0790ab4  ./inc/regopts.h
+d117423d6a1b0af67f41bcdfc6d85ac9  ./inc/trap.h
+2df39fa680be7e8ab0c2499be03f1d44  ./inc/bwio.h
+e79dd3bcff94cd6d74fcb65601afb704  ./inc/config.h
+1d370f061cef5a04b47d0aa92366e189  ./inc/ts7200.h
+5295c901e1cdf8be78a7acc9370451e9  ./inc/devices/clock.h
+748a423fc63602fbc0bf0f19f3ba6fe6  ./inc/devices/console.h
+1b59fdaf2ccf1a72f418328151e66590  ./inc/sched.h
+b557805aeaa1dace38404995dab28b5c  ./inc/context.h
+29bea3aad55c6bb623279a3dbd6830b7  ./inc/trap_reason.h
+c43cfa95330540b4d28d90d93032d3ca  ./inc/watchdog.h
+c33fa0127b592dc024e50c754dda7dd5  ./inc/interrupt.h
+3fd4e32a82edc39a2703e4035a9ae2e2  ./inc/syscall.h
+4f9e1f65e1fda0a30500444e612ab105  ./inc/mem.h
+fe42a1e47a2a09050edbe4b69495688d  ./inc/session.h
+db65ecbcf002422c1122c81b488001b6  ./inc/ep9302.h
+d32d3824ad7b8bede6a764f2298270e4  ./inc/perf.h
+ce329cc4552923d94ebcb33eafce95c9  ./inc/abort.h
+bcdef2bf41b3745535bf4649049d0e3f  ./Makefile
+4aa618b9753c5292e5d9e5c95d297f10  ./build/orex.ld
+d41d8cd98f00b204e9800998ecf8427e  ./built/.gitignore
+e4fdcce89a48fd3c5636deaecbc7c8dd  ./built/userland/apps/srr_timing/main.s
+14131aac9a9aea88ba0166740ec81953  ./built/userland/apps/srr_timing/main.o
+92bd88807f21e953d263f710d4b5dfe9  ./upload
+880331f94a7bb48a4225468e7e2a40a4  ./out
 
 
 

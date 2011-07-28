@@ -11,12 +11,12 @@
 To install the kernel, boot the TS-7200 box into RedBoot and load the executable
 from the tftp server via
 
-> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_p2.elf"
+> load -b 0x00218000 -h 129.97.167.18 "ARM/z2long/pinball_p3.elf"
 
-A backup of pinball_p2.elf is located in /u9/z2long/rt/rel/p2/bin/pinball_p2.elf
+A backup of pinball_p2.elf is located in /u9/z2long/rt/rel/p3/bin/pinball_p3.elf
 
 MD5 of pinball:
-cd4a7a5279f10ced7f60eef49df0c91c  ./bin/pinball_p2.elf
+9c0b8e692a74b39730a1539b2ec3ec78  ./bin/pinball_p3.elf
 
 This version might be slightly different from the version we used on the demo.
 The version used on the demo is either this version or an earlier version.
@@ -53,9 +53,32 @@ commands are:
   Plan a trip for the train < train id > to < distance after destination > after
   < destination >.  The execution of the trip should happen immediately and
   would only be impeded by failure of reserving tracks.
+  
+- sched < src > < dist > < dest > < dist >
+
+  Add a schedule to be executed by one of the free trains.
+  
+- pausesched
+
+  Pause execution of the scheduler.
+  
+- resumesched
+
+  Resume execution of the scheduler.
+  
+- pu < train id > < pickup direction [F/B] >
+
+  Set the pickup direction of the train.
+  
+- sctime < train id > < min sc time > < max sc time >
+
+  Set the speed change time of the train.
 
 
 4. Known Problems
 =================
 
 - Program occasionally freeze up.  In such case reboot is the only solution.
+- Train might derail.
+- No warranty.
+- Does not always work.
