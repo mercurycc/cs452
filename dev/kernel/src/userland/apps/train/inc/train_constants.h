@@ -40,8 +40,11 @@ static inline int train_tail_length( int id ){
 }
 
 static inline int train_full_length( int id ){
-	return PICKUP_SIZE + train_tail_length( id ) + train_tail_length( id );
 	return PICKUP_SIZE + train_head_length( id ) + train_tail_length( id );
+}
+
+static inline int train_over_length( int id ){
+	return PICKUP_SIZE + train_tail_length( id ) + train_tail_length( id );
 }
 
 #endif /* _TRAIN_CONSTANTS_H_ */

@@ -125,7 +125,7 @@ static inline int execute_command( Rbuf* command_buffer, char* switch_table, int
 		break;
 	case TRAIN_EXEC_RV:
 		reverse( command.args[0] );
-		delay = TRAIN_XMIT_DELAY;
+		delay = TRAIN_RV_DELAY;
 		break;
 	case TRAIN_EXEC_SW:
 		i = SWID_TO_ARRAYID( command.args[0] );
