@@ -90,6 +90,7 @@
 #define RESERVE_NAME        "track_rsv"
 #define PLANNER_UI_NAME     "planner_ui"
 #define TRAIN_SCHED_NAME    "t_sched"
+#define SCHED_UI_NAME       "sched_ui"
 #define TRAIN_COMMAND_MAX_TOKEN  16
 
 /* Timing, in ticks */

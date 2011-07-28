@@ -75,7 +75,7 @@ void train_control()
 
 	/* Print title */
 	/* System */
-	region_printf( &title_reg, "Pinball P2" );
+	region_printf( &title_reg, "Pinball P3" );
 	/* Console */
 	status = region_init( &prompt_titles );
 	assert( status == ERR_NONE );
@@ -223,6 +223,7 @@ void train_control()
 			if( token_filled == 3 ){
 				args[ 0 ] = ( int )stou( token_buf[ 1 ] );
 				args[ 1 ] = ( int )stou( token_buf[ 2 ] );
+				train_sched_suspend( sched_tid );
 				train_set_speed( module_tid, args[ 0 ], args[ 1 ] );
 				train_auto_set_speed( auto_tid, args[ 0 ], args[ 1 ] );
 				region_printf( &result_reg, "Set train %d to speed level %d\n", args[ 0 ], args[ 1 ] );
@@ -234,6 +235,7 @@ void train_control()
 			if( token_filled == 2 ){
 				arg = ( int )stou( token_buf[ 1 ] );
 				/* Reverse direction */
+				train_sched_suspend( sched_tid );
 				train_reverse( module_tid, arg );
 				train_auto_set_reverse( auto_tid, arg );
 
@@ -288,6 +290,7 @@ void train_control()
 			int train_id;
 			if( token_filled == 2 ){
 				train_id = ( int )stou( token_buf[ 1 ] );
+				train_sched_suspend( sched_tid );
 				train_auto_new_train( auto_tid, train_id );
 				// test
 				planner_ui_new_train( planner_ui_tid, train_id );
@@ -335,6 +338,7 @@ void train_control()
 					fail = 1;
 				}
 				if (!fail) {
+					train_sched_suspend( sched_tid );
 					train_auto_reset_track( auto_tid, track_id );
 					region_printf( &result_reg, "Reset track %c\n", track_id );
 				}

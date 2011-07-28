@@ -357,7 +357,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 			/* Wait for update */
 			sem_acquire_all( train->update );
 
-			dprintf( "Train %d caught update\n", train->id );
+			// dprintf( "Train %d caught update\n", train->id );
 
 			if( ! train->planner_control ){
 				dprintf( "Train %d control is taken back to manual\n", train->id );
@@ -368,7 +368,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 			match_node = train->check_point;
 
 			track_node_id2name( name, match_node->group, match_node->id );
-			dprintf( "Train %d matching %s\n", train->id, name );
+			// dprintf( "Train %d matching %s\n", train->id, name );
 		
 			/* Here we remove the distance of traveled edges */
 			do {

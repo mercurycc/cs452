@@ -25,7 +25,7 @@
 #define SERVICE_PRIORITY              2
 #define IDLE_SERVICE_PRIORITY         15
 #define UART_TXBUF_SIZE               1024       /* How many bytes will the UART tx software buffer hold.  This number (2048) should be able to hold a whole screen */
-#define DISPLAY_REFRESH_RATE          3          /* In ticks */
+#define DISPLAY_REFRESH_RATE          4          /* In ticks */
 #define SEMAPHORE_WAIT_QUEUE_SIZE     32
 #define SEMAPHORE_SERVER_NAME         "sem_srv"
 

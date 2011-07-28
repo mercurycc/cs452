@@ -2,6 +2,7 @@
 #include <user/syscall.h>
 #include <user/semaphore.h>
 #include <user/name_server.h>
+#include <user/display.h>
 #include <user/assert.h>
 #include <lib/rbuf.h>
 #include <lib/str.h>
@@ -24,6 +25,7 @@ enum Train_sched_request_types {
 
 typedef struct Train_assign_s {
 	Train* train;
+	int ticket;
 	int dest_assign;
 	int dest_group;
 	int dest_id;
@@ -32,6 +34,7 @@ typedef struct Train_assign_s {
 	int src_group;
 	int src_id;
 	int src_dist;
+	int done;
 } Train_assign;
 
 typedef struct Train_sched_request_s {
@@ -63,18 +66,20 @@ void train_sched()
 	Train_assign trains[ MAX_NUM_TRAINS ];
 	Train_assign* current_assign;
 	Sched_request request_buf[ SCHEDULER_BUFFER ];
+	Region status_reg = { 69, 12, 1, 78 - 69, 1, 0 };
 	Rbuf ring_body;
-	Rbuf* request_pool = &ring_body;
+	Rbuf* request_pool;
 	int available_trains = 0;
-	int ticket = 1;
+	int ticket;
 	int status;
-	int control = 1;
+	int control;
 	int auto_tid;
+	int sched_ui_tid;
 	int i;
 	int temp;
 	int tid;
 
-	dnotice( "Sched launched\n" );
+	dnotice( "\n" );
 
 	status = RegisterAs( TRAIN_SCHED_NAME );
 	assert( status == REGISTER_AS_SUCCESS );
@@ -82,14 +87,22 @@ void train_sched()
 	auto_tid = WhoIs( TRAIN_AUTO_NAME );
 	assert( auto_tid > 0 );
 
+	request_pool = &ring_body;
+
 	status = rbuf_init( request_pool, ( uchar* )request_buf, sizeof( Sched_request ), sizeof( Sched_request ) * SCHEDULER_BUFFER );
 	assert( status == ERR_NONE );
 
 	status = Create( TRAIN_SCHED_PRIORITY + 1, train_sched_alarm );
 	assert( status > 0 );
 
-	temp = 1;
+	sched_ui_tid = Create( TRAIN_UI_PRIORITY, sched_ui );
+	assert( sched_ui_tid > 0 );
+
+	region_init( &status_reg );
+
+	ticket = 1;
 	control = 1;
+	available_trains = 0;
 
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -104,6 +117,9 @@ void train_sched()
 		case TRAIN_SCHED_ADD:
 			request.ticket = ticket;
 			ticket += 1;
+			sched_ui_new_plan( sched_ui_tid, request.ticket, request.assign.dest_group,
+					   request.assign.dest_id, request.assign.dest_dist, request.assign.src_group,
+					   request.assign.src_id, request.assign.src_dist );
 			rbuf_put( request_pool, ( uchar* )&request );
 			break;
 		case TRAIN_SCHED_CANCEL:
@@ -118,6 +134,7 @@ void train_sched()
 						break;
 					}
 					if( request.ticket == request_ticket ){
+						sched_ui_complete( sched_ui_tid, request_ticket );
 						break;
 					} else {
 						rbuf_put( request_pool, ( uchar* )&request );
@@ -126,9 +143,11 @@ void train_sched()
 			}
 			break;
 		case TRAIN_SCHED_SUSPEND:
+			region_printf( &status_reg, " PAUSE\n" );
 			control = 0;
 			break;
 		case TRAIN_SCHED_RESUME:
+			region_printf( &status_reg, "RUNNING" );
 			control = 1;
 			break;
 		case TRAIN_SCHED_UPDATE:
@@ -165,18 +184,25 @@ void train_sched()
 								 current_assign->dest_dist );
 						dprintf( "Plan destination trip for train %d\n", current_assign->train->id );
 						current_assign->dest_assign = 0;
+					} else if( ! current_assign->done ){
+						dprintf( "Trip %d completed by train %d\n", current_assign->ticket, current_assign->train->id );
+						sched_ui_complete( sched_ui_tid, current_assign->ticket );
+						current_assign->done = 1;
 					} else if( !rbuf_empty( request_pool ) ){
 						rbuf_get( request_pool, ( uchar* )&request );
 						request.assign.train = current_assign->train;
+						request.assign.ticket = request.ticket;
 						request.assign.dest_assign = 1;
 						request.assign.src_assign = 1;
+						request.assign.done = 0;
+						sched_ui_assign( sched_ui_tid, request.ticket, current_assign->train->id );
 						dprintf( "Assigning trip %d for train %d\n", request.ticket, current_assign->train->id );
 						memcpy( ( uchar* )current_assign, ( uchar* )&request.assign, sizeof( request.assign ) );
 						continue;
 					}
 					break;
 				}
-			}					
+			}			
 		}
 	}
 }
@@ -225,6 +251,7 @@ int train_sched_add( int tid, int dest_group, int dest_id, int dest_dist, int sr
 	assign.src_group = src_group;
 	assign.src_id = src_id;
 	assign.src_dist = src_dist;
+	assign.done = 1;
 
 	status = train_sched_request( tid, TRAIN_SCHED_ADD, 0, &assign, &reply );
 	assert( status == ERR_NONE );

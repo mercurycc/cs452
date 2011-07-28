@@ -45,9 +45,9 @@ void planner_ui(){
 	Planner_ui_request request;
 	int available_slot = 1;
 	/* UI specific, see UIDesign */
-	Region title_reg = { 28, 12, 1, 44 - 28, 1, 0 };
-	Region data_reg = { 28, 13, 20 - 13, 78 - 28, 1, 1 };
-	Region entry = { 30, 15, 1, 75 - 29, 0, 0 };
+	Region title_reg = { 28, 12, 1, 41 - 28, 1, 0 };
+	Region data_reg = { 28, 13, 20 - 13, 46 - 28, 1, 1 };
+	Region entry = { 30, 15, 4, 44 - 29, 0, 0 };
 	int train_map[ MAX_TRAIN_ID ] = { 0 };
 	char mark_name[ 16 ];
 	Timespec time;
@@ -59,13 +59,18 @@ void planner_ui(){
 	assert( status == REGISTER_AS_SUCCESS );
 
 	region_init( &title_reg );
-	region_printf( &title_reg, "Train Schedule\n" );
+	region_printf( &title_reg, "Destination\n" );
 	region_init( &data_reg );
 	region_printf( &data_reg,
-		       " #|Dest.|Deadl|  #|Dest.|Deadl|  #|Dest.|Deadl" );
+		       " #|Dest.|Deadl" );
 	region_init( &entry );
 	region_printf( &entry,
-		       "  |     |     |   |     |     |   |     |     " );
+		       "  |     |\n"
+		       "  |     |\n"
+		       "  |     |\n"
+		       "  |     |\n" );
+
+	entry.height = 1;
 
 	while( 1 ){
 		status = Receive( &tid, ( char* )&request, sizeof( request ) );
@@ -102,7 +107,7 @@ void planner_ui(){
 			break;
 		}
 		
-		entry.col = train_map[ request.train_id ] * 16 + 14;
+		entry.row = train_map[ request.train_id ] * 1 + 14;
 		
 		switch ( request.type ) {
 		case PLANNER_UI_NEW_TRAIN:

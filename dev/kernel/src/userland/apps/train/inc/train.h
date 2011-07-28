@@ -102,6 +102,11 @@ int train_planner_have_control( Train_data* train );
 /* UI */
 int train_ui_register( int tid, Train_data* train );
 
-
+/* Scheduler UI */
+/* Server */
+void sched_ui();
+int sched_ui_new_plan( int tid, int ticket, int dest_group, int dest_id, int dest_dist, int src_group, int src_id, int src_dist );
+int sched_ui_assign( int tid, int ticket, int train_id );
+int sched_ui_complete( int tid, int ticket );
 
 #endif
