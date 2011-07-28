@@ -74,6 +74,9 @@ int tracking_ui_speed( int tid, int train_id, int speed );
 
 /* Planner ui api */
 int planner_ui_new_train( int tid, int train_id );
+int planner_ui_new_plan( int tid, int train_id, int group, int id, int deadline );
+int planner_ui_arrival( int tid, int train_id, int deadline );
+int planner_ui_cancel( int tid, int train_id );
 
 /* sensor api */
 /* Server */

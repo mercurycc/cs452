@@ -321,6 +321,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 	int temp;
 	char name[ 6 ];
 	int done = 0;
+	int ret = ERR_NONE;
 	
 	rbuf_init( local_path, ( uchar* )path_buf[ 0 ], sizeof( Train_path ), sizeof( path_buf[ 0 ] ) );
 	rbuf_init( local_path_stack, ( uchar* )path_buf[ 1 ], sizeof( Train_path ), sizeof( path_buf[ 1 ] ) );
@@ -362,6 +363,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		if( train->planner_control ){
 			train_forward_set_speed( train, &state, temp, module_tid, auto_tid );
 		} else {
+			ret = -1;
 			dprintf( "Train %d control is taken back to manual\n", train->id );
 			break;
 		}
@@ -377,6 +379,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 
 			if( ! train->planner_control ){
 				dprintf( "Train %d control is taken back to manual\n", train->id );
+				ret = -1;
 				break;
 			}
 
@@ -462,7 +465,7 @@ static int train_forward_stop( volatile Train_data* train, Rbuf* path, volatile 
 		dprintf( "Train %d forward execution completed\n", train->id );
 	}
 
-	return ERR_NONE;
+	return ret;
 }
 
 void train_planner()
@@ -490,7 +493,9 @@ void train_planner()
 	int module_tid;
 	int reserve_tid;
 	int auto_tid;
+	int plan_ui_tid;
 	char name[ 6 ];
+	int incomplete = 0;
 	int status;
 
 	/* Receive init */
@@ -507,6 +512,9 @@ void train_planner()
 
 	reserve_tid = WhoIs( RESERVE_NAME );
 	assert( reserve_tid > 0 );
+
+	plan_ui_tid = WhoIs( PLANNER_UI_NAME );
+	assert( plan_ui_tid > 0 );
 	
 	train = ( Train_data* )request.dst;
 	track_graph = train->track_graph;
@@ -550,6 +558,8 @@ void train_planner()
 			dprintf( "Path planned, dist pass = %d\n", dist_pass );
 
 			assert( ! rbuf_empty( path ) );
+
+			incomplete = 0;
 
 			while( train->planner_control && ( ! rbuf_empty( path ) ) ){
 				dprintf( "Planner filling forward path for train %d\n", train->id );
@@ -613,6 +623,8 @@ void train_planner()
 					status = train_forward_stop( train, forward_path, switch_table, path_length, module_tid, auto_tid );
 					dprintf( "Planner forward path executing for %d completed\n", train->id );
 					if( status < 0 ){
+						incomplete = 1;
+						planner_ui_cancel( plan_ui_tid, train->id );
 						break;
 					}
 				}
@@ -622,6 +634,10 @@ void train_planner()
 				}
 				
 				plan_direction = PLANNER_BACKWARD;
+			}
+
+			if( ! incomplete ){
+				planner_ui_arrival( plan_ui_tid, train->id, 0 );
 			}
 		default:
 			break;

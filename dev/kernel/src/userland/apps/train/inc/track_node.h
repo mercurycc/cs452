@@ -55,8 +55,7 @@ struct track_edge {
 	Track_reserve close_reserves[ MAX_NUM_TRAINS ];
 
 	/* Long term reservation */
-	int reserve_from;     /* Reserve time period */
-	int reserve_to;
+	// Track_reserve far_reserves[ MAX_NUM_TRAINS ];
 };
 
 struct track_node {

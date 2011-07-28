@@ -23,6 +23,7 @@ typedef struct Planner_ui_s Planner_ui_request;
 enum Planner_ui_request_type {
 	PLANNER_UI_NEW_TRAIN,
 	PLANNER_UI_NEW_PLAN,
+	PLANNER_UI_CANCEL,
 	PLANNER_UI_ARRIVAL
 };
 
@@ -77,6 +78,7 @@ void planner_ui(){
 		status -= sizeof( uint ) * 2;
 
 		switch ( request.type ) {
+		case PLANNER_UI_CANCEL:
 		case PLANNER_UI_NEW_TRAIN:
 			assert( status == 0 );
 			break;
@@ -108,6 +110,7 @@ void planner_ui(){
 		}
 		
 		entry.row = train_map[ request.train_id ] * 1 + 14;
+		entry.col = 30;
 		
 		switch ( request.type ) {
 		case PLANNER_UI_NEW_TRAIN:
@@ -122,15 +125,17 @@ void planner_ui(){
 			region_printf( &entry, "%s\n", mark_name);
 			entry.col += 6;
 			entry.width = 5;
-			time_tick_to_spec( &time, request.data.new_plan.deadline );
-			region_printf( &entry, "%2u:%2u\n", time.minute, time.second );
+			region_printf( &entry, "ROUT.\n", time.minute, time.second );
 			break;
 		case PLANNER_UI_ARRIVAL:
 			entry.col += 9;
 			entry.width = 5;
-			time_tick_to_spec( &time, request.data.arrival.deadline );
-			region_printf( &entry, "%2u:%2u\n", time.minute, time.second );
+			region_printf( &entry, "ARIV.\n", time.minute, time.second );
 			break;
+		case PLANNER_UI_CANCEL:
+			entry.col += 9;
+			entry.width = 5;
+			region_printf( &entry, "CANC.\n", time.minute, time.second );
 		}
 		
 	}
@@ -170,12 +175,23 @@ int planner_ui_new_plan( int tid, int train_id, int group, int id, int deadline 
 	return planner_ui_request( tid, &request, sizeof( request.data.new_plan ) );
 }
 
-int planner_ui_arrival( int tid, int train_id, int deadline ){
+int planner_ui_arrival( int tid, int train_id, int deadline )
+{
 	Planner_ui_request request;
 
-	request.type = PLANNER_UI_NEW_PLAN;
+	request.type = PLANNER_UI_ARRIVAL;
 	request.train_id = train_id;
 	request.data.arrival.deadline = deadline;
 
 	return planner_ui_request( tid, &request, sizeof( request.data.arrival ) );
+}
+
+int planner_ui_cancel( int tid, int train_id )
+{
+	Planner_ui_request request;
+
+	request.type = PLANNER_UI_CANCEL;
+	request.train_id = train_id;
+
+	return planner_ui_request( tid, &request, 0 );
 }

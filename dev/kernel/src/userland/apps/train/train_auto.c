@@ -221,6 +221,7 @@ void train_auto()
 	int control_tid;
 	int reserve_tid;
 	int sched_tid;
+	int plan_ui_tid;
 	int tid;
 	int i;
 	int temp;
@@ -288,6 +289,9 @@ void train_auto()
 
 	sched_tid = WhoIs( TRAIN_SCHED_NAME );
 	assert( sched_tid > 0 );
+
+	plan_ui_tid = WhoIs( PLANNER_UI_NAME );
+	assert( plan_ui_tid > 0 );
 	
 	/* Start alarm */
 	alarm_tid = Create( TRAIN_AUTO_PRIROTY + 1, train_auto_alarm );
@@ -616,6 +620,8 @@ void train_auto()
 
 				current_train->current_dest = current_sensor;
 				current_train->current_dist_pass = request.data.plan.dist_pass;
+
+				planner_ui_new_plan( plan_ui_tid, current_train->id, request.data.plan.group, request.data.plan.id, 0 );
 
 				/* Release planner control */
 				if( current_train->planner_control || ( ! current_train->planner_ready ) ){
