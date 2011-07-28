@@ -7,9 +7,9 @@ abort_trap:
 	@ Check spsr
 	mrs	ip, spsr
 	and	ip, ip, #0x1f
-	cmp	ip, 0x1b
+	cmp	ip, #0x1b
 	beq	abort_trace_end
-	cmp	ip, 0x17
+	cmp	ip, #0x17
 	beq	abort_trace_end
 	@ Pass in the PC of the faulting instruction
 	mov	a1, lr
