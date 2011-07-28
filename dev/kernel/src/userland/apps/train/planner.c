@@ -69,7 +69,7 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 	int mark[ TRACK_NUM_NODES ];
 	uint min_cost;
 	int min_index;
-	int temp;
+	uint temp;
 	int i;
 	const track_node* current_node;
 	const track_node* next_node;
@@ -116,10 +116,24 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 	
 	/* Assign initial cost */
 	sem_acquire_all( train->sem );
-	cost[ check_point->reverse->index ] = train_tracking_position( train );
-	parent[ check_point->reverse->index ][ 0 ] = -1;
-	cost[ next_check_point->index ] = train_tracking_remaining_distance( train );
-	parent[ next_check_point->index ][ 0 ] = -1;
+	if ( track_reserve_may_i_range( reserve_tid, train, check_point, 0, train_tracking_position( train ), DIR_AHEAD ) == RESERVE_SUCCESS ) {
+		cost[ check_point->reverse->index ] = train_tracking_position( train );
+		parent[ check_point->reverse->index ][ 0 ] = -1;
+	}
+	else {
+		track_node_id2name( name, check_point->group, check_point->id );
+		dprintf( "cannot reserve at %s from 0 - %d\n", name, train_tracking_position( train ) );
+		cost[ check_point->reverse->index ] = ~0;
+	}
+	if ( track_reserve_may_i_range( reserve_tid, train, next_check_point->reverse, 0, train_tracking_remaining_distance( train ), DIR_AHEAD ) == RESERVE_SUCCESS ) {
+		cost[ next_check_point->index ] = train_tracking_remaining_distance( train );
+		parent[ next_check_point->index ][ 0 ] = -1;
+	}
+	else {
+		track_node_id2name( name, next_check_point->reverse->group, next_check_point->reverse->id );
+		dprintf( "cannot reserve at %s from 0 - %d\n", name, train_tracking_remaining_distance( train ) );
+		cost[ next_check_point->index ] = ~0;
+	}
 	sem_release( train->sem );
 
 	/* Find path */
@@ -174,7 +188,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 			next_node = current_node->edge[ DIR_AHEAD ].dest;
 			if( ! mark[ next_node->index ] ){
 				temp += current_node->edge[ DIR_AHEAD ].dist;
-				if( track_reserve_may_i_range( reserve_tid, train, current_node, 0, SAFETY_DISTANCE * 2, DIR_AHEAD ) != RESERVE_SUCCESS ){
+				if( track_reserve_may_i_range( reserve_tid, train, current_node, 0, current_node->edge[ DIR_AHEAD ].dist, DIR_AHEAD ) != RESERVE_SUCCESS ||
+					current_node->edge[ DIR_AHEAD ].dist >= 0x7FFFFFFF ){
+					/* the path should be ignored */
 					temp = ~0;
 				}
 				train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'S' );
@@ -185,7 +201,9 @@ static int train_planner_plan( const track_node* dst, int* dist_pass, const Trai
 				next_node = current_node->edge[ DIR_CURVED ].dest;
 				if( ! mark[ next_node->index ] ){
 					temp += current_node->edge[ DIR_CURVED ].dist;
-					if( track_reserve_may_i_range( reserve_tid, train, current_node, 0, SAFETY_DISTANCE * 2, DIR_AHEAD ) != RESERVE_SUCCESS ){
+					if( track_reserve_may_i_range( reserve_tid, train, current_node, 0, current_node->edge[ DIR_CURVED ].dist, DIR_AHEAD ) != RESERVE_SUCCESS ||
+						current_node->edge[ DIR_CURVED ].dist >= 0x7FFFFFFF ){
+						/* the path should be ignored */
 						temp = ~0;
 					}
 					train_planner_update_cost( cost, parent, temp, next_node->index, min_index, 'C' );
@@ -524,7 +542,7 @@ void train_planner()
 					train_reverse( module_tid, train->id );
 					train_auto_set_reverse( auto_tid, train->id );
 					dprintf( "Reverse for %d\n", train->id );
-					// Delay( 50 );
+					Delay( 50 );
 				}
 
 				previous_node = 0;
