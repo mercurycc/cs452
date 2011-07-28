@@ -131,7 +131,7 @@ static void train_auto_alarm()
 	int ptid = MyParentTid();
 
 	while( 1 ){
-		Delay( 1 );
+		Delay( 2 ); /* possible? */
 
 		train_auto_wakeup( ptid );
 	}
@@ -140,6 +140,17 @@ static void train_auto_alarm()
 static inline int train_auto_safety_dist( Train* train )
 {
 	return TRACK_RESERVE_SAFE_DISTANCE + TRACK_RESERVE_SAFE_MODIFIER * ( train->tracking.speed_level ) / NUM_SPEED_LEVEL;
+}
+
+static inline int train_auto_front_length( Train* train ){
+	int length;
+	if ( train->pickup == TRAIN_PICKUP_FRONT ) {
+		length = PICKUP_SIZE + train_head_length( train->id );
+	}
+	else {
+		length = PICKUP_SIZE + train_tail_length( train->id );
+	}
+	return length;
 }
 
 static inline int train_auto_back_length( Train* train )
@@ -753,7 +764,7 @@ void train_auto()
 							hit_sensor = 0;
 							if ( current_train->next_sensor && train_loc_is_sensor_tripped( &sensor_data, current_train->next_sensor ) ) {
 								// tries to check if the sensor is in the reservation
-								if ( track_reserve_holds( reserve_tid, current_train, current_train->next_sensor ) == RESERVE_NOT_HOLD ){
+								if ( track_reserve_may_i_range( reserve_tid, current_train, current_train->next_sensor, 0, train_auto_front_length( current_train ), DIR_AHEAD ) != RESERVE_SUCCESS ){
 									dprintf( "train %d ignores trigger of primary sensor, version %d\n", current_train->id );
 									break;
 								}
@@ -763,7 +774,7 @@ void train_auto()
 								hit_sensor = 1;
 							} else if ( current_train->secondary_sensor &&
 								    train_loc_is_sensor_tripped( &sensor_data, current_train->secondary_sensor ) ) {
-								if ( track_reserve_holds( reserve_tid, current_train, current_train->secondary_sensor ) == RESERVE_NOT_HOLD ){
+								if ( track_reserve_may_i_range( reserve_tid, current_train, current_train->secondary_sensor, 0, train_auto_front_length( current_train ), DIR_AHEAD ) != RESERVE_SUCCESS ){
 									dprintf( "train %d ignores trigger of secondary sensor\n", current_train->id );
 									break;
 								}
